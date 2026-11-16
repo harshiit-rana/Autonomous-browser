@@ -1,0 +1,89 @@
+# Autonomous Browser (Project Codename: Aegis)
+
+> **Next-Generation Autonomous Multi-Agent AI Browser with Elastic Swarms, Test-Time Tree Search, and Indirect Injection Immunity.**
+
+---
+
+## 🌟 Overview
+
+The **Autonomous Browser** is a production-grade, open-source AI desktop browser engineered from the ground up to solve the fundamental limitations of single-agent and brittle screen-clicking systems (such as Strawberry Browser). 
+
+Instead of chaining users to a single tab with slow, token-heavy screenshot loops, Autonomous Browser introduces:
+1. **Elastic Chromium Swarms**: True parallel agent execution across 1 to 10+ background tabs without screen hijacking.
+2. **Test-Time Tree Search (MCTS / Best-First Planning)**: Exploration, state backtracking, and dead-end recovery over complex workflows.
+3. **Dual-Mode Precision Execution**: Physical pointer simulation (`CDP Input.dispatchMouseEvent`) and instantaneous semantic DOM node targeting (`data-agent-id`).
+4. **Architectural Indirect Prompt Injection Defense**: Untrusted content isolation layers, Agent Origin Sets, and dual-model validation protecting user data and credentials.
+5. **Universal Model Context Protocol (MCP)**: Native hub to connect external tools, filesystem access, local CLI tools, and databases.
+6. **Local-First Privacy & Semantic Memory**: Embedded vector memory (DuckDB/SQLite FTS5) with 100% offline local LLM compatibility (Ollama, LM Studio) alongside cloud providers (Claude 3.7/3.5, Gemini 2.0, OpenAI).
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart TD
+    User(["User (Prompt / Voice / URL)"]) --> UI["Modern Browser Chrome (Electron / Svelte 5 / React)"]
+    
+    subgraph BrowserProcess ["Browser Shell & Orchestrator"]
+        Omnibar["Universal Smart Omnibar (Browse + Swarm Prompts)"]
+        Coordinator["Autonomous Swarm Coordinator (Task Decomposer)"]
+        TreePlanner["MCTS / Test-Time Search Planner & State Graph"]
+        SecurityShield["Indirect Injection Shield & Origin Boundary Guard"]
+        MCPHub["Model Context Protocol (MCP) Hub"]
+        MemoryDB["Local Vector Memory (SQLite FTS5 / DuckDB)"]
+    end
+
+    subgraph ElasticSwarm ["Elastic Multi-Agent Swarm (Background Isolated Tabs)"]
+        Tab1["Agent Worker 1 (CDP / DOM Indexer)"]
+        Tab2["Agent Worker 2 (CDP / DOM Indexer)"]
+        Tab3["Agent Worker 3 (CDP / DOM Indexer)"]
+        TabN["Agent Worker N (Elastic Scale)"]
+    end
+
+    subgraph ContentSurfaces ["Content Presentation"]
+        MainTab["Active User Browsing Surface (WebContentsView)"]
+        Sidebar["Agent Drawer (Live Progress & Streamed Evidence)"]
+    end
+
+    UI --> Omnibar
+    Omnibar --> Coordinator
+    Coordinator --> TreePlanner
+    TreePlanner <--> SecurityShield
+    TreePlanner -->|"Elastic Spawn"| ElasticSwarm
+    ElasticSwarm -->|"Structured Evidence"| Coordinator
+    Coordinator --> Sidebar
+    Coordinator <--> MemoryDB
+    Coordinator <--> MCPHub
+    UI --> MainTab
+```
+
+---
+
+## 🗺️ Master Roadmap & Milestone Tracker
+
+The project is structured into **7 core epic milestones**, broken down into detailed GitHub Issues:
+
+- [ ] **Milestone 1: Project Scaffolding, Hardening & Dual-Layer Window Architecture**
+- [ ] **Milestone 2: High-Performance Semantic DOM Indexer & Dual-Mode Execution**
+- [ ] **Milestone 3: Elastic Multi-Agent Swarm Orchestrator & Task Decomposition**
+- [ ] **Milestone 4: Test-Time Compute, MCTS & Backtracking Engine**
+- [ ] **Milestone 5: Indirect Prompt Injection Defense & Dual-Model Security Shield**
+- [ ] **Milestone 6: Universal MCP Hub & Local Vector Memory Subsystem**
+- [ ] **Milestone 7: Premium Modern Browser Chrome & Swarm Stream Drawer UI**
+
+---
+
+## 🛠️ Tech Stack
+
+- **Runtime / Shell**: Electron 33+, Node.js 22+, TypeScript
+- **Frontend Chrome**: Svelte 5 (or React 19) + Tailwind CSS + Lucide Icons
+- **Browser Automation Core**: Chromium DevTools Protocol (CDP) + Playwright Core
+- **Database / Memory**: `better-sqlite3` + FTS5, Vector Embeddings
+- **Protocol**: Model Context Protocol (MCP) SDK
+- **LLM Integrations**: Claude (ACP/Anthropic), Gemini (Google GenAI), OpenAI, Ollama / Local OpenAI-compatible APIs
+
+---
+
+## 📄 License
+
+MIT License. See [LICENSE](LICENSE) for details.
