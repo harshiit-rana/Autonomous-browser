@@ -1,0 +1,59 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-build:
+    name: Build & Test Matrix (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [22]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile TypeScript
+        run: npm run build:ts
+
+      - name: Run Memory and Vault Unit Tests
+        run: npx tsx tests/test_memory_and_vault.ts
+
+      - name: Run Stealth Simulation Tests
+        run: npx tsx tests/test_stealth.ts
+
+      - name: Run Multi-Model Hub Tests
+        run: npx tsx tests/test_model_hub.ts
+
+      - name: Run Perception Tests
+        run: npx tsx tests/test_perception.ts
+
+      - name: Run Swarm Infrastructure Tests
+        run: npx tsx tests/test_swarm_infrastructure.ts
+
+      - name: Run Session & Pipeline Tests
+        run: npx tsx tests/test_session_and_pipeline.ts
+
+      - name: Run Data Extraction & Security Red-Team Tests
+        run: npx tsx tests/test_data_and_security.ts
+
+      - name: Run Autonomous Agents & Automation Tests
+        run: npx tsx tests/test_automation.ts
+
+      - name: Run UI Omnibar Tests
+        run: npx tsx tests/test_ui.ts
