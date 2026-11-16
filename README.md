@@ -1,99 +1,97 @@
-# Autonomous Browser (Project Codename: Aegis)
+# Autonomous Browser: Master Architecture & Issue Tracker
 
-> **Next-Generation Autonomous Multi-Agent AI Browser with Elastic Swarms, Test-Time Tree Search, and Indirect Injection Immunity.**
-
----
-
-## 🌟 Overview
-
-The **Autonomous Browser** is a production-grade, open-source AI desktop browser engineered from the ground up to solve the fundamental limitations of single-agent and brittle screen-clicking systems (such as Strawberry Browser). 
-
-Instead of chaining users to a single tab with slow, token-heavy screenshot loops, Autonomous Browser introduces:
-1. **Elastic Chromium Swarms**: True parallel agent execution across 1 to 10+ background tabs without screen hijacking.
-2. **Test-Time Tree Search (MCTS / Best-First Planning)**: Exploration, state backtracking, and dead-end recovery over complex workflows.
-3. **Dual-Mode Precision Execution**: Physical pointer simulation (`CDP Input.dispatchMouseEvent`) and instantaneous semantic DOM node targeting (`data-agent-id`).
-4. **Architectural Indirect Prompt Injection Defense**: Untrusted content isolation layers, Agent Origin Sets, and dual-model validation protecting user data and credentials.
-5. **Universal Model Context Protocol (MCP)**: Native hub to connect external tools, filesystem access, local CLI tools, and databases.
-6. **Local-First Privacy & Semantic Memory**: Embedded vector memory (DuckDB/SQLite FTS5) with 100% offline local LLM compatibility (Ollama, LM Studio) alongside cloud providers (Claude 3.7/3.5, Gemini 2.0, OpenAI).
+> Complete engineering breakdown and specification for **Autonomous Browser** on GitHub: [harshiit-rana/Autonomous-browser](https://github.com/harshiit-rana/Autonomous-browser).
 
 ---
 
-## 🏗️ Architecture
+## 🗺️ Master Directory of All 60 Detailed Engineering Issues
 
-```mermaid
-flowchart TD
-    User(["User (Prompt / Voice / URL)"]) --> UI["Modern Browser Chrome (Electron / Svelte 5 / React)"]
-    
-    subgraph BrowserProcess ["Browser Shell & Orchestrator"]
-        Omnibar["Universal Smart Omnibar (Browse + Swarm Prompts)"]
-        Coordinator["Autonomous Swarm Coordinator (Task Decomposer)"]
-        TreePlanner["MCTS / Test-Time Search Planner & State Graph"]
-        SecurityShield["Indirect Injection Shield & Origin Boundary Guard"]
-        MCPHub["Model Context Protocol (MCP) Hub"]
-        MemoryDB["Local Vector Memory (SQLite FTS5 / DuckDB)"]
-    end
-
-    subgraph ElasticSwarm ["Elastic Multi-Agent Swarm (Background Isolated Tabs)"]
-        Tab1["Agent Worker 1 (CDP / DOM Indexer)"]
-        Tab2["Agent Worker 2 (CDP / DOM Indexer)"]
-        Tab3["Agent Worker 3 (CDP / DOM Indexer)"]
-        TabN["Agent Worker N (Elastic Scale)"]
-    end
-
-    subgraph ContentSurfaces ["Content Presentation"]
-        MainTab["Active User Browsing Surface (WebContentsView)"]
-        Sidebar["Agent Drawer (Live Progress & Streamed Evidence)"]
-    end
-
-    UI --> Omnibar
-    Omnibar --> Coordinator
-    Coordinator --> TreePlanner
-    TreePlanner <--> SecurityShield
-    TreePlanner -->|"Elastic Spawn"| ElasticSwarm
-    ElasticSwarm -->|"Structured Evidence"| Coordinator
-    Coordinator --> Sidebar
-    Coordinator <--> MemoryDB
-    Coordinator <--> MCPHub
-    UI --> MainTab
-```
+### Milestone 1: Core Shell & Window Architecture
+* **[#1: M1.1: Project Scaffolding, TypeScript Config, and Hardened Electron Packaging](https://github.com/harshiit-rana/Autonomous-browser/issues/1)**
+* **[#2: M1.2: Dual-Layer Window Architecture (Shell Chrome + WebContentsView)](https://github.com/harshiit-rana/Autonomous-browser/issues/2)**
+* **[#16: CORE-01: Low-Latency Binary IPC Protocol (Dendrite-Lite) for Main-Renderer Communication](https://github.com/harshiit-rana/Autonomous-browser/issues/16)**
+* **[#17: CORE-02: CDP Session Pool & Multi-Target Lifecycle Manager](https://github.com/harshiit-rana/Autonomous-browser/issues/17)**
+* **[#18: CORE-03: CDP Network Interception, Request Spoofing, and Mocking Engine](https://github.com/harshiit-rana/Autonomous-browser/issues/18)**
+* **[#19: CORE-04: JavaScript Dialog Interception Bridge (Alert, Confirm, Prompt, BeforeUnload)](https://github.com/harshiit-rana/Autonomous-browser/issues/19)**
+* **[#20: CORE-05: Native File Chooser Interception & Autonomous Upload Manager](https://github.com/harshiit-rana/Autonomous-browser/issues/20)**
+* **[#24: CORE-09: Robust Frame Tree Navigation & Cross-Origin Shadow DOM Traversal](https://github.com/harshiit-rana/Autonomous-browser/issues/24)**
+* **[#25: CORE-10: Viewport Adaptation, Device Emulation, and Dynamic Zoom Handling](https://github.com/harshiit-rana/Autonomous-browser/issues/25)**
 
 ---
 
-## 🗺️ Master Roadmap & GitHub Issue Tracker
-
-The complete architectural plan has been mapped out and published to GitHub Issues with exhaustive implementation criteria:
-
-| Milestone / Issue | Category | Description |
-| :--- | :--- | :--- |
-| **[#1](https://github.com/harshiit-rana/Autonomous-browser/issues/1)** | `core-engine` | **M1.1: Project Scaffolding, TypeScript Config, and Hardened Electron Packaging** |
-| **[#2](https://github.com/harshiit-rana/Autonomous-browser/issues/2)** | `core-engine`, `ui-ux` | **M1.2: Dual-Layer Window Architecture (Shell Chrome + WebContentsView)** |
-| **[#3](https://github.com/harshiit-rana/Autonomous-browser/issues/3)** | `core-engine`, `algorithm` | **M2.1: Semantic DOM Tree Indexer & Persistent Handle Assignment** |
-| **[#4](https://github.com/harshiit-rana/Autonomous-browser/issues/4)** | `core-engine` | **M2.2: Dual-Mode Execution Engine (Physical CDP Pointer Simulation + DOM Direct)** |
-| **[#5](https://github.com/harshiit-rana/Autonomous-browser/issues/5)** | `core-engine`, `swarm` | **M3.1: Elastic Swarm Orchestrator & Background Worker Tab Pool** |
-| **[#6](https://github.com/harshiit-rana/Autonomous-browser/issues/6)** | `swarm`, `algorithm` | **M3.2: Hierarchical Task Decomposition & Swarm Coordinator** |
-| **[#7](https://github.com/harshiit-rana/Autonomous-browser/issues/7)** | `core-engine`, `algorithm` | **M4.1: Test-Time Compute & MCTS Planning Engine for Complex Workflows** |
-| **[#8](https://github.com/harshiit-rana/Autonomous-browser/issues/8)** | `security`, `algorithm` | **M4.2: Web State Snapshotting, Speculative Backtracking & Safety Rollbacks** |
-| **[#9](https://github.com/harshiit-rana/Autonomous-browser/issues/9)** | `security` | **M5.1: Indirect Prompt Injection Defense: Untrusted Content Isolation Layer** |
-| **[#10](https://github.com/harshiit-rana/Autonomous-browser/issues/10)** | `security`, `algorithm` | **M5.2: Dual-Model Intent Guard & Agent Origin Boundary Enforcement** |
-| **[#11](https://github.com/harshiit-rana/Autonomous-browser/issues/11)** | `core-engine` | **M6.1: Universal Model Context Protocol (MCP) Hub & Client Integration** |
-| **[#12](https://github.com/harshiit-rana/Autonomous-browser/issues/12)** | `core-engine`, `memory` | **M6.2: Local Privacy-First Semantic Vector Memory & Browsing Recall (DuckDB/SQLite)** |
-| **[#13](https://github.com/harshiit-rana/Autonomous-browser/issues/13)** | `ui-ux` | **M7.1: Universal Smart Omnibar (Hybrid URL Navigation + Swarm Prompting)** |
-| **[#14](https://github.com/harshiit-rana/Autonomous-browser/issues/14)** | `swarm`, `ui-ux` | **M7.2: Swarm Activity Drawer & Live Streaming Execution Dashboard** |
-| **[#15](https://github.com/harshiit-rana/Autonomous-browser/issues/15)** | `core-engine` | **M7.3: Pluggable Multi-Model Hub (Claude, Gemini, OpenAI, and Local Ollama)** |
+### Milestone 2: Perception, DOM Indexing & Stealth Input
+* **[#3: M2.1: Semantic DOM Tree Indexer & Persistent Handle Assignment](https://github.com/harshiit-rana/Autonomous-browser/issues/3)**
+* **[#4: M2.2: Dual-Mode Execution Engine (Physical CDP Pointer Simulation + DOM Direct)](https://github.com/harshiit-rana/Autonomous-browser/issues/4)**
+* **[#21: CORE-06: Human-Realistic Bezier Curve Mouse Trajectory Simulator](https://github.com/harshiit-rana/Autonomous-browser/issues/21)**
+* **[#22: CORE-07: Human Cadence Keyboard Typer with Realistic Keystroke Latency & Typo Simulation](https://github.com/harshiit-rana/Autonomous-browser/issues/22)**
+* **[#23: CORE-08: Cross-Platform Anti-Bot Evasion & Navigator Fingerprint Masking](https://github.com/harshiit-rana/Autonomous-browser/issues/23)**
+* **[#26: PERC-01: Accessibility Tree (AXTree) Extraction & Semantic Pruning](https://github.com/harshiit-rana/Autonomous-browser/issues/26)**
+* **[#27: PERC-02: Visual 'Set-of-Mark' (SoM) Dynamic Overlay Generator](https://github.com/harshiit-rana/Autonomous-browser/issues/27)**
+* **[#28: PERC-03: Real-Time DOM Mutation Observer & Visual Settle Detector](https://github.com/harshiit-rana/Autonomous-browser/issues/28)**
+* **[#29: PERC-04: Spatial Relationship & Visual Hierarchy Reasoning Engine](https://github.com/harshiit-rana/Autonomous-browser/issues/29)**
+* **[#30: PERC-05: Dynamic OCR & Canvas/SVG Text Extraction Fallback](https://github.com/harshiit-rana/Autonomous-browser/issues/30)**
 
 ---
 
-## 🛠️ Tech Stack
-
-- **Runtime / Shell**: Electron 33+, Node.js 22+, TypeScript
-- **Frontend Chrome**: Svelte 5 (or React 19) + Tailwind CSS + Lucide Icons
-- **Browser Automation Core**: Chromium DevTools Protocol (CDP) + Playwright Core
-- **Database / Memory**: `better-sqlite3` + FTS5, Vector Embeddings
-- **Protocol**: Model Context Protocol (MCP) SDK
-- **LLM Integrations**: Claude (ACP/Anthropic), Gemini (Google GenAI), OpenAI, Ollama / Local OpenAI-compatible APIs
+### Milestone 3: Elastic Swarm Orchestration & Parallel Workers
+* **[#5: M3.1: Elastic Swarm Orchestrator & Background Worker Tab Pool](https://github.com/harshiit-rana/Autonomous-browser/issues/5)**
+* **[#6: M3.2: Hierarchical Task Decomposition & Swarm Coordinator](https://github.com/harshiit-rana/Autonomous-browser/issues/6)**
+* **[#31: SWARM-01: Worker Tab Memory & Resource Throttler](https://github.com/harshiit-rana/Autonomous-browser/issues/31)**
+* **[#32: SWARM-02: Shared Blackboard State & Distributed Evidence Store](https://github.com/harshiit-rana/Autonomous-browser/issues/32)**
+* **[#33: SWARM-03: Dynamic Work-Stealing Queue for Parallel Web Crawling & Research](https://github.com/harshiit-rana/Autonomous-browser/issues/33)**
+* **[#34: SWARM-04: Swarm Synchronization & Barrier Primitives for Multi-Stage Tasks](https://github.com/harshiit-rana/Autonomous-browser/issues/34)**
+* **[#35: SWARM-05: Worker Telemetry, Heartbeats, and Auto-Recovery Daemon](https://github.com/harshiit-rana/Autonomous-browser/issues/35)**
 
 ---
 
-## 📄 License
+### Milestone 4: Test-Time Compute, MCTS & Backtracking Planning
+* **[#7: M4.1: Test-Time Compute & MCTS Planning Engine for Complex Workflows](https://github.com/harshiit-rana/Autonomous-browser/issues/7)**
+* **[#8: M4.2: Web State Snapshotting, Speculative Backtracking & Safety Rollbacks](https://github.com/harshiit-rana/Autonomous-browser/issues/8)**
+* **[#36: PLAN-01: Web Action Space Formalization & Pruning Heuristics](https://github.com/harshiit-rana/Autonomous-browser/issues/36)**
+* **[#37: PLAN-02: LLM Critic & State Value Function for MCTS Node Evaluation](https://github.com/harshiit-rana/Autonomous-browser/issues/37)**
+* **[#38: PLAN-03: Upper Confidence Bounds for Trees (UCT) Selection Policy](https://github.com/harshiit-rana/Autonomous-browser/issues/38)**
+* **[#39: PLAN-04: Speculative Parallel Rollouts via Headless Clone Tabs](https://github.com/harshiit-rana/Autonomous-browser/issues/39)**
+* **[#40: PLAN-05: Hierarchical High-Level Plan Space (Plan-MCTS)](https://github.com/harshiit-rana/Autonomous-browser/issues/40)**
 
-MIT License. See [LICENSE](LICENSE) for details.
+---
+
+### Milestone 5: Indirect Prompt Injection Defense & Dual-Model Security
+* **[#9: M5.1: Indirect Prompt Injection Defense: Untrusted Content Isolation Layer](https://github.com/harshiit-rana/Autonomous-browser/issues/9)**
+* **[#10: M5.2: Dual-Model Intent Guard & Agent Origin Boundary Enforcement](https://github.com/harshiit-rana/Autonomous-browser/issues/10)**
+* **[#41: SEC-01: Strict Content Security Policy (CSP) & Script Sandboxing for Agent Chrome](https://github.com/harshiit-rana/Autonomous-browser/issues/41)**
+* **[#42: SEC-02: Agent Origin Scope Locker (Per-Task Domain Whitelisting)](https://github.com/harshiit-rana/Autonomous-browser/issues/42)**
+* **[#43: SEC-03: Dual-Model Intent Alignment Verifier (Pre-Action Gate)](https://github.com/harshiit-rana/Autonomous-browser/issues/43)**
+* **[#44: SEC-04: Credential Masking & Sensitive Input Redaction Filter](https://github.com/harshiit-rana/Autonomous-browser/issues/44)**
+* **[#45: SEC-05: Automated Indirect Prompt Injection Red-Teaming Suite](https://github.com/harshiit-rana/Autonomous-browser/issues/45)**
+
+---
+
+### Milestone 6: Universal MCP & Local-First Vector Memory
+* **[#11: M6.1: Universal Model Context Protocol (MCP) Hub & Client Integration](https://github.com/harshiit-rana/Autonomous-browser/issues/11)**
+* **[#12: M6.2: Local Privacy-First Semantic Vector Memory & Browsing Recall (DuckDB/SQLite)](https://github.com/harshiit-rana/Autonomous-browser/issues/12)**
+* **[#46: MEM-01: SQLite FTS5 Full-Text Search Engine for Visited Page Content](https://github.com/harshiit-rana/Autonomous-browser/issues/46)**
+* **[#47: MEM-02: On-Device Local Embedding Generation Pipeline](https://github.com/harshiit-rana/Autonomous-browser/issues/47)**
+* **[#48: MEM-03: Vector Similarity Search & Hybrid RAG Retrieval Engine](https://github.com/harshiit-rana/Autonomous-browser/issues/48)**
+* **[#49: MEM-04: Automated Daily Browsing Activity Summarizer (OptMem Parity)](https://github.com/harshiit-rana/Autonomous-browser/issues/49)**
+* **[#50: MEM-05: Secure Encrypted Vault for User Credentials, API Keys, and Cookies](https://github.com/harshiit-rana/Autonomous-browser/issues/50)**
+
+---
+
+### Milestone 7: Modern Browser UI, Swarm Drawer & Multi-Model Hub
+* **[#13: M7.1: Universal Smart Omnibar (Hybrid URL Navigation + Swarm Prompting)](https://github.com/harshiit-rana/Autonomous-browser/issues/13)**
+* **[#14: M7.2: Swarm Activity Drawer & Live Streaming Execution Dashboard](https://github.com/harshiit-rana/Autonomous-browser/issues/14)**
+* **[#15: M7.3: Pluggable Multi-Model Hub (Claude, Gemini, OpenAI, and Local Ollama)](https://github.com/harshiit-rana/Autonomous-browser/issues/15)**
+* **[#51: UI-01: Modern Glassmorphic Window Frame with Custom Titlebar & Window Controls](https://github.com/harshiit-rana/Autonomous-browser/issues/51)**
+* **[#52: UI-02: Dynamic Tab Strip with Workspace & Profile Isolation](https://github.com/harshiit-rana/Autonomous-browser/issues/52)**
+* **[#53: UI-03: Real-Time Swarm Progress Sidebar with Live Worker Stream Cards](https://github.com/harshiit-rana/Autonomous-browser/issues/53)**
+* **[#54: UI-04: Floating Quick-Action Companion Pill (Voice & Global Shortcuts)](https://github.com/harshiit-rana/Autonomous-browser/issues/54)**
+* **[#55: UI-05: Interactive Manual Takeover & Agent Debugger Inspector](https://github.com/harshiit-rana/Autonomous-browser/issues/55)**
+
+---
+
+### Milestone 8: Audio, Chrome Extensions & Benchmarking
+* **[#56: EXT-01: Chrome Extension Runtime & Manifest V3 Compatibility Subsystem](https://github.com/harshiit-rana/Autonomous-browser/issues/56)**
+* **[#57: AUDIO-01: Windows WASAPI Audio Loopback Capture & Meeting Transcription Pipeline](https://github.com/harshiit-rana/Autonomous-browser/issues/57)**
+* **[#58: BENCH-01: End-to-End WebArena & Mind2Web Benchmark Evaluation Suite](https://github.com/harshiit-rana/Autonomous-browser/issues/58)**
+* **[#59: INFRA-01: Automated Multi-Platform CI/CD Pipeline & GitHub Release Packager](https://github.com/harshiit-rana/Autonomous-browser/issues/59)**
+* **[#60: INFRA-02: Comprehensive Documentation, Developer Guide, and Architecture Specs](https://github.com/harshiit-rana/Autonomous-browser/issues/60)**
