@@ -1,6 +1,7 @@
 import { WebContentsView, BrowserWindow } from 'electron';
 import * as path from 'node:path';
 import { ActionExecutor } from '../core/action_executor.js';
+import { CURSOR_OVERLAY_SCRIPT } from '../stealth/cursor_overlay.js';
 
 export interface TabView {
   id: string;
@@ -61,6 +62,7 @@ export class ViewManager {
       tab.isLoading = false;
       tab.title = view.webContents.getTitle();
       tab.url = view.webContents.getURL();
+      view.webContents.executeJavaScript(CURSOR_OVERLAY_SCRIPT).catch(() => {});
       try {
         this.window.webContents.send('tab:updated', { id, title: tab.title, url: tab.url });
       } catch {}

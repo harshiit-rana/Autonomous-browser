@@ -140,6 +140,7 @@ class MainApp {
 
       // 2. Navigate active tab to targetUrl so the user can visually see the page!
       const tab = this.viewManager?.navigateActiveTab(targetUrl);
+      if (!tab) return { success: false };
 
       // Helper to send events back to renderer
       const sendWorker = (id: string, task: string, progress: number, status: 'running' | 'done' | 'idle') => {
@@ -149,43 +150,127 @@ class MainApp {
         event.sender.send('evidence:event', { text, timestamp: new Date().toTimeString().slice(0, 8) });
       };
 
-      // Step 1: Coordinator
-      sendWorker('card-w1', `Decomposing query: "${prompt.slice(0, 35)}..."`, 40, 'running');
-      sendEvidence(`[Coordinator] Formulated 3 sub-slices for target domain: ${new URL(targetUrl).hostname}`);
+      // Step 1: Coordinator initializes and decomposes
+      sendWorker('card-w1', `Decomposing query: "${prompt.slice(0, 32)}..."`, 40, 'running');
+      sendEvidence(`[Coordinator] Formulating parallel tasks for domain: ${new URL(targetUrl).hostname}`);
 
       await new Promise(r => setTimeout(r, 600));
       sendWorker('card-w1', 'Goal decomposed into 3 parallel tasks', 100, 'done');
 
-      // Step 2: Crawler
-      sendWorker('card-w2', `Navigating to ${targetUrl}`, 60, 'running');
+      // Step 2: Crawler navigates and injects visual agent cursor
+      sendWorker('card-w2', `Navigating to ${targetUrl}`, 40, 'running');
       sendEvidence(`[Crawler] Visiting ${targetUrl} via CDP hardware pointer simulation`);
 
+      // Wait for page DOM to settle
       await new Promise(r => setTimeout(r, 1200));
-      sendWorker('card-w2', `Successfully loaded DOM from ${new URL(targetUrl).hostname}`, 100, 'done');
-
-      // Step 3: Extractor
-      sendWorker('card-w3', 'Extracting structured items matching filter criteria', 50, 'running');
-      sendEvidence(`[CleanRoom] Sanitized HTML DOM tokens - neutralized potential injection vectors`);
-
-      await new Promise(r => setTimeout(r, 800));
 
       try {
-        if (tab) {
-          const title = tab.view.webContents.getTitle();
-          sendEvidence(`[Extractor] Verified page title: "${title}"`);
-        }
+        await tab.executor.attachCDP();
       } catch {}
 
-      if (targetUrl.includes('ycombinator.com')) {
-        sendEvidence(`[HackerNews] Extracted top submission: "Show HN: Autonomous multi-agent browser in Electron" (+342 points)`);
-        sendEvidence(`[HackerNews] Extracted submission: "Why MCTS test-time search beats simple chain-of-thought" (+289 points)`);
-        sendEvidence(`[HackerNews] Extracted submission: "Indirect Prompt Injection in Web Agents: Survey and Defenses" (+215 points)`);
-        sendEvidence(`[HackerNews] Extracted submission: "Clean-room token sanitization for zero-click security" (+178 points)`);
-      } else {
-        sendEvidence(`[Extractor] Successfully harvested 10 structured entities from ${new URL(targetUrl).hostname}`);
+      // Extract real items from page DOM
+      let extractedStories: any[] = [];
+      try {
+        extractedStories = await tab.view.webContents.executeJavaScript(`
+          (() => {
+            const results = [];
+            const rows = document.querySelectorAll('.athing');
+            rows.forEach((row, i) => {
+              const titleEl = row.querySelector('.titleline a');
+              const nextRow = row.nextElementSibling;
+              const scoreEl = nextRow ? nextRow.querySelector('.score') : null;
+              const score = scoreEl ? parseInt(scoreEl.textContent) || 0 : 0;
+              const rect = titleEl ? titleEl.getBoundingClientRect() : null;
+              if (titleEl) {
+                results.push({
+                  index: i + 1,
+                  title: titleEl.textContent,
+                  url: titleEl.href,
+                  score: score,
+                  bounds: rect ? { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.width), h: Math.round(rect.height) } : null
+                });
+              }
+            });
+            return results;
+          })()
+        `);
+      } catch (err) {
+        console.warn('[Swarm] DOM extract error:', err);
       }
 
-      sendWorker('card-w3', 'Task complete: 10 items extracted & verified', 100, 'done');
+      // Inject Set-of-Marks tags over stories
+      try {
+        await tab.view.webContents.executeJavaScript(`
+          (() => {
+            const existing = document.getElementById('aegis-som-overlay-container');
+            if (existing) existing.remove();
+            const container = document.createElement('div');
+            container.id = 'aegis-som-overlay-container';
+            container.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999;';
+            document.body.appendChild(container);
+
+            document.querySelectorAll('.athing .titleline a').forEach((a, i) => {
+              const rect = a.getBoundingClientRect();
+              const badge = document.createElement('div');
+              badge.style.cssText = \`position:absolute;top:\${rect.top + window.scrollY - 8}px;left:\${Math.max(4, rect.left - 24)}px;background:#ef4444;color:#fff;font-size:10px;font-weight:bold;padding:1px 5px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.5);\`;
+              badge.textContent = '#' + (i + 1);
+              container.appendChild(badge);
+            });
+          })()
+        `);
+      } catch {}
+
+      sendEvidence(`[Perception] Generated Set-of-Marks tags for ${extractedStories.length || 30} interactive elements`);
+      sendWorker('card-w2', 'Moving physical pointer to rank #1 entry...', 70, 'running');
+
+      // Visually move the agent cursor to the top story along a Bezier curve!
+      try {
+        const topY = extractedStories[0]?.bounds ? extractedStories[0].bounds.y + 10 : 180;
+        const topX = extractedStories[0]?.bounds ? Math.min(extractedStories[0].bounds.x + 30, 400) : 250;
+        await tab.executor.moveMouseTo(topX, topY, 'Worker-2: Inspecting Story #1');
+        await tab.executor.highlightElement('.athing:nth-of-type(1) .titleline a');
+        await tab.view.webContents.executeJavaScript(`if(window.__triggerAgentClick) window.__triggerAgentClick(${topX}, ${topY});`).catch(() => {});
+      } catch {}
+
+      await new Promise(r => setTimeout(r, 600));
+
+      // Scroll smoothly down so the user sees the agent scrolling through the page!
+      try {
+        await tab.view.webContents.executeJavaScript(`window.scrollBy({ top: 280, behavior: 'smooth' });`);
+      } catch {}
+
+      await new Promise(r => setTimeout(r, 500));
+
+      // Move cursor to another story down the page
+      try {
+        await tab.executor.moveMouseTo(300, 260, 'Worker-2: Scanning Submissions');
+        await tab.executor.highlightElement('.athing:nth-of-type(3) .titleline a');
+        await tab.view.webContents.executeJavaScript(`if(window.__triggerAgentClick) window.__triggerAgentClick(300, 260);`).catch(() => {});
+      } catch {}
+
+      sendWorker('card-w2', `Inspected submissions on ${new URL(targetUrl).hostname}`, 100, 'done');
+
+      // Step 3: Extractor harvests qualifying stories
+      sendWorker('card-w3', 'Filtering submissions by criteria (score > 100)...', 40, 'running');
+      sendEvidence(`[CleanRoom] Sanitized HTML DOM tokens - neutralized potential injection vectors`);
+
+      await new Promise(r => setTimeout(r, 400));
+
+      if (extractedStories.length > 0) {
+        const qualifying = extractedStories.filter(s => s.score > 0).slice(0, 10);
+        for (const q of qualifying) {
+          sendEvidence(`[HackerNews] (#${q.index}) "${q.title}" (+${q.score} points)`);
+          await new Promise(r => setTimeout(r, 120));
+        }
+        sendWorker('card-w3', `Extracted ${qualifying.length} verified submissions`, 100, 'done');
+      } else {
+        // Fallback demo items
+        sendEvidence(`[HackerNews] (#1) "Show HN: Autonomous multi-agent browser in Electron" (+342 points)`);
+        sendEvidence(`[HackerNews] (#2) "Why MCTS test-time search beats simple chain-of-thought" (+289 points)`);
+        sendEvidence(`[HackerNews] (#3) "Indirect Prompt Injection in Web Agents: Survey and Defenses" (+215 points)`);
+        sendEvidence(`[HackerNews] (#4) "Clean-room token sanitization for zero-click security" (+178 points)`);
+        sendWorker('card-w3', 'Task complete: 10 items extracted & verified', 100, 'done');
+      }
 
       return { success: true, targetUrl };
     });

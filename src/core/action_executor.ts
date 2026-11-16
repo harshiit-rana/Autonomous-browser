@@ -3,6 +3,7 @@ import { DOM_INDEXER_SCRIPT, PageDOMState, IndexedElement } from './dom_indexer.
 import { MouseTrajectoryGenerator, Point } from '../stealth/mouse_trajectory.js';
 import { KeyboardTyper } from '../stealth/keyboard_typer.js';
 import { FingerprintShield } from '../stealth/fingerprint_shield.js';
+import { CURSOR_OVERLAY_SCRIPT } from '../stealth/cursor_overlay.js';
 
 export interface ClickOptions {
   button?: 'left' | 'right' | 'middle';
@@ -47,6 +48,11 @@ export class ActionExecutor {
       await this.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', {
         source: stealthScript
       });
+      await this.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', {
+        source: CURSOR_OVERLAY_SCRIPT
+      });
+      // Also inject into current document immediately if loaded
+      this.webContents.executeJavaScript(CURSOR_OVERLAY_SCRIPT).catch(() => {});
     } catch (err) {
       console.warn('[ActionExecutor] Debugger attach warning:', err);
     }
@@ -117,6 +123,7 @@ export class ActionExecutor {
             x: pt.x,
             y: pt.y
           });
+          this.webContents.executeJavaScript(`if(window.__updateAgentCursor) window.__updateAgentCursor(${Math.round(pt.x)}, ${Math.round(pt.y)});`).catch(() => {});
           lastTime = pt.timestamp;
         }
       } else {
@@ -125,10 +132,14 @@ export class ActionExecutor {
           x: targetX,
           y: targetY
         });
+        this.webContents.executeJavaScript(`if(window.__updateAgentCursor) window.__updateAgentCursor(${targetX}, ${targetY});`).catch(() => {});
       }
 
       this.lastMousePos = { x: targetX, y: targetY };
       await this.sleep(30 + Math.random() * 20);
+
+      // Visual Click Ripple Feedback
+      this.webContents.executeJavaScript(`if(window.__triggerAgentClick) window.__triggerAgentClick(${targetX}, ${targetY});`).catch(() => {});
 
       // Press down
       await this.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
@@ -157,6 +168,41 @@ export class ActionExecutor {
       await this.syntheticClick(agentId);
       return { success: true, mode: 'synthetic-fallback' };
     }
+  }
+
+  /**
+   * Visually moves the agent cursor along a natural human Bezier curve
+   */
+  public async moveMouseTo(targetX: number, targetY: number, label?: string): Promise<void> {
+    await this.attachCDP();
+    const trajectory = MouseTrajectoryGenerator.generateTrajectory(
+      this.lastMousePos,
+      { x: targetX, y: targetY },
+      { targetWidth: 20, targetHeight: 20 }
+    );
+
+    let lastTime = 0;
+    for (const pt of trajectory) {
+      const delta = pt.timestamp - lastTime;
+      if (delta > 0) {
+        await this.sleep(delta);
+      }
+      await this.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+        type: 'mouseMoved',
+        x: pt.x,
+        y: pt.y
+      });
+      this.webContents.executeJavaScript(`if(window.__updateAgentCursor) window.__updateAgentCursor(${Math.round(pt.x)}, ${Math.round(pt.y)}, ${label ? JSON.stringify(label) : 'undefined'});`).catch(() => {});
+      lastTime = pt.timestamp;
+    }
+    this.lastMousePos = { x: targetX, y: targetY };
+  }
+
+  /**
+   * Highlights an element with a glowing outline
+   */
+  public async highlightElement(selector: string): Promise<void> {
+    await this.webContents.executeJavaScript(`if(window.__highlightElement) window.__highlightElement(${JSON.stringify(selector)});`).catch(() => {});
   }
 
   /**
