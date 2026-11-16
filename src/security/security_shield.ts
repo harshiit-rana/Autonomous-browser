@@ -15,12 +15,14 @@ export interface SanitizedContent {
 export class SecurityShield {
   // Common adversarial trigger patterns used in prompt injections
   private static readonly INJECTION_PATTERNS: RegExp[] = [
-    /ignore\s+(all\s+)?(previous|above|prior)\s+instructions/i,
-    /system\s*prompt/i,
+    /(?:ignore|disregard|override)\s+(?:all\s+)?(?:previous|above|prior)\s+instructions/i,
+    /system\s*(?:prompt|:)/i,
+    /(?:important\s+)?(?:ai|system|admin)\s+instruction/i,
     /you\s+are\s+now\s+in\s+developer\s+mode/i,
     /disregard\s+all\s+safety/i,
-    /exfiltrate|send\s+cookies|send\s+credentials/i,
-    /curl\s+http|fetch\([^)]*http/i
+    /exfiltrate|send\s+cookies|send\s+credentials|output\s+all\s+(?:user\s+)?api\s+keys/i,
+    /curl\s+http|fetch\([^)]*http/i,
+    /<!--[\s\S]*?-->/g
   ];
 
   /**
@@ -57,6 +59,27 @@ ${cleanText}
       wrappedPromptContext,
       detectedSuspiciousPatterns: suspiciousHits,
       isQuarantined
+    };
+  }
+
+  /**
+   * Sanitizes a raw string against known indirect prompt injection patterns.
+   */
+  public static sanitizeString(raw: string): { cleanText: string; isQuarantined: boolean; suspiciousHits: string[] } {
+    const suspiciousHits: string[] = [];
+    let clean = raw;
+
+    for (const pattern of this.INJECTION_PATTERNS) {
+      if (pattern.test(clean)) {
+        suspiciousHits.push(`Trigger '${pattern.source}' detected`);
+        clean = clean.replace(pattern, '[REDACTED_PROMPT_INJECTION]');
+      }
+    }
+
+    return {
+      cleanText: clean,
+      isQuarantined: suspiciousHits.length > 0,
+      suspiciousHits
     };
   }
 
