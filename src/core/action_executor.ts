@@ -1,20 +1,30 @@
 import { WebContents } from 'electron';
 import { DOM_INDEXER_SCRIPT, PageDOMState, IndexedElement } from './dom_indexer.js';
+import { MouseTrajectoryGenerator, Point } from '../stealth/mouse_trajectory.js';
+import { KeyboardTyper } from '../stealth/keyboard_typer.js';
+import { FingerprintShield } from '../stealth/fingerprint_shield.js';
 
 export interface ClickOptions {
   button?: 'left' | 'right' | 'middle';
   clickCount?: 1 | 2 | 3;
   doubleClick?: boolean;
+  realisticTrajectory?: boolean;
+}
+
+export interface TypeOptions {
+  wordsPerMinute?: number;
+  typoRate?: number;
 }
 
 /**
  * Dual-Mode Execution Engine
- * Combines authentic physical hardware pointer simulation via CDP with synthetic DOM fallback.
- * Directly mirrors Strawberry's AgentDOMService.clickElement & simulateMouseClick.
+ * Combines authentic physical hardware pointer simulation via CDP with synthetic DOM fallback,
+ * featuring realistic human kinematic mouse trajectories, typing cadence, and fingerprint evasion.
  */
 export class ActionExecutor {
   private webContents: WebContents;
   private isAttached: boolean = false;
+  private lastMousePos: Point = { x: 100, y: 100 };
 
   constructor(webContents: WebContents) {
     this.webContents = webContents;
@@ -27,6 +37,16 @@ export class ActionExecutor {
         this.webContents.debugger.attach('1.3');
       }
       this.isAttached = true;
+
+      // Enable Page and Runtime domains
+      await this.webContents.debugger.sendCommand('Page.enable');
+      await this.webContents.debugger.sendCommand('Runtime.enable');
+
+      // Inject anti-bot evasion script on every document load
+      const stealthScript = FingerprintShield.getStealthScript();
+      await this.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', {
+        source: stealthScript
+      });
     } catch (err) {
       console.warn('[ActionExecutor] Debugger attach warning:', err);
     }
@@ -53,7 +73,7 @@ export class ActionExecutor {
 
   /**
    * Dual-mode click execution:
-   * 1. Physical Mode: Computes bounding box center and dispatches Input.dispatchMouseEvent.
+   * 1. Physical Mode: Computes bounding box center, moves along a human Bezier curve, and dispatches CDP events.
    * 2. Synthetic Fallback: Dispatches in-frame element.click() if obscured or contenteditable.
    */
   public async clickElement(agentId: string, options: ClickOptions = {}): Promise<{ success: boolean; mode: string }> {
@@ -66,8 +86,8 @@ export class ActionExecutor {
     }
 
     const { x, y, w, h } = element.bounds;
-    const clickX = Math.round(x + w / 2);
-    const clickY = Math.round(y + h / 2);
+    const targetX = Math.round(x + w / 2);
+    const targetY = Math.round(y + h / 2);
     const button = options.button || 'left';
     const clickCount = options.doubleClick ? 2 : (options.clickCount || 1);
 
@@ -78,27 +98,54 @@ export class ActionExecutor {
     }
 
     try {
-      // Physical CDP Event Simulation
-      await this.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-        type: 'mouseMoved',
-        x: clickX,
-        y: clickY
-      });
-      await this.sleep(40);
+      // Simulate realistic human mouse curve trajectory
+      if (options.realisticTrajectory !== false) {
+        const trajectory = MouseTrajectoryGenerator.generateTrajectory(
+          this.lastMousePos,
+          { x: targetX, y: targetY },
+          { targetWidth: w, targetHeight: h }
+        );
 
+        let lastTime = 0;
+        for (const pt of trajectory) {
+          const delta = pt.timestamp - lastTime;
+          if (delta > 0) {
+            await this.sleep(delta);
+          }
+          await this.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseMoved',
+            x: pt.x,
+            y: pt.y
+          });
+          lastTime = pt.timestamp;
+        }
+      } else {
+        await this.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+          type: 'mouseMoved',
+          x: targetX,
+          y: targetY
+        });
+      }
+
+      this.lastMousePos = { x: targetX, y: targetY };
+      await this.sleep(30 + Math.random() * 20);
+
+      // Press down
       await this.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
         type: 'mousePressed',
-        x: clickX,
-        y: clickY,
+        x: targetX,
+        y: targetY,
         button: button,
         clickCount: clickCount
       });
-      await this.sleep(40);
 
+      await this.sleep(40 + Math.random() * 25);
+
+      // Release
       await this.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
         type: 'mouseReleased',
-        x: clickX,
-        y: clickY,
+        x: targetX,
+        y: targetY,
         button: button,
         clickCount: clickCount
       });
@@ -112,25 +159,34 @@ export class ActionExecutor {
     }
   }
 
-  public async typeText(agentId: string, text: string): Promise<void> {
+  /**
+   * Types text into the given element using realistic human cadence and typo simulation.
+   */
+  public async typeText(agentId: string, text: string, options: TypeOptions = {}): Promise<void> {
     await this.attachCDP();
-    // Focus the target first
-    await this.clickElement(agentId);
-    await this.sleep(50);
+    // Focus the target element first
+    await this.clickElement(agentId, { realisticTrajectory: true });
+    await this.sleep(80);
 
-    for (const char of text) {
+    const keystrokes = KeyboardTyper.planKeystrokes(text, options);
+
+    for (const step of keystrokes) {
+      if (step.delayBeforeMs > 0) {
+        await this.sleep(step.delayBeforeMs);
+      }
+
       await this.webContents.debugger.sendCommand('Input.dispatchKeyEvent', {
-        type: 'keyDown',
-        text: char
+        type: step.type,
+        key: step.key,
+        code: step.code,
+        text: step.text
       });
-      await this.webContents.debugger.sendCommand('Input.dispatchKeyEvent', {
-        type: 'keyUp',
-        text: char
-      });
-      await this.sleep(15); // Human typing jitter
     }
   }
 
+  /**
+   * Synthesizes smooth human scroll gesture.
+   */
   public async scroll(deltaY: number): Promise<void> {
     await this.attachCDP();
     await this.webContents.debugger.sendCommand('Input.synthesizeScrollGesture', {

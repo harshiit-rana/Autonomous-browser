@@ -4,3 +4,7 @@ dist/
 *.log
 .npm-cache/
 .tmp/
+*.tsbuildinfo
+temp_*.enc
+*.db
+*.db-journal
