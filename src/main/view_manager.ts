@@ -61,15 +61,33 @@ export class ViewManager {
       tab.isLoading = false;
       tab.title = view.webContents.getTitle();
       tab.url = view.webContents.getURL();
+      try {
+        this.window.webContents.send('tab:updated', { id, title: tab.title, url: tab.url });
+      } catch {}
     });
 
     view.webContents.loadURL(url);
     this.tabs.set(id, tab);
 
-    if (!isBackgroundAgent && !this.activeTabId) {
+    if (!isBackgroundAgent) {
       this.setActiveTab(id);
     }
 
+    return tab;
+  }
+
+  public getActiveTab(): TabView | undefined {
+    return this.activeTabId ? this.tabs.get(this.activeTabId) : undefined;
+  }
+
+  public navigateActiveTab(url: string): TabView {
+    let tab = this.getActiveTab();
+    if (!tab) {
+      tab = this.createTab(url, false);
+    } else {
+      tab.url = url;
+      tab.view.webContents.loadURL(url);
+    }
     return tab;
   }
 

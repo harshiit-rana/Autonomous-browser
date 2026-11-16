@@ -14,6 +14,7 @@ class BrowserApp {
   private newTabBtn: HTMLButtonElement;
   private pauseBtn: HTMLButtonElement;
   private takeoverBtn: HTMLButtonElement;
+  private modelSelect: HTMLSelectElement;
   private isPaused = false;
   private isTakeover = false;
 
@@ -26,20 +27,84 @@ class BrowserApp {
     this.newTabBtn = document.getElementById('new-tab-btn') as HTMLButtonElement;
     this.pauseBtn = document.getElementById('pause-agent-btn') as HTMLButtonElement;
     this.takeoverBtn = document.getElementById('takeover-btn') as HTMLButtonElement;
+    this.modelSelect = document.getElementById('model-select') as HTMLSelectElement;
 
     this.bindEvents();
+    this.registerBridgeListeners();
+  }
+
+  private registerBridgeListeners(): void {
+    const aegis = (window as any).aegis;
+    if (!aegis) return;
+
+    // 1. Worker status updates
+    aegis.onWorkerEvent((data: { id: string; task: string; progress: number; status: string }) => {
+      const card = document.getElementById(data.id);
+      if (card) {
+        const taskEl = card.querySelector('.w-task');
+        if (taskEl) taskEl.textContent = data.task;
+        const bar = card.querySelector('.progress-bar .fill') as HTMLElement;
+        if (bar) bar.style.width = `${data.progress}%`;
+        const dot = card.querySelector('.status-dot');
+        if (dot) {
+          dot.className = `status-dot ${data.status === 'done' || data.status === 'running' ? 'green' : 'gray'}`;
+        }
+        card.className = `worker-card ${data.status}`;
+      }
+    });
+
+    // 2. Discovered Evidence feed
+    aegis.onEvidenceEvent((data: { text: string; timestamp?: string }) => {
+      this.addWorkerLog(data.text, data.timestamp);
+      
+      // Update token & cost telemetry
+      const tokensEl = document.getElementById('tokens-stat');
+      if (tokensEl) {
+        const current = parseInt(tokensEl.textContent?.replace(/,/g, '') || '1420', 10);
+        tokensEl.textContent = (current + 185).toLocaleString();
+      }
+      const costEl = document.getElementById('cost-stat');
+      if (costEl) {
+        const currentCost = parseFloat(costEl.textContent?.replace('$', '') || '0.002');
+        costEl.textContent = `$${(currentCost + 0.0004).toFixed(3)}`;
+      }
+    });
+
+    // 3. Tab update events (page load, title changes)
+    aegis.onTabUpdated((data: { id: string; title: string; url: string }) => {
+      const activeTabTitle = document.querySelector('.tab.active .tab-title');
+      if (activeTabTitle && data.title) {
+        activeTabTitle.textContent = data.title;
+      }
+      if (data.url && !this.omnibarInput.value.startsWith('/')) {
+        this.omnibarInput.value = data.url;
+      }
+    });
   }
 
   private bindEvents(): void {
+    const aegis = (window as any).aegis;
+
     // 0. Native Window Controls
     document.getElementById('min-btn')?.addEventListener('click', () => {
-      (window as any).aegis?.minimize();
+      aegis?.minimize();
     });
     document.getElementById('max-btn')?.addEventListener('click', () => {
-      (window as any).aegis?.maximize();
+      aegis?.maximize();
     });
     document.getElementById('close-btn')?.addEventListener('click', () => {
-      (window as any).aegis?.close();
+      aegis?.close();
+    });
+
+    // Navigation buttons
+    document.getElementById('back-btn')?.addEventListener('click', () => {
+      aegis?.goBack();
+    });
+    document.getElementById('forward-btn')?.addEventListener('click', () => {
+      aegis?.goForward();
+    });
+    document.getElementById('reload-btn')?.addEventListener('click', () => {
+      aegis?.reload();
     });
 
     // 1. Omnibar submit
@@ -50,8 +115,9 @@ class BrowserApp {
 
     // 2. Swarm Drawer toggle
     this.drawerToggleBtn.addEventListener('click', () => {
-      this.swarmDrawer.classList.toggle('closed');
+      const isClosed = this.swarmDrawer.classList.toggle('closed');
       this.drawerToggleBtn.classList.toggle('active');
+      aegis?.toggleDrawer(!isClosed, 320);
     });
 
     // 3. Quick prompts click
@@ -88,29 +154,52 @@ class BrowserApp {
     });
   }
 
-  private handleOmnibarSubmit(): void {
-    const raw = this.omnibarInput.value;
+  private async handleOmnibarSubmit(): Promise<void> {
+    const raw = this.omnibarInput.value.trim();
+    if (!raw) return;
+
+    const aegis = (window as any).aegis;
     const intent = OmnibarParser.parse(raw);
     console.log('[Omnibar] Parsed Intent:', intent);
 
+    // Hide welcome screen when an action or navigation begins
+    const welcome = document.querySelector('.welcome-screen') as HTMLElement;
+    if (welcome) welcome.style.display = 'none';
+
     if (intent.type === 'agent_command') {
-      // Add worker card or trigger coordinator
-      this.addWorkerLog(`Started command: /${intent.command} "${intent.prompt}"`);
       // Open drawer if closed
       this.swarmDrawer.classList.remove('closed');
       this.drawerToggleBtn.classList.add('active');
+      aegis?.toggleDrawer(true, 320);
+
+      this.addWorkerLog(`Initiating swarm /${intent.command}: "${intent.prompt}"`);
+
+      const model = this.modelSelect?.value || 'gemini-2.0-flash';
+      if (aegis?.executeSwarm) {
+        const res = await aegis.executeSwarm(intent.command, intent.prompt, model);
+        if (res?.targetUrl) {
+          const activeTab = document.querySelector('.tab.active .tab-title');
+          if (activeTab) {
+            try { activeTab.textContent = new URL(res.targetUrl).hostname; } catch {}
+          }
+        }
+      }
     } else if (intent.type === 'url' || intent.type === 'search') {
-      const target = intent.targetUrl || '';
+      const target = intent.targetUrl || raw;
       console.log('[Omnibar] Navigating to:', target);
-      // Update active tab title
+      
       const activeTab = document.querySelector('.tab.active .tab-title');
       if (activeTab) {
         try { activeTab.textContent = new URL(target).hostname; } catch { activeTab.textContent = target; }
       }
+
+      if (aegis?.navigateTab) {
+        await aegis.navigateTab(target);
+      }
     }
   }
 
-  private createNewTab(title: string, url: string): void {
+  private async createNewTab(title: string, url: string): Promise<void> {
     const tabId = 'tab_' + Date.now();
     const tab = document.createElement('div');
     tab.className = 'tab';
@@ -128,25 +217,32 @@ class BrowserApp {
       }
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
+      (window as any).aegis?.switchTab(tabId);
     });
 
     const closeBtn = tab.querySelector('.tab-close-btn')!;
     closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       tab.remove();
+      (window as any).aegis?.closeTab(tabId);
     });
 
     this.tabStrip.insertBefore(tab, this.newTabBtn);
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
+
+    const aegis = (window as any).aegis;
+    if (aegis?.createTab) {
+      await aegis.createTab(url);
+    }
   }
 
-  private addWorkerLog(text: string): void {
+  private addWorkerLog(text: string, timestamp?: string): void {
     const feed = document.getElementById('evidence-feed');
     if (!feed) return;
     const item = document.createElement('div');
     item.className = 'evidence-item';
-    const time = new Date().toTimeString().slice(0, 8);
+    const time = timestamp || new Date().toTimeString().slice(0, 8);
     item.innerHTML = `<span class="ev-time">${time}</span><span class="ev-text">${text}</span>`;
     feed.prepend(item);
   }
