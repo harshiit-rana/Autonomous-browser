@@ -1,0 +1,26 @@
+{
+  "name": "autonomous-browser",
+  "version": "0.1.0",
+  "description": "Next-Generation Autonomous Multi-Agent AI Browser with Elastic Swarms, MCTS Planning, and Injection Immunity",
+  "author": "harshiit-rana",
+  "license": "MIT",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "vite",
+    "build:ts": "tsc -b",
+    "build": "tsc -b && vite build",
+    "start": "electron dist/main/index.js",
+    "build:fuses": "node scripts/build-fuses.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "playwright-core": "^1.65.1"
+  },
+  "devDependencies": {
+    "@electron/fuses": "^1.8.0",
+    "@types/node": "^22.20.5",
+    "electron": "^33.4.11",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.1"
+  }
+}
