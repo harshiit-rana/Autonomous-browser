@@ -9,8 +9,10 @@
     "dev": "vite",
     "build:ts": "tsc -b",
     "build": "tsc -b && vite build",
+    "demo:e2e": "tsx scripts/e2e_autonomous_demo.ts",
     "start": "electron dist/main/index.js",
-    "build:fuses": "node scripts/build-fuses.mjs"
+    "build:fuses": "node scripts/build-fuses.mjs",
+    "dist": "npm run build && electron-builder --win nsis portable --publish never"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -22,5 +24,26 @@
     "electron": "^33.4.11",
     "typescript": "^5.9.3",
     "vite": "^6.0.1"
+  },
+  "build": {
+    "appId": "com.aegis.browser",
+    "productName": "Autonomous Browser",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    }
   }
 }

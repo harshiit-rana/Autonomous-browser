@@ -1,4 +1,5 @@
-import { WebContentsView, BaseWindow } from 'electron';
+import { WebContentsView, BrowserWindow } from 'electron';
+import * as path from 'node:path';
 import { ActionExecutor } from '../core/action_executor.js';
 
 export interface TabView {
@@ -19,14 +20,15 @@ export interface TabView {
  * - Background agent worker tabs run unattached to the visible frame, avoiding screen conflicts.
  */
 export class ViewManager {
-  private window: BaseWindow;
+  private window: BrowserWindow;
   private tabs: Map<string, TabView> = new Map();
   private activeTabId: string | null = null;
-  private topChromeHeight: number = 72;
-  private drawerWidth: number = 0;
+  private topChromeHeight: number = 88;
+  private drawerWidth: number = 320;
 
-  constructor(window: BaseWindow) {
+  constructor(window: BrowserWindow) {
     this.window = window;
+    this.relayout();
   }
 
   public createTab(url: string, isBackgroundAgent: boolean = false): TabView {
@@ -115,11 +117,12 @@ export class ViewManager {
   }
 
   public relayout(): void {
+    const bounds = this.window.getBounds();
+
     if (!this.activeTabId) return;
     const activeTab = this.tabs.get(this.activeTabId);
     if (!activeTab) return;
 
-    const bounds = this.window.getBounds();
     const contentWidth = Math.max(200, bounds.width - this.drawerWidth);
     const contentHeight = Math.max(200, bounds.height - this.topChromeHeight);
 

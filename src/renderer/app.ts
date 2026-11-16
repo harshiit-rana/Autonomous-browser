@@ -31,6 +31,17 @@ class BrowserApp {
   }
 
   private bindEvents(): void {
+    // 0. Native Window Controls
+    document.getElementById('min-btn')?.addEventListener('click', () => {
+      (window as any).aegis?.minimize();
+    });
+    document.getElementById('max-btn')?.addEventListener('click', () => {
+      (window as any).aegis?.maximize();
+    });
+    document.getElementById('close-btn')?.addEventListener('click', () => {
+      (window as any).aegis?.close();
+    });
+
     // 1. Omnibar submit
     this.swarmRunBtn.addEventListener('click', () => this.handleOmnibarSubmit());
     this.omnibarInput.addEventListener('keydown', (e) => {

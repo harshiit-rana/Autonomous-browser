@@ -8,3 +8,5 @@ dist/
 temp_*.enc
 *.db
 *.db-journal
+release/
+.aegis-user-data/
