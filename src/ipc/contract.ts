@@ -88,6 +88,13 @@ export interface MissionStatusPayload {
   message?: string;
 }
 
+export interface TelemetryEventPayload {
+  tokensTotal: number;
+  costTotal: number;
+  stepTokens?: number;
+  stepCost?: number;
+}
+
 export const IPC_CHANNELS = {
   // Window
   WINDOW_MINIMIZE: 'window:minimize',
@@ -124,7 +131,8 @@ export const IPC_CHANNELS = {
   EVENT_TAB_PATCH: 'tab:patch',
   EVENT_WORKER: 'worker:event',
   EVENT_EVIDENCE: 'evidence:event',
-  EVENT_MISSION_STATUS: 'mission:status'
+  EVENT_MISSION_STATUS: 'mission:status',
+  EVENT_TELEMETRY: 'telemetry:event'
 } as const;
 
 export type IPCChannelName = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

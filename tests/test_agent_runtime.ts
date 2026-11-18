@@ -170,10 +170,29 @@ async function testModelProviderFactory() {
   console.log('✓ ModelProviderFactory dynamic resolution verified!');
 }
 
+async function testUsageLedger() {
+  console.log('Testing UsageLedger (Issue #132)...');
+  const { UsageLedger } = await import('../src/models/pricing.js');
+  const ledger = new UsageLedger();
+
+  // Test Gemini 2.0 Flash pricing: $0.10/M in, $0.40/M out
+  const stats1 = ledger.recordUsage('gemini-2.0-flash', 1_000_000, 500_000);
+  assert.equal(stats1.tokensTotal, 1_500_000);
+  assert.equal(Math.round(stats1.costTotal * 100) / 100, 0.30); // 0.10 + 0.20 = 0.30
+
+  // Test local model: $0 cost
+  const stats2 = ledger.recordUsage('deepseek-r1:8b', 500_000, 200_000);
+  assert.equal(stats2.tokensTotal, 2_200_000);
+  assert.equal(Math.round(stats2.costTotal * 100) / 100, 0.30);
+
+  console.log('✓ UsageLedger token and cost calculations verified!');
+}
+
 async function run() {
   await testMockModelProvider();
   await testToolExecutor();
   await testModelProviderFactory();
+  await testUsageLedger();
   console.log('✓ All Milestone M1 tests passed successfully!');
 }
 

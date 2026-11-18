@@ -74,5 +74,8 @@ contextBridge.exposeInMainWorld('aegis', {
   },
   onMissionStatus: (callback: (data: MissionStatusPayload) => void) => {
     ipcRenderer.on(IPC_CHANNELS.EVENT_MISSION_STATUS, (_, data) => callback(data));
+  },
+  onTelemetry: (callback: (data: any) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.EVENT_TELEMETRY, (_, data) => callback(data));
   }
 });

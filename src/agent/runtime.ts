@@ -1,12 +1,16 @@
 import { BrowserWindow } from 'electron';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { ViewManager, TabView } from '../main/view_manager.js';
 import { ModelProviderFactory } from '../models/provider_factory.js';
 import { IModelProvider, CanonicalMessage, ContentBlock } from '../models/types.js';
 import { PerceptionEngine, PageSnapshot } from './perception.js';
 import { BROWSER_TOOLS, ToolExecutor, ToolExecutionResult } from './tools.js';
-import { IPC_CHANNELS, WorkerEventPayload, EvidenceEventPayload, MissionStatusPayload } from '../ipc/contract.js';
+import { IPC_CHANNELS, WorkerEventPayload, EvidenceEventPayload, MissionStatusPayload, TelemetryEventPayload } from '../ipc/contract.js';
 import { rootLogger } from '../infrastructure/logger.js';
 import { getSettings } from '../infrastructure/settings.js';
+import { getAppPaths } from '../infrastructure/paths.js';
+import { UsageLedger } from '../models/pricing.js';
 
 const logger = rootLogger.child('agent-runtime');
 
@@ -30,11 +34,12 @@ export interface Mission {
   tabId?: string;
   result?: string;
   error?: string;
+  evidenceCollected: string[];
 }
 
 const SYSTEM_PROMPT = `
 You are Aegis, an industry-grade autonomous AI web browsing agent.
-You interact with web pages through typed tools: navigate, click, type, press_key, scroll, wait, done, fail.
+You interact with web pages through typed tools: navigate, click, type, press_key, scroll, wait, ask_user, done, fail.
 
 Rules:
 1. Always base actions on the current page URL, title, and interactive element refs ([e1], [e2], ...).
@@ -50,6 +55,7 @@ export class AgentRuntime {
   private abortController: AbortController | null = null;
   private isPaused: boolean = false;
   private pausePromiseResolve: (() => void) | null = null;
+  private usageLedger: UsageLedger = new UsageLedger();
 
   private viewManager: ViewManager;
   private window: BrowserWindow;
@@ -112,6 +118,7 @@ export class AgentRuntime {
     const missionId = `m_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     this.abortController = new AbortController();
     this.isPaused = false;
+    this.usageLedger.reset();
 
     let targetTab = this.viewManager.getActiveTab();
     if (!targetTab) {
@@ -126,7 +133,8 @@ export class AgentRuntime {
       stepCount: 0,
       maxSteps: 20,
       history: [],
-      tabId: targetTab.id
+      tabId: targetTab.id,
+      evidenceCollected: []
     };
 
     logger.info('Starting mission', { missionId, prompt, model: this.activeMission.model, tabId: targetTab.id });
@@ -234,6 +242,8 @@ export class AgentRuntime {
       content: `User Goal: ${mission.prompt}`
     });
 
+    const actionSignatures: string[] = [];
+
     while (mission.state === 'running' && mission.stepCount < mission.maxSteps) {
       if (this.abortController?.signal.aborted) {
         this.finishMission('cancelled', undefined, 'Mission aborted');
@@ -264,6 +274,9 @@ export class AgentRuntime {
 
       // Settle page loading and DOM stability (Issue #121)
       await this.waitForSettle(tab);
+
+      // Context Management: prune older full-page snapshots to keep token growth bounded (Issue #123)
+      this.pruneHistory(mission.history);
 
       // 1. Observe: Capture current page snapshot
       const snapshot: PageSnapshot = await PerceptionEngine.captureSnapshot(tab.view.webContents, false);
@@ -302,6 +315,21 @@ ${snapshot.formattedTree}
         return;
       }
 
+      // Record real token usage and cost (Issue #132)
+      if (response.usage) {
+        const stats = this.usageLedger.recordUsage(
+          mission.model,
+          response.usage.promptTokens,
+          response.usage.completionTokens
+        );
+        this.emitTelemetry({
+          tokensTotal: stats.tokensTotal,
+          costTotal: stats.costTotal,
+          stepTokens: response.usage.promptTokens + response.usage.completionTokens,
+          stepCost: stats.stepCost
+        });
+      }
+
       // Record assistant turn in history
       const assistantBlocks: ContentBlock[] = [];
       if (response.text) {
@@ -336,8 +364,6 @@ ${snapshot.formattedTree}
       }
 
       let isFinished = false;
-      const actionSignatures: string[] = [];
-
       for (const toolCall of response.toolCalls) {
         if (this.abortController?.signal.aborted) return;
 
@@ -377,6 +403,7 @@ ${snapshot.formattedTree}
 
         if (execResult.effect?.evidence && Array.isArray(execResult.effect.evidence)) {
           for (const ev of execResult.effect.evidence) {
+            mission.evidenceCollected.push(ev);
             this.emitEvidence(`[Evidence] ${ev}`);
           }
         }
@@ -398,12 +425,87 @@ ${snapshot.formattedTree}
         }
       }
 
+      // Save mission checkpoint after step (Issue #127)
+      this.saveCheckpoint(mission);
+
       // Settle wait between steps for page render
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 600));
     }
 
     if (mission.state === 'running' && mission.stepCount >= mission.maxSteps) {
       this.finishMission('failed', undefined, `Exceeded maximum step budget of ${mission.maxSteps}`);
+    }
+  }
+
+  private pruneHistory(history: CanonicalMessage[]): void {
+    const observationIndices: number[] = [];
+    history.forEach((msg, idx) => {
+      if (msg.role === 'user' && typeof msg.content === 'string' && msg.content.includes('[Page State]')) {
+        observationIndices.push(idx);
+      }
+    });
+
+    if (observationIndices.length > 2) {
+      const toPrune = observationIndices.slice(0, observationIndices.length - 2);
+      for (const idx of toPrune) {
+        const original = history[idx].content as string;
+        const urlMatch = original.match(/URL:\s*(https?:\/\/[^\s\n]+)/);
+        const titleMatch = original.match(/Title:\s*([^\n]+)/);
+        const url = urlMatch ? urlMatch[1] : '';
+        const title = titleMatch ? titleMatch[1] : '';
+        history[idx].content = `[Page State Summary: Visited "${title}" (${url}) - DOM snapshot pruned to conserve context tokens]`;
+      }
+    }
+  }
+
+  private saveCheckpoint(mission: Mission): void {
+    try {
+      const paths = getAppPaths();
+      const missionsDir = path.join(paths.userData, 'missions');
+      if (!fs.existsSync(missionsDir)) {
+        fs.mkdirSync(missionsDir, { recursive: true });
+      }
+      const checkpointFile = path.join(missionsDir, `${mission.id}.json`);
+      const tempFile = `${checkpointFile}.tmp`;
+      const data = {
+        id: mission.id,
+        prompt: mission.prompt,
+        model: mission.model,
+        state: mission.state,
+        stepCount: mission.stepCount,
+        tabId: mission.tabId,
+        result: mission.result,
+        error: mission.error,
+        evidenceCount: mission.evidenceCollected.length,
+        updatedAt: Date.now()
+      };
+      fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
+      fs.renameSync(tempFile, checkpointFile);
+    } catch (err: any) {
+      logger.warn('Failed to save checkpoint', { error: err.message });
+    }
+  }
+
+  private saveDeliverableReport(mission: Mission): void {
+    try {
+      const paths = getAppPaths();
+      const deliverablesDir = path.join(paths.userData, 'deliverables');
+      if (!fs.existsSync(deliverablesDir)) {
+        fs.mkdirSync(deliverablesDir, { recursive: true });
+      }
+      const filePath = path.join(deliverablesDir, `${mission.id}_report.md`);
+      const md = `# Mission Report: ${mission.prompt}\n\n` +
+        `**Status:** ${mission.state}\n` +
+        `**Model:** ${mission.model}\n` +
+        `**Steps Executed:** ${mission.stepCount}\n` +
+        `**Date:** ${new Date().toISOString()}\n\n` +
+        `## Deliverable Findings\n${mission.result || 'No final result recorded.'}\n\n` +
+        `## Verified Evidence (${mission.evidenceCollected.length})\n` +
+        mission.evidenceCollected.map((e, idx) => `${idx + 1}. ${e}`).join('\n') + '\n';
+      fs.writeFileSync(filePath, md, 'utf-8');
+      logger.info('Deliverable report saved', { filePath });
+    } catch (err: any) {
+      logger.warn('Failed to save deliverable report', { error: err.message });
     }
   }
 
@@ -437,6 +539,12 @@ ${snapshot.formattedTree}
       status: state === 'completed' ? 'done' : 'failed'
     });
     this.emitEvidence(`[Mission Finished] ${statusText}`);
+
+    // Persist final checkpoint and export structured deliverable (Issues #124, #127)
+    this.saveCheckpoint(this.activeMission);
+    if (state === 'completed') {
+      this.saveDeliverableReport(this.activeMission);
+    }
   }
 
   private emitMissionStatus(status: MissionStatusPayload['status'], message: string): void {
@@ -468,6 +576,14 @@ ${snapshot.formattedTree}
           timestamp: new Date().toTimeString().slice(0, 8)
         };
         this.window.webContents.send(IPC_CHANNELS.EVENT_EVIDENCE, payload);
+      }
+    } catch {}
+  }
+
+  private emitTelemetry(payload: TelemetryEventPayload): void {
+    try {
+      if (!this.window.isDestroyed()) {
+        this.window.webContents.send(IPC_CHANNELS.EVENT_TELEMETRY, payload);
       }
     } catch {}
   }

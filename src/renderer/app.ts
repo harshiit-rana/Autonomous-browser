@@ -123,6 +123,16 @@ class BrowserApp {
     aegis.onEvidenceEvent((data: EvidenceEventPayload) => {
       this.addEvidenceItem(data.text, data.timestamp);
     });
+
+    // 5. Live Telemetry accounting (Issue #132)
+    aegis.onTelemetry((data: { tokensTotal: number; costTotal: number }) => {
+      if (this.tokensStat) {
+        this.tokensStat.textContent = data.tokensTotal.toLocaleString();
+      }
+      if (this.costStat) {
+        this.costStat.textContent = `$${data.costTotal.toFixed(4)}`;
+      }
+    });
   }
 
   private renderTabs(): void {
