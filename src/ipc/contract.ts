@@ -121,10 +121,15 @@ export const IPC_CHANNELS = {
   MISSION_CANCEL: 'mission:cancel',
   MISSION_TAKEOVER: 'mission:takeover',
   MISSION_HANDBACK: 'mission:handback',
+  MISSION_STEER: 'mission:steer',
+  MISSION_UNDO: 'mission:undo',
 
-  // Settings
+  // Settings & Credentials
   SETTINGS_GET: 'settings:get',
   SETTINGS_UPDATE: 'settings:update',
+  CREDENTIALS_TEST: 'credentials:test',
+  CREDENTIALS_SET: 'credentials:set',
+  CREDENTIALS_GET_STATUS: 'credentials:get_status',
 
   // Push Events from Main to Renderer
   EVENT_TABS_SYNC: 'tabs:sync',

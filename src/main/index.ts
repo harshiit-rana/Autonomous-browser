@@ -4,6 +4,7 @@ import { ViewManager } from './view_manager.js';
 import { initializeAppPaths, getAppPaths } from '../infrastructure/paths.js';
 import { rootLogger } from '../infrastructure/logger.js';
 import { getSettings, updateSettings } from '../infrastructure/settings.js';
+import { credentialVault } from '../infrastructure/credentials.js';
 import { registerTypedHandler } from '../ipc/main_handler.js';
 import { AgentRuntime } from '../agent/runtime.js';
 import {
@@ -299,6 +300,23 @@ class MainApp {
       return true;
     });
 
+    registerTypedHandler<{ message: string; type?: any }, boolean>(
+      IPC_CHANNELS.MISSION_STEER,
+      getChrome,
+      (req) => {
+        AgentRuntime.getInstance().steer(req.message, req.type);
+        return true;
+      }
+    );
+
+    registerTypedHandler(
+      IPC_CHANNELS.MISSION_UNDO,
+      getChrome,
+      async () => {
+        return AgentRuntime.getInstance().undoLastAction();
+      }
+    );
+
     // Settings
     registerTypedHandler(IPC_CHANNELS.SETTINGS_GET, getChrome, () => {
       return getSettings();
@@ -309,6 +327,35 @@ class MainApp {
       getChrome,
       (req) => {
         return updateSettings(req.settings);
+      }
+    );
+
+    // Secure Credentials Vault (Issue #133)
+    registerTypedHandler<{ provider: string; key: string; baseUrl?: string }, any>(
+      IPC_CHANNELS.CREDENTIALS_TEST,
+      getChrome,
+      async (req) => {
+        return credentialVault.testCredentials(req.provider, req.key, req.baseUrl);
+      }
+    );
+
+    registerTypedHandler<{ provider: string; key: string }, boolean>(
+      IPC_CHANNELS.CREDENTIALS_SET,
+      getChrome,
+      async (req) => {
+        await credentialVault.setKey(req.provider, req.key);
+        return true;
+      }
+    );
+
+    registerTypedHandler(
+      IPC_CHANNELS.CREDENTIALS_GET_STATUS,
+      getChrome,
+      async () => {
+        const gemini = Boolean(await credentialVault.getKey('gemini') || process.env.GEMINI_API_KEY);
+        const anthropic = Boolean(await credentialVault.getKey('anthropic') || process.env.ANTHROPIC_API_KEY);
+        const openai = Boolean(await credentialVault.getKey('openai') || process.env.OPENAI_API_KEY);
+        return { gemini, anthropic, openai };
       }
     );
   }

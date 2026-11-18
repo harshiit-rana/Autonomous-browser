@@ -12,6 +12,13 @@ import { rootLogger } from '../infrastructure/logger.js';
 import { getSettings } from '../infrastructure/settings.js';
 import { getAppPaths } from '../infrastructure/paths.js';
 import { UsageLedger } from '../models/pricing.js';
+import { globalGovernor } from '../models/governor.js';
+import {
+  PromptRegistry,
+  MidRunSteeringQueue,
+  ActionLedger,
+  SteeringClass
+} from './steering_and_reversibility.js';
 
 const logger = rootLogger.child('agent-runtime');
 
@@ -57,6 +64,8 @@ export class AgentRuntime {
   private isPaused: boolean = false;
   private pausePromiseResolve: (() => void) | null = null;
   private usageLedger: UsageLedger = new UsageLedger();
+  private actionLedger: ActionLedger = new ActionLedger();
+  private steeringQueue: MidRunSteeringQueue = new MidRunSteeringQueue();
 
   private viewManager: ViewManager;
   private window: BrowserWindow;
@@ -220,6 +229,19 @@ export class AgentRuntime {
     }
   }
 
+  public steer(message: string, type: SteeringClass = 'steering'): void {
+    this.steeringQueue.enqueue(type, message);
+    this.emitEvidence(`[Steering Queued] ${type}: ${message}`);
+  }
+
+  public async undoLastAction(): Promise<{ ok: boolean; message: string }> {
+    return this.actionLedger.undoLast(this.viewManager);
+  }
+
+  public getActionLedger(): ActionLedger {
+    return this.actionLedger;
+  }
+
   private async runLoop(): Promise<void> {
     if (!this.activeMission) return;
     const mission = this.activeMission;
@@ -273,6 +295,16 @@ export class AgentRuntime {
         status: 'running'
       });
 
+      // Drain mid-run steering messages (Issue #211)
+      const steeringMsgs = this.steeringQueue.drain();
+      for (const sm of steeringMsgs) {
+        this.emitEvidence(`[User Steering - ${sm.type.toUpperCase()}] ${sm.text}`);
+        mission.history.push({
+          role: 'user',
+          content: `[User Steering Instruction]: ${sm.text}`
+        });
+      }
+
       // Settle page loading and DOM stability (Issue #121)
       await this.waitForSettle(tab);
 
@@ -312,10 +344,10 @@ ${snapshot.formattedTree}
 
       let response;
       try {
-        response = await provider.generate({
+        response = await globalGovernor.executeSafe(provider, {
           messages: mission.history,
           tools: BROWSER_TOOLS,
-          systemPrompt: SYSTEM_PROMPT,
+          systemPrompt: PromptRegistry.getInstance().getEffectivePrompt('actor').systemPrompt,
           abortSignal: this.abortController?.signal,
           missionId: mission.id,
           stepId: `step_${currentStep}`
@@ -328,12 +360,23 @@ ${snapshot.formattedTree}
         return;
       }
 
+      if (response.thinking) {
+        this.emitEvidence(`[Thought Stream] ${response.thinking}`);
+      }
+
+      if (response.finishReason === 'refusal') {
+        this.emitEvidence(`[Refusal] Model refused to perform action: ${response.text}`);
+        this.finishMission('failed', undefined, `Safety refusal: ${response.text}`);
+        return;
+      }
+
       // Record real token usage and cost (Issue #132)
       if (response.usage) {
         const stats = this.usageLedger.recordUsage(
           mission.model,
           response.usage.promptTokens,
-          response.usage.completionTokens
+          response.usage.completionTokens,
+          response.usage.cacheReadTokens || 0
         );
         this.emitTelemetry({
           tokensTotal: stats.tokensTotal,
@@ -399,6 +442,9 @@ ${snapshot.formattedTree}
           toolCall.arguments,
           { tab, snapshot }
         );
+
+        // Record in Action Ledger for reversibility and audit (Issue #214)
+        this.actionLedger.record(currentStep, toolCall.name, toolCall.arguments, tab.id);
 
         let outputText = execResult.output;
         if (!execResult.ok) {

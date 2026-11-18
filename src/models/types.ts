@@ -78,16 +78,19 @@ export interface ModelRequest {
 
 export interface ModelResponse {
   text: string;
+  thinking?: string;
   toolCalls: Array<{
     id: string;
     name: string;
     arguments: Record<string, any>;
   }>;
-  finishReason: 'stop' | 'tool_calls' | 'length' | 'error';
+  finishReason: 'stop' | 'tool_calls' | 'length' | 'error' | 'refusal';
   usage?: {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    cacheReadTokens?: number;
+    cacheWriteTokens?: number;
   };
   raw?: any;
 }

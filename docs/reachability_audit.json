@@ -1,10 +1,18 @@
 [
   {
+    "path": "agent/errors.ts",
+    "isReachable": true
+  },
+  {
     "path": "agent/perception.ts",
     "isReachable": true
   },
   {
     "path": "agent/runtime.ts",
+    "isReachable": true
+  },
+  {
+    "path": "agent/steering_and_reversibility.ts",
     "isReachable": true
   },
   {
@@ -100,6 +108,10 @@
     "isReachable": false
   },
   {
+    "path": "infrastructure/credentials.ts",
+    "isReachable": true
+  },
+  {
     "path": "infrastructure/logger.ts",
     "isReachable": true
   },
@@ -144,7 +156,15 @@
     "isReachable": false
   },
   {
+    "path": "models/anthropic_provider.ts",
+    "isReachable": true
+  },
+  {
     "path": "models/gemini_provider.ts",
+    "isReachable": true
+  },
+  {
+    "path": "models/governor.ts",
     "isReachable": true
   },
   {
@@ -153,6 +173,10 @@
   },
   {
     "path": "models/openai_provider.ts",
+    "isReachable": true
+  },
+  {
+    "path": "models/pricing.ts",
     "isReachable": true
   },
   {
