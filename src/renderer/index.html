@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body class="dark-theme">
-  <!-- 1. Custom Glassmorphic Window Titlebar (UI-01) -->
+  <!-- 1. Custom Single Titlebar with Integrated Tabs (Issues #107, #138) -->
   <header id="titlebar">
     <div class="window-drag-region">
       <div class="app-logo">
@@ -18,14 +18,21 @@
         <span>Aegis</span>
       </div>
 
-      <!-- Tab Strip (UI-02) -->
+      <!-- Tab Strip -->
       <nav id="tab-strip">
         <div id="tabs-container" style="display: flex; gap: 4px; align-items: center;"></div>
         <button id="new-tab-btn" title="Open new tab">+</button>
       </nav>
     </div>
 
-    <!-- Window Controls -->
+    <!-- Layout Switcher (Issue #138: Stage, Grid, Theatre) -->
+    <div class="layout-switcher">
+      <button id="layout-stage-btn" class="layout-btn active" title="Stage Layout (Single Focused Tab)">Stage</button>
+      <button id="layout-grid-btn" class="layout-btn" title="Swarm Grid Layout (Live Worker Tiles)">Grid</button>
+      <button id="layout-theatre-btn" class="layout-btn" title="Theatre Layout (Cinematic Focus)">Theatre</button>
+    </div>
+
+    <!-- Window Controls (Frameless overlay) -->
     <div class="window-controls">
       <button id="min-btn" class="win-btn" title="Minimize">&#9472;</button>
       <button id="max-btn" class="win-btn" title="Maximize">&#9633;</button>
@@ -33,7 +40,7 @@
     </div>
   </header>
 
-  <!-- 2. Omnibar Navigation & Model Selector (M7.1) -->
+  <!-- 2. Omnibar Navigation & Model Selector (Issues #133, #140) -->
   <section id="omnibar-container">
     <div class="nav-buttons">
       <button id="back-btn" class="icon-btn" title="Back">&larr;</button>
@@ -45,17 +52,18 @@
       <div class="model-badge" title="Active Intelligence Model">
         <select id="model-select">
           <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-          <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+          <option value="claude-3-7-sonnet-latest">Claude 3.7 Sonnet</option>
+          <option value="claude-3-5-sonnet-latest">Claude 3.5 Sonnet</option>
           <option value="gpt-4o">GPT-4o</option>
-          <option value="deepseek-r1">DeepSeek-R1 (Local)</option>
+          <option value="deepseek-r1:8b">DeepSeek-R1 (Local)</option>
         </select>
       </div>
-      <input type="text" id="omnibar-input" placeholder="Enter URL or agent command (e.g. /swarm compare flight prices to Tokyo)..." autofocus>
-      <button id="swarm-run-btn" class="btn-primary" title="Execute Swarm">Execute</button>
+      <input type="text" id="omnibar-input" placeholder="Enter URL or describe an autonomous browsing mission..." autofocus>
+      <button id="swarm-run-btn" class="btn-primary" title="Preview and Execute Mission">Run</button>
     </div>
 
     <!-- Swarm Drawer Toggle -->
-    <button id="toggle-drawer-btn" class="icon-btn active" title="Toggle Swarm Activity Drawer">
+    <button id="toggle-drawer-btn" class="icon-btn active" title="Toggle Mission Control Drawer">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
         <line x1="15" y1="3" x2="15" y2="21"/>
@@ -71,52 +79,108 @@
     </button>
   </section>
 
-  <!-- 3. Main Workspace: WebContents Viewport + Swarm Drawer (UI-03, M7.2) -->
+  <!-- 3. Main Workspace (Stage / Swarm Grid / Drawer) -->
   <main id="workspace">
-    <!-- Web page content placeholder (actual WebContentsView docked here by main process) -->
+    <!-- Web page content viewport -->
     <div id="webview-viewport">
+      <!-- Agent Presence Layer (Issue #136: rendered safely in chrome UI outside page DOM) -->
+      <div id="presence-overlay" class="presence-overlay"></div>
+
+      <!-- Live Swarm Grid View (Issue #135: real per-worker live preview frames) -->
+      <div id="swarm-grid-container" class="swarm-grid-container hidden"></div>
+
       <div class="welcome-screen">
         <h1>Autonomous Multi-Agent AI Browser</h1>
         <p>Type a URL or describe a complex web task to spawn an elastic parallel swarm.</p>
         <div class="quick-prompts">
-          <button class="pill" data-prompt="/swarm extract top 10 articles from Hacker News with score > 100">Top Hacker News Posts</button>
-          <button class="pill" data-prompt="/research autonomous web agent state of the art benchmarks">Research Web Agents SOTA</button>
-          <button class="pill" data-prompt="/mcts find cheapest direct flight from NYC to London next week">Flight Price Optimization</button>
+          <button class="pill" data-prompt="Find top 5 articles from Hacker News with score > 100">Top Hacker News Posts</button>
+          <button class="pill" data-prompt="Research web agent autonomous benchmark papers">Research Web Agents</button>
+          <button class="pill" data-prompt="Compare GitHub trending repositories in TypeScript">Trending Repositories</button>
         </div>
       </div>
     </div>
 
-    <!-- Swarm Activity Sidebar Drawer (UI-03) -->
+    <!-- Draggable Pane Resizer (Issue #138) -->
+    <div id="pane-resizer" class="pane-resizer" title="Drag to resize drawer"></div>
+
+    <!-- Swarm Mission Control Drawer -->
     <aside id="swarm-drawer" class="open">
       <div class="drawer-header">
-        <h3>Swarm Activity</h3>
+        <h3>Mission Control</h3>
+        <!-- Real Controls (Issues #139, #214) -->
         <div class="drawer-actions">
-          <button id="pause-agent-btn" class="badge-btn warning">Pause</button>
-          <button id="takeover-btn" class="badge-btn danger">Takeover</button>
+          <button id="pause-agent-btn" class="badge-btn warning" title="Pause or Resume Agent">Pause</button>
+          <button id="takeover-btn" class="badge-btn danger" title="Manual Takeover">Takeover</button>
+          <button id="undo-btn" class="badge-btn" title="Undo Last Reversible Action">Undo</button>
+          <button id="cancel-mission-btn" class="badge-btn danger" title="Cancel Running Mission">&times;</button>
         </div>
       </div>
 
-      <!-- Telemetry Stats -->
+      <!-- Live Telemetry Stats (Issue #141) -->
       <div class="telemetry-bar">
         <div class="stat"><span class="lbl">Workers</span><span id="worker-count-stat" class="val">0</span></div>
         <div class="stat"><span class="lbl">Tokens</span><span id="tokens-stat" class="val">0</span></div>
-        <div class="stat"><span class="lbl">Cost</span><span id="cost-stat" class="val">$0.00</span></div>
+        <div class="stat"><span class="lbl">Cost</span><span id="cost-stat" class="val">$0.0000</span></div>
       </div>
 
-      <!-- Worker Cards Container (Rendered dynamically from state) -->
+      <!-- Mid-Run Steering Input (Issue #211) -->
+      <div class="steering-bar">
+        <input type="text" id="steering-input" placeholder="Steer agent (e.g. prioritize reviews)...">
+        <button id="steering-send-btn" class="badge-btn" title="Send steering message">Send</button>
+      </div>
+
+      <!-- Worker Cards Container -->
       <div id="worker-cards-container">
-        <div id="no-workers-msg" class="empty-state-text" style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 24px 0;">No active agent workers</div>
+        <div id="no-workers-msg" class="empty-state-text">No active agent workers</div>
       </div>
 
-      <!-- Live Evidence Feed from Blackboard -->
-      <h4>Discovered Evidence</h4>
+      <!-- Live Step Timeline & Thought Stream (Issue #137) -->
+      <div class="timeline-header">
+        <h4>Live Activity Timeline</h4>
+        <!-- Timeline Filter Chips -->
+        <div class="timeline-filters">
+          <button class="filter-chip active" data-filter="all">All</button>
+          <button class="filter-chip" data-filter="actions">Actions</button>
+          <button class="filter-chip" data-filter="thoughts">Thoughts</button>
+          <button class="filter-chip" data-filter="evidence">Evidence</button>
+        </div>
+      </div>
+
       <div id="evidence-feed">
-        <div id="no-evidence-msg" class="empty-state-text" style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 24px 0;">No evidence recorded</div>
+        <div id="no-evidence-msg" class="empty-state-text">No activity recorded</div>
       </div>
     </aside>
   </main>
 
-  <!-- 4. Settings Modal (Configures API keys and local providers) -->
+  <!-- 4. Plan Preview Modal (Issue #140: Natural-language plan preview before run) -->
+  <div id="plan-preview-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Mission Plan Preview</h3>
+        <button id="close-plan-btn" class="icon-btn" title="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="plan-goal-box">
+          <label class="lbl">Goal</label>
+          <div id="plan-goal-text" class="plan-goal-text"></div>
+        </div>
+
+        <label class="lbl">Proposed Execution Strategy</label>
+        <div id="plan-steps-container" class="plan-steps-list"></div>
+
+        <div class="plan-meta-bar">
+          <div><span class="lbl">Est. Duration:</span> <span id="plan-est-duration">~15s</span></div>
+          <div><span class="lbl">Est. Cost:</span> <span id="plan-est-cost">~$0.0035</span></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancel-plan-btn" class="btn-secondary">Cancel</button>
+        <button id="execute-plan-btn" class="btn-primary">Execute Mission</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Settings Modal (Issues #129, #133) -->
   <div id="settings-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
@@ -127,37 +191,60 @@
         <div class="form-group">
           <label for="settings-provider">Active Model Provider</label>
           <select id="settings-provider" class="form-select">
-            <option value="gemini">Google Gemini (Recommended)</option>
+            <option value="gemini">Google Gemini (Gemini 2.0 Flash / Pro)</option>
+            <option value="anthropic">Anthropic (Claude 3.7 Sonnet / 3.5 Sonnet / Haiku)</option>
             <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
-            <option value="ollama">Ollama (Local / DeepSeek-R1)</option>
+            <option value="ollama">Ollama (Local DeepSeek-R1)</option>
           </select>
         </div>
 
+        <!-- Gemini API Key -->
         <div class="form-group" id="group-gemini-key">
           <label for="settings-gemini-key">Google Gemini API Key</label>
-          <input type="password" id="settings-gemini-key" class="form-input" placeholder="Enter Gemini API key (AIzaSy...)">
-          <span class="field-hint">Used for Gemini models. Stored locally on your machine.</span>
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="settings-gemini-key" class="form-input" placeholder="AIzaSy...">
+            <button id="test-gemini-btn" class="btn-secondary" style="white-space: nowrap;">Test Key</button>
+          </div>
+          <span class="field-hint">Encrypted securely via OS safeStorage keystore.</span>
         </div>
 
+        <!-- Anthropic API Key -->
+        <div class="form-group" id="group-anthropic-key" style="display: none;">
+          <label for="settings-anthropic-key">Anthropic Claude API Key</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="settings-anthropic-key" class="form-input" placeholder="sk-ant-...">
+            <button id="test-anthropic-btn" class="btn-secondary" style="white-space: nowrap;">Test Key</button>
+          </div>
+          <span class="field-hint">Supports adaptive thinking, prompt caching, and Claude 3.7 Sonnet.</span>
+        </div>
+
+        <!-- OpenAI API Key -->
         <div class="form-group" id="group-openai-key" style="display: none;">
           <label for="settings-openai-key">OpenAI API Key</label>
-          <input type="password" id="settings-openai-key" class="form-input" placeholder="sk-...">
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="settings-openai-key" class="form-input" placeholder="sk-...">
+            <button id="test-openai-btn" class="btn-secondary" style="white-space: nowrap;">Test Key</button>
+          </div>
         </div>
 
+        <!-- Ollama URL -->
         <div class="form-group" id="group-ollama-url" style="display: none;">
           <label for="settings-ollama-url">Ollama Base URL</label>
-          <input type="text" id="settings-ollama-url" class="form-input" value="http://localhost:11434">
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="settings-ollama-url" class="form-input" value="http://localhost:11434">
+            <button id="test-ollama-btn" class="btn-secondary" style="white-space: nowrap;">Test Connection</button>
+          </div>
           <span class="field-hint">Run local models (e.g. ollama run deepseek-r1:8b).</span>
         </div>
 
         <div class="form-group">
           <label class="checkbox-label">
             <input type="checkbox" id="settings-demo-mode">
-            <span>Demo Mode (Mock agent responses without external API keys)</span>
+            <span>Demo Mode (Mock responses without external API calls)</span>
           </label>
         </div>
 
-        <div id="settings-status-msg" style="font-size: 12px; color: var(--success); display: none;"></div>
+        <div id="settings-status-msg" style="font-size: 12px; margin-top: 8px; display: none;"></div>
       </div>
       <div class="modal-footer">
         <button id="cancel-settings-btn" class="btn-secondary">Cancel</button>

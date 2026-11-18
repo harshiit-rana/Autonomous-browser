@@ -95,13 +95,46 @@ export interface TelemetryEventPayload {
   stepCost?: number;
 }
 
+export interface PresenceEventPayload {
+  tabId: string;
+  type: 'move' | 'click' | 'type' | 'scroll';
+  x: number;
+  y: number;
+  workerName?: string;
+  color?: string;
+  label?: string;
+}
+
+export interface SwarmPreviewItem {
+  tabId: string;
+  title: string;
+  url: string;
+  owner: string;
+  thumbnailBase64?: string;
+  isActive: boolean;
+}
+
+export interface PlanPreviewRequest {
+  prompt: string;
+  model?: string;
+}
+
+export interface PlanPreviewResponse {
+  goal: string;
+  steps: Array<{ stepNumber: number; title: string; description: string; toolHint: string }>;
+  estimatedCostUSD: number;
+  estimatedDurationSec: number;
+}
+
 export const IPC_CHANNELS = {
-  // Window
+  // Window & Layout (Issue #138)
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',
   WINDOW_CLOSE: 'window:close',
+  LAYOUT_SET: 'layout:set',
+  OVERLAY_SET_ACTIVE: 'overlay:set_active',
 
-  // Tabs
+  // Tabs & Swarm Grid (Issue #135)
   TAB_CREATE: 'tab:create',
   TAB_NAVIGATE: 'tab:navigate',
   TAB_SWITCH: 'tab:switch',
@@ -110,12 +143,14 @@ export const IPC_CHANNELS = {
   TAB_GO_BACK: 'tab:go_back',
   TAB_GO_FORWARD: 'tab:go_forward',
   TAB_RELOAD: 'tab:reload',
+  SWARM_PREVIEWS_GET: 'swarm:previews_get',
 
   // UI
   DRAWER_TOGGLE: 'drawer:toggle',
 
-  // Mission
+  // Mission Lifecycle & Plan Preview (Issue #140)
   MISSION_START: 'mission:start',
+  MISSION_PLAN_PREVIEW: 'mission:plan_preview',
   MISSION_PAUSE: 'mission:pause',
   MISSION_RESUME: 'mission:resume',
   MISSION_CANCEL: 'mission:cancel',
@@ -137,7 +172,8 @@ export const IPC_CHANNELS = {
   EVENT_WORKER: 'worker:event',
   EVENT_EVIDENCE: 'evidence:event',
   EVENT_MISSION_STATUS: 'mission:status',
-  EVENT_TELEMETRY: 'telemetry:event'
+  EVENT_TELEMETRY: 'telemetry:event',
+  EVENT_PRESENCE: 'presence:event'
 } as const;
 
 export type IPCChannelName = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

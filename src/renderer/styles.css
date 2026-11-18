@@ -574,3 +574,308 @@ body.dark-theme {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-main);
 }
+
+/* Layout Switcher (Issue #138) */
+.layout-switcher {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  margin-right: 12px;
+  -webkit-app-region: no-drag;
+}
+
+.layout-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.layout-btn.active {
+  background: var(--accent);
+  color: #FFF;
+}
+
+/* Presence Overlay (Issue #136: Rendered safely outside page DOM) */
+.presence-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.__presence_cursor__ {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ec4899 0%, #8b5cf6 100%);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.9);
+  pointer-events: none;
+  transition: transform 0.08s ease-out;
+  transform: translate(-9px, -9px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.__presence_cursor__ .cursor-chip {
+  position: absolute;
+  top: 20px;
+  left: 10px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #F8FAFC;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.__presence_ripple__ {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #ec4899;
+  transform: translate(-18px, -18px) scale(0.2);
+  opacity: 1;
+  pointer-events: none;
+  animation: rippleAnim 0.4s ease-out forwards;
+}
+
+@keyframes rippleAnim {
+  to {
+    transform: translate(-18px, -18px) scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Draggable Pane Resizer (Issue #138) */
+.pane-resizer {
+  width: 5px;
+  background: transparent;
+  cursor: col-resize;
+  transition: background 0.2s;
+  z-index: 100;
+}
+
+.pane-resizer:hover, .pane-resizer.active {
+  background: var(--accent);
+}
+
+/* Swarm Grid Container (Issue #135) */
+.swarm-grid-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-main);
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.swarm-grid-container.hidden {
+  display: none;
+}
+
+.swarm-grid-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.swarm-grid-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.swarm-grid-card.active-tab {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+.swarm-card-thumb {
+  width: 100%;
+  height: 160px;
+  background: #000;
+  object-fit: cover;
+}
+
+.swarm-card-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.swarm-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.swarm-card-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Steering Bar (Issue #211) */
+.steering-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.steering-bar input {
+  flex: 1;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: var(--text-main);
+  font-size: 12px;
+  outline: none;
+}
+
+.steering-bar input:focus {
+  border-color: var(--accent);
+}
+
+/* Timeline Header & Filter Chips (Issue #137) */
+.timeline-header {
+  padding: 12px 16px 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timeline-header h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.timeline-filters {
+  display: flex;
+  gap: 4px;
+}
+
+.filter-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-chip.active {
+  background: var(--accent);
+  color: #FFF;
+  border-color: var(--accent);
+}
+
+/* Plan Preview Modal (Issue #140) */
+.plan-goal-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.plan-goal-text {
+  font-size: 13px;
+  color: #F8FAFC;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.plan-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.plan-step-item {
+  display: flex;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.step-num-badge {
+  background: var(--accent);
+  color: #FFF;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #FFF;
+}
+
+.step-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.plan-meta-bar {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+

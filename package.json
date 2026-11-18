@@ -10,7 +10,7 @@
     "typecheck": "tsc -b",
     "build:ts": "tsc -b",
     "build": "tsc -b && vite build",
-    "test": "tsx tests/test_agent_runtime.ts && tsx tests/test_anthropic_provider.ts && tsx tests/test_governor.ts && tsx tests/test_credentials.ts && tsx tests/test_steering_and_reversibility.ts && tsx tests/test_final_batch.ts",
+    "test": "tsx tests/test_agent_runtime.ts && tsx tests/test_anthropic_provider.ts && tsx tests/test_governor.ts && tsx tests/test_credentials.ts && tsx tests/test_steering_and_reversibility.ts && tsx tests/test_omnibar_parser.ts && tsx tests/test_mission_control.ts && tsx tests/test_final_batch.ts",
     "audit:reachability": "node scripts/audit_reachability.mjs",
     "demo:smoke": "tsx scripts/demo/pipeline_smoke.ts",
     "start": "electron dist/main/index.js",

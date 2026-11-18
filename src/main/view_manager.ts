@@ -1,7 +1,6 @@
 import { WebContentsView, BrowserWindow } from 'electron';
 import { ActionExecutor } from '../core/action_executor.js';
-import { CURSOR_OVERLAY_SCRIPT } from '../stealth/cursor_overlay.js';
-import { TabState, TabsSnapshot, TabPatch, IPC_CHANNELS } from '../ipc/contract.js';
+import { TabState, TabsSnapshot, TabPatch, IPC_CHANNELS, SwarmPreviewItem, PresenceEventPayload } from '../ipc/contract.js';
 import { rootLogger } from '../infrastructure/logger.js';
 
 export interface TabView {
@@ -21,6 +20,8 @@ export class ViewManager {
   private activeTabId: string | null = null;
   private topChromeHeight: number = 88;
   private drawerWidth: number = 320;
+  private layoutMode: 'stage' | 'grid' | 'theatre' = 'stage';
+  private isOverlayActive: boolean = false;
 
   constructor(window: BrowserWindow) {
     this.window = window;
@@ -100,8 +101,6 @@ export class ViewManager {
       tab.state.url = wc.getURL() || tab.state.url;
       tab.state.canGoBack = wc.navigationHistory.canGoBack();
       tab.state.canGoForward = wc.navigationHistory.canGoForward();
-
-      wc.executeJavaScript(CURSOR_OVERLAY_SCRIPT).catch(() => {});
 
       this.broadcastTabPatch(id, {
         isLoading: false,
@@ -255,6 +254,17 @@ export class ViewManager {
     this.relayout();
   }
 
+  public setLayoutMode(mode: 'stage' | 'grid' | 'theatre'): void {
+    logger.info('Setting layout mode', { mode });
+    this.layoutMode = mode;
+    this.relayout();
+  }
+
+  public setOverlayActive(active: boolean): void {
+    this.isOverlayActive = active;
+    this.relayout();
+  }
+
   public relayout(): void {
     const bounds = this.window.getBounds();
     if (!this.activeTabId) return;
@@ -262,16 +272,71 @@ export class ViewManager {
     const activeTab = this.tabs.get(this.activeTabId);
     if (!activeTab) return;
 
+    // Issue #138: If modal overlay is active or grid mode is active,
+    // shrink native WebContentsView to 0x0 so renderer DOM is never occluded.
+    if (this.isOverlayActive || this.layoutMode === 'grid') {
+      try {
+        activeTab.view.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+      } catch {}
+      return;
+    }
+
     const contentWidth = Math.max(200, bounds.width - this.drawerWidth);
     const contentHeight = Math.max(200, bounds.height - this.topChromeHeight);
 
     try {
-      activeTab.view.setBounds({
-        x: 0,
-        y: this.topChromeHeight,
-        width: contentWidth,
-        height: contentHeight
+      if (this.layoutMode === 'theatre') {
+        // Centered cinematic view with focus borders
+        activeTab.view.setBounds({
+          x: 24,
+          y: this.topChromeHeight + 12,
+          width: Math.max(200, contentWidth - 48),
+          height: Math.max(200, contentHeight - 24)
+        });
+      } else {
+        // Standard Stage layout
+        activeTab.view.setBounds({
+          x: 0,
+          y: this.topChromeHeight,
+          width: contentWidth,
+          height: contentHeight
+        });
+      }
+    } catch {}
+  }
+
+  public async getSwarmPreviews(): Promise<SwarmPreviewItem[]> {
+    const items: SwarmPreviewItem[] = [];
+    for (const id of this.tabOrder) {
+      const tab = this.tabs.get(id);
+      if (!tab) continue;
+
+      let thumbnailBase64: string | undefined = undefined;
+      try {
+        const image = await tab.view.webContents.capturePage();
+        if (!image.isEmpty()) {
+          const resized = image.resize({ width: 320 });
+          thumbnailBase64 = resized.toDataURL();
+        }
+      } catch {}
+
+      items.push({
+        tabId: tab.id,
+        title: tab.state.title,
+        url: tab.state.url,
+        owner: tab.state.owner,
+        thumbnailBase64,
+        isActive: tab.id === this.activeTabId
       });
+    }
+    return items;
+  }
+
+  public broadcastPresence(payload: PresenceEventPayload): void {
+    try {
+      if (!this.window.isDestroyed()) {
+        this.window.webContents.send(IPC_CHANNELS.EVENT_PRESENCE, payload);
+      }
     } catch {}
   }
 

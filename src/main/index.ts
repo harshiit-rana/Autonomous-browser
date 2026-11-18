@@ -96,6 +96,12 @@ class MainApp {
       title: 'Autonomous Browser',
       show: true,
       backgroundColor: '#0F1117',
+      titleBarStyle: 'hidden',
+      titleBarOverlay: process.platform === 'darwin' ? false : {
+        color: '#090d16',
+        symbolColor: '#94a3b8',
+        height: 38
+      },
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -148,7 +154,7 @@ class MainApp {
   private registerIPC(): void {
     const getChrome = () => this.window?.webContents || null;
 
-    // Window controls
+    // Window & Layout controls (Issue #138)
     registerTypedHandler(IPC_CHANNELS.WINDOW_MINIMIZE, getChrome, () => {
       this.window?.minimize();
       return true;
@@ -167,6 +173,32 @@ class MainApp {
       this.window?.close();
       return true;
     });
+
+    registerTypedHandler<{ mode: 'stage' | 'grid' | 'theatre' }, boolean>(
+      IPC_CHANNELS.LAYOUT_SET,
+      getChrome,
+      (req) => {
+        this.viewManager?.setLayoutMode(req.mode);
+        return true;
+      }
+    );
+
+    registerTypedHandler<{ active: boolean }, boolean>(
+      IPC_CHANNELS.OVERLAY_SET_ACTIVE,
+      getChrome,
+      (req) => {
+        this.viewManager?.setOverlayActive(req.active);
+        return true;
+      }
+    );
+
+    registerTypedHandler(
+      IPC_CHANNELS.SWARM_PREVIEWS_GET,
+      getChrome,
+      async () => {
+        return this.viewManager?.getSwarmPreviews() || [];
+      }
+    );
 
     // Drawer control
     registerTypedHandler<DrawerToggleRequest, boolean>(
@@ -249,6 +281,42 @@ class MainApp {
       tab?.view.webContents.reload();
       return true;
     });
+
+    // Plan Preview (Issue #140)
+    registerTypedHandler<{ prompt: string; model?: string }, any>(
+      IPC_CHANNELS.MISSION_PLAN_PREVIEW,
+      getChrome,
+      async (req) => {
+        const prompt = req.prompt.trim();
+        const steps = [
+          {
+            stepNumber: 1,
+            title: 'Target Navigation & Domain Discovery',
+            description: `Inspect active tab or navigate to primary domain for: "${prompt.slice(0, 50)}"`,
+            toolHint: 'navigate / observe'
+          },
+          {
+            stepNumber: 2,
+            title: 'Perception & Action Dispatch',
+            description: 'Extract interactive element refs ([e1], [e2]), compute center quad targets, and execute CDP actions',
+            toolHint: 'click / type / scroll'
+          },
+          {
+            stepNumber: 3,
+            title: 'Evidence Extraction & Verification',
+            description: 'Validate extracted facts against goal criteria and generate structured markdown deliverable',
+            toolHint: 'done'
+          }
+        ];
+
+        return {
+          goal: prompt,
+          steps,
+          estimatedCostUSD: 0.0035,
+          estimatedDurationSec: 12
+        };
+      }
+    );
 
     // Mission Execution (Real Agent Runtime - Issues #115, #116, #128)
     registerTypedHandler<MissionStartRequest, MissionStartResponse>(
