@@ -320,7 +320,27 @@
     "isReachable": false
   },
   {
+    "path": "ui/motion_engine.ts",
+    "isReachable": false
+  },
+  {
     "path": "ui/omnibar_parser.ts",
     "isReachable": true
+  },
+  {
+    "path": "workspace/conversation_threads.ts",
+    "isReachable": false
+  },
+  {
+    "path": "workspace/custom_instructions.ts",
+    "isReachable": false
+  },
+  {
+    "path": "workspace/prompt_workspace.ts",
+    "isReachable": false
+  },
+  {
+    "path": "workspace/template_library.ts",
+    "isReachable": false
   }
 ]
