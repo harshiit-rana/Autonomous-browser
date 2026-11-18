@@ -84,7 +84,7 @@ export interface EvidenceEventPayload {
 
 export interface MissionStatusPayload {
   missionId?: string;
-  status: 'idle' | 'running' | 'paused' | 'completed' | 'failed';
+  status: 'idle' | 'planning' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
   message?: string;
 }
 

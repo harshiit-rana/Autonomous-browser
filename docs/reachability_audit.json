@@ -1,5 +1,17 @@
 [
   {
+    "path": "agent/perception.ts",
+    "isReachable": true
+  },
+  {
+    "path": "agent/runtime.ts",
+    "isReachable": true
+  },
+  {
+    "path": "agent/tools.ts",
+    "isReachable": true
+  },
+  {
     "path": "automation/alert_bridge.ts",
     "isReachable": false
   },
@@ -130,6 +142,26 @@
   {
     "path": "memory/vault.ts",
     "isReachable": false
+  },
+  {
+    "path": "models/gemini_provider.ts",
+    "isReachable": true
+  },
+  {
+    "path": "models/mock_provider.ts",
+    "isReachable": true
+  },
+  {
+    "path": "models/openai_provider.ts",
+    "isReachable": true
+  },
+  {
+    "path": "models/provider_factory.ts",
+    "isReachable": true
+  },
+  {
+    "path": "models/types.ts",
+    "isReachable": true
   },
   {
     "path": "native/audio_loopback.ts",

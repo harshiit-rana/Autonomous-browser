@@ -10,7 +10,7 @@
     "typecheck": "tsc -b",
     "build:ts": "tsc -b",
     "build": "tsc -b && vite build",
-    "test": "tsx tests/test_final_batch.ts",
+    "test": "tsx tests/test_agent_runtime.ts && tsx tests/test_final_batch.ts",
     "audit:reachability": "node scripts/audit_reachability.mjs",
     "demo:smoke": "tsx scripts/demo/pipeline_smoke.ts",
     "start": "electron dist/main/index.js",
@@ -21,7 +21,9 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@google/genai": "^3.6.0",
     "@modelcontextprotocol/sdk": "^1.32.2",
+    "openai": "^7.60.0",
     "playwright-core": "^1.65.1"
   },
   "devDependencies": {

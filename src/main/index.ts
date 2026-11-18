@@ -5,6 +5,7 @@ import { initializeAppPaths, getAppPaths } from '../infrastructure/paths.js';
 import { rootLogger } from '../infrastructure/logger.js';
 import { getSettings, updateSettings } from '../infrastructure/settings.js';
 import { registerTypedHandler } from '../ipc/main_handler.js';
+import { AgentRuntime } from '../agent/runtime.js';
 import {
   IPC_CHANNELS,
   TabCreateRequest,
@@ -123,6 +124,7 @@ class MainApp {
     });
 
     this.viewManager = new ViewManager(this.window);
+    AgentRuntime.initialize(this.window, this.viewManager);
 
     const rendererHtml = path.resolve(__dirname, '../renderer/index.html');
     logger.info('Loading chrome renderer HTML', { rendererHtml });
@@ -247,33 +249,45 @@ class MainApp {
       return true;
     });
 
-    // Mission Execution (Honest handling replacing scripted demo - Issue #101)
+    // Mission Execution (Real Agent Runtime - Issues #115, #116, #128)
     registerTypedHandler<MissionStartRequest, MissionStartResponse>(
       IPC_CHANNELS.MISSION_START,
       getChrome,
       async (req) => {
         logger.info('Mission start requested', { prompt: req.prompt, model: req.model });
-
-        const settings = getSettings();
-        if (settings.demoMode) {
-          logger.info('Demo mode active - starting explicit simulated scenario');
+        try {
+          const runtime = AgentRuntime.getInstance();
+          const result = await runtime.startMission(req.prompt, req.model);
+          return {
+            started: result.ok,
+            missionId: result.missionId,
+            message: result.error
+          };
+        } catch (err: any) {
+          logger.error('Failed to start mission', err);
           return {
             started: false,
-            reason: 'agent-runtime-not-available',
-            message: 'Demo mode is not wired yet. Real agent execution requires Milestone M1.'
+            reason: 'error',
+            message: err.message
           };
         }
-
-        // Check if agent runtime is available
-        // Note: As defined in #101 and #115, until M1 agent runtime is wired,
-        // we explicitly return agent-runtime-not-available with zero simulated work.
-        return {
-          started: false,
-          reason: 'agent-runtime-not-available',
-          message: 'Agent runtime not configured. LLM provider and agent execution loop will be connected in Milestone M1/M2.'
-        };
       }
     );
+
+    registerTypedHandler(IPC_CHANNELS.MISSION_PAUSE, getChrome, () => {
+      AgentRuntime.getInstance().pause();
+      return true;
+    });
+
+    registerTypedHandler(IPC_CHANNELS.MISSION_RESUME, getChrome, () => {
+      AgentRuntime.getInstance().resume();
+      return true;
+    });
+
+    registerTypedHandler(IPC_CHANNELS.MISSION_CANCEL, getChrome, () => {
+      AgentRuntime.getInstance().cancel();
+      return true;
+    });
 
     // Settings
     registerTypedHandler(IPC_CHANNELS.SETTINGS_GET, getChrome, () => {
