@@ -289,6 +289,16 @@ class MainApp {
       return true;
     });
 
+    registerTypedHandler(IPC_CHANNELS.MISSION_TAKEOVER, getChrome, () => {
+      AgentRuntime.getInstance().takeover();
+      return true;
+    });
+
+    registerTypedHandler(IPC_CHANNELS.MISSION_HANDBACK, getChrome, async () => {
+      await AgentRuntime.getInstance().handBack();
+      return true;
+    });
+
     // Settings
     registerTypedHandler(IPC_CHANNELS.SETTINGS_GET, getChrome, () => {
       return getSettings();

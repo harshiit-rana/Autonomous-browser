@@ -140,6 +140,11 @@ async function testToolExecutor() {
   assert.equal(doneResult.isDone, true);
   assert.deepEqual(doneResult.effect?.evidence, ['Fact 1', 'Fact 2']);
 
+  // Test ask_user
+  const askResult = await ToolExecutor.execute('ask_user', { question: 'Please solve the CAPTCHA' }, { tab: mockTab, snapshot: mockSnapshot });
+  assert.equal(askResult.ok, true);
+  assert.equal(askResult.requiresUser, true);
+
   // Test fail
   const failResult = await ToolExecutor.execute('fail', { reason: 'Page blocked by Cloudflare' }, { tab: mockTab, snapshot: mockSnapshot });
   assert.equal(failResult.ok, false);

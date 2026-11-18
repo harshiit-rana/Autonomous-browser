@@ -324,6 +324,11 @@ class BrowserApp {
       this.isTakeover = !this.isTakeover;
       this.takeoverBtn.textContent = this.isTakeover ? 'Hand Back' : 'Takeover';
       this.takeoverBtn.className = this.isTakeover ? 'badge-btn warning' : 'badge-btn danger';
+      if (this.isTakeover) {
+        aegis?.takeoverMission?.();
+      } else {
+        aegis?.handBackMission?.();
+      }
     });
   }
 

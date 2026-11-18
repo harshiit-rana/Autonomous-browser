@@ -112,6 +112,20 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
     }
   },
   {
+    name: 'ask_user',
+    description: 'Ask the human user a clarifying question or request assistance (e.g. for 2FA, CAPTCHA, or option selection)',
+    parameters: {
+      type: 'object',
+      properties: {
+        question: {
+          type: 'string',
+          description: 'The question or request for the human operator'
+        }
+      },
+      required: ['question']
+    }
+  },
+  {
     name: 'done',
     description: 'Signal that the user mission has been successfully completed and report final findings',
     parameters: {
@@ -158,6 +172,7 @@ export interface ToolExecutionResult {
   error?: string;
   isTerminal?: boolean;
   isDone?: boolean;
+  requiresUser?: boolean;
 }
 
 export class ToolExecutor {
@@ -195,9 +210,34 @@ export class ToolExecutor {
             };
           }
 
+          let bounds = el.bounds;
+
+          // Scroll element into view if xpath is present (Issue #120)
+          if (el.xpath) {
+            try {
+              const updated = await tab.view.webContents.executeJavaScript(`
+                (() => {
+                  try {
+                    const res = document.evaluate(${JSON.stringify(el.xpath)}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                    const target = res.singleNodeValue;
+                    if (!target) return null;
+                    target.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+                    const r = target.getBoundingClientRect();
+                    return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
+                  } catch {
+                    return null;
+                  }
+                })()
+              `);
+              if (updated && updated.width > 0 && updated.height > 0) {
+                bounds = updated;
+              }
+            } catch {}
+          }
+
           // Calculate center coordinates
-          const targetX = Math.round(el.bounds.x + el.bounds.width / 2);
-          const targetY = Math.round(el.bounds.y + el.bounds.height / 2);
+          const targetX = Math.round(bounds.x + bounds.width / 2);
+          const targetY = Math.round(bounds.y + bounds.height / 2);
 
           // Physical cursor movement simulation
           try {
@@ -244,8 +284,33 @@ export class ToolExecutor {
             };
           }
 
-          const targetX = Math.round(el.bounds.x + el.bounds.width / 2);
-          const targetY = Math.round(el.bounds.y + el.bounds.height / 2);
+          let bounds = el.bounds;
+
+          // Scroll element into view if xpath is present (Issue #120)
+          if (el.xpath) {
+            try {
+              const updated = await tab.view.webContents.executeJavaScript(`
+                (() => {
+                  try {
+                    const res = document.evaluate(${JSON.stringify(el.xpath)}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                    const target = res.singleNodeValue;
+                    if (!target) return null;
+                    target.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+                    const r = target.getBoundingClientRect();
+                    return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
+                  } catch {
+                    return null;
+                  }
+                })()
+              `);
+              if (updated && updated.width > 0 && updated.height > 0) {
+                bounds = updated;
+              }
+            } catch {}
+          }
+
+          const targetX = Math.round(bounds.x + bounds.width / 2);
+          const targetY = Math.round(bounds.y + bounds.height / 2);
 
           // Focus the input
           await tab.view.webContents.sendInputEvent({
@@ -318,6 +383,14 @@ export class ToolExecutor {
           return {
             ok: true,
             output: `Waited for ${duration}ms`
+          };
+        }
+
+        case 'ask_user': {
+          return {
+            ok: true,
+            output: `User prompt asked: "${args.question}"`,
+            requiresUser: true
           };
         }
 

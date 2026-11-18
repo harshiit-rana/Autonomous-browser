@@ -175,6 +175,30 @@ export class AgentRuntime {
     }
   }
 
+  public takeover(): void {
+    if (this.activeMission && this.activeMission.state === 'running') {
+      this.pause();
+      this.emitEvidence('[Manual Takeover] Human operator took manual control of the browser.');
+      this.emitMissionStatus('paused', 'Manual human takeover active');
+    }
+  }
+
+  public async handBack(): Promise<void> {
+    if (this.activeMission && this.activeMission.state === 'paused') {
+      this.emitEvidence('[Hand Back] Human operator returned control to agent. Reconciling page state...');
+      const tab = this.viewManager.getActiveTab();
+      if (tab) {
+        await this.waitForSettle(tab);
+        const snapshot = await PerceptionEngine.captureSnapshot(tab.view.webContents, false);
+        this.activeMission.history.push({
+          role: 'user',
+          content: `[Operator Hand Back] The user completed manual interaction and returned control. Current page state:\nURL: ${snapshot.url}\nTitle: ${snapshot.title}\nInteractive Elements:\n${snapshot.formattedTree}`
+        });
+      }
+      this.resume();
+    }
+  }
+
   public cancel(): void {
     if (this.activeMission) {
       logger.info('Cancelling mission', { missionId: this.activeMission.id });
@@ -312,8 +336,22 @@ ${snapshot.formattedTree}
       }
 
       let isFinished = false;
+      const actionSignatures: string[] = [];
+
       for (const toolCall of response.toolCalls) {
         if (this.abortController?.signal.aborted) return;
+
+        // Loop / repetition detection (Issue #122)
+        const sig = `${toolCall.name}:${JSON.stringify(toolCall.arguments)}`;
+        actionSignatures.push(sig);
+        const recent = actionSignatures.slice(-3);
+        if (recent.length === 3 && recent.every(s => s === sig)) {
+          this.emitEvidence(`[Loop Warning] Action "${toolCall.name}" repeated multiple times.`);
+          mission.history.push({
+            role: 'user',
+            content: `[System Notice] You have repeated action ${toolCall.name} 3 times. Please try a different element or approach.`
+          });
+        }
 
         this.emitEvidence(`[Action] ${toolCall.name}(${JSON.stringify(toolCall.arguments).slice(0, 80)})`);
 
@@ -341,6 +379,12 @@ ${snapshot.formattedTree}
           for (const ev of execResult.effect.evidence) {
             this.emitEvidence(`[Evidence] ${ev}`);
           }
+        }
+
+        if (execResult.requiresUser) {
+          this.emitEvidence(`[Human Assistance] ${execResult.output}`);
+          this.pause();
+          this.emitMissionStatus('paused', `Awaiting human assistance: ${execResult.output}`);
         }
 
         if (execResult.isTerminal) {

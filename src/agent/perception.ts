@@ -20,6 +20,7 @@ export interface DiscoveredElement {
   bounds: BoundingBox;
   isClickable: boolean;
   isTextInput: boolean;
+  xpath?: string;
 }
 
 export interface PageSnapshot {
@@ -32,6 +33,28 @@ export interface PageSnapshot {
 
 const EXTRACTOR_SCRIPT = `
 (() => {
+  function computeXPath(element) {
+    if (element.id && !/^\\d/.test(element.id)) {
+      return '//*[@id="' + element.id + '"]';
+    }
+    const parts = [];
+    let curr = element;
+    while (curr && curr.nodeType === 1) {
+      let index = 1;
+      let sibling = curr.previousSibling;
+      while (sibling) {
+        if (sibling.nodeType === 1 && sibling.nodeName === curr.nodeName) {
+          index++;
+        }
+        sibling = sibling.previousSibling;
+      }
+      const nodeName = curr.nodeName.toLowerCase();
+      parts.unshift(nodeName + '[' + index + ']');
+      curr = curr.parentNode;
+    }
+    return '/' + parts.join('/');
+  }
+
   const elements = [];
   const interactiveSelectors = [
     'button',
@@ -59,8 +82,7 @@ const EXTRACTOR_SCRIPT = `
       style.display === 'none' ||
       style.visibility === 'hidden' ||
       style.opacity === '0' ||
-      rect.width === 0 ||
-      rect.height === 0
+      (rect.width === 0 && rect.height === 0)
     ) {
       continue;
     }
@@ -81,6 +103,7 @@ const EXTRACTOR_SCRIPT = `
     const type = el.getAttribute('type') || undefined;
     const isTextInput = tagName === 'textarea' || (tagName === 'input' && (!type || ['text', 'search', 'email', 'password', 'url', 'number'].includes(type)));
     const isClickable = !isTextInput;
+    const xpath = computeXPath(el);
 
     elements.push({
       ref: 'e' + counter++,
@@ -96,7 +119,8 @@ const EXTRACTOR_SCRIPT = `
         height: Math.round(rect.height)
       },
       isClickable,
-      isTextInput
+      isTextInput,
+      xpath
     });
 
     if (counter > 150) break; // Limit elements for token economy

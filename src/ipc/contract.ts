@@ -112,6 +112,8 @@ export const IPC_CHANNELS = {
   MISSION_PAUSE: 'mission:pause',
   MISSION_RESUME: 'mission:resume',
   MISSION_CANCEL: 'mission:cancel',
+  MISSION_TAKEOVER: 'mission:takeover',
+  MISSION_HANDBACK: 'mission:handback',
 
   // Settings
   SETTINGS_GET: 'settings:get',

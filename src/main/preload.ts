@@ -48,6 +48,10 @@ contextBridge.exposeInMainWorld('aegis', {
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_RESUME),
   cancelMission: () =>
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_CANCEL),
+  takeoverMission: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_TAKEOVER),
+  handBackMission: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_HANDBACK),
 
   // Settings
   getSettings: () =>
