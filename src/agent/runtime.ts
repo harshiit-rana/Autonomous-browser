@@ -597,6 +597,18 @@ ${snapshot.formattedTree}
       : `Mission ${state}: ${error || 'Ended'}`;
 
     this.emitMissionStatus(state, statusText);
+
+    // Native OS Notification (Issue #146: Background awareness)
+    try {
+      const { Notification } = require('electron');
+      if (Notification && Notification.isSupported && Notification.isSupported()) {
+        new Notification({
+          title: `Aegis Mission ${state === 'completed' ? 'Completed' : 'Finished'}`,
+          body: `Status: ${state} - "${this.activeMission.prompt.slice(0, 50)}"`
+        }).show();
+      }
+    } catch {}
+
     this.emitWorkerEvent({
       id: 'worker-agent-1',
       name: 'Agent [Operator]',

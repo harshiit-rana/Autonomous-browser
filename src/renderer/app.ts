@@ -718,6 +718,30 @@ export class BrowserApp {
       if (e.key === 'Enter') this.handleOmnibarSubmit();
     });
 
+    // Keyboard shortcuts (Issue #145: Accessibility & speed)
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      const isCtrl = e.ctrlKey || e.metaKey;
+      if (isCtrl && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        this.omnibarInput.focus();
+        this.omnibarInput.select();
+      } else if (isCtrl && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        aegis?.createTab('https://duckduckgo.com');
+      } else if (isCtrl && e.key.toLowerCase() === 'w') {
+        e.preventDefault();
+        if (this.activeTabId) aegis?.closeTab(this.activeTabId);
+      } else if (isCtrl && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        const isClosed = this.swarmDrawer.classList.toggle('closed');
+        this.drawerToggleBtn.classList.toggle('active');
+        aegis?.toggleDrawer(!isClosed, this.drawerWidth);
+      } else if (e.key === 'Escape') {
+        this.closeSettings();
+        this.closePlanPreview();
+      }
+    });
+
     // Drawer toggle
     this.drawerToggleBtn.addEventListener('click', () => {
       const isClosed = this.swarmDrawer.classList.toggle('closed');

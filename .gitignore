@@ -10,3 +10,4 @@ temp_*.enc
 *.db-journal
 release/
 .aegis-user-data/
+tests/output/

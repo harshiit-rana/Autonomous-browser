@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Tray, Menu, Notification, powerSaveBlocker, nativeImage } from 'electron';
 import path from 'node:path';
 import { ViewManager } from './view_manager.js';
 import { initializeAppPaths, getAppPaths } from '../infrastructure/paths.js';
@@ -23,6 +23,8 @@ const logger = rootLogger.child('main');
 class MainApp {
   private window: BrowserWindow | null = null;
   private viewManager: ViewManager | null = null;
+  private tray: Tray | null = null;
+  private powerSaveBlockerId: number | null = null;
 
   public async init(): Promise<void> {
     logger.info('Initializing Autonomous Browser...');
@@ -53,6 +55,7 @@ class MainApp {
     logger.info('Electron app ready. Creating primary window...');
     this.createWindow();
     this.registerIPC();
+    this.setupTray();
 
     app.on('window-all-closed', () => {
       if (process.platform !== 'darwin') {
@@ -85,6 +88,56 @@ class MainApp {
         exitCode: details.exitCode
       });
     });
+  }
+
+  private setupTray(): void {
+    try {
+      // 16x16 transparent PNG icon fallback
+      const iconBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAA7SURBVDhPY/wPBAwUACYoZhjVAMwASk2AOQADpC5gGIwG0N0AUk0g1QByTSAFAH3DQCUAk+sPGBgAfl0gQQrYtVkAAAAASUVORK5CYII=', 'base64');
+      const trayIcon = nativeImage.createFromBuffer(iconBuffer);
+      this.tray = new Tray(trayIcon);
+      this.tray.setToolTip('Project Aegis Autonomous Browser');
+
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'Show Browser',
+          click: () => {
+            if (this.window) {
+              this.window.show();
+              this.window.focus();
+            }
+          }
+        },
+        {
+          label: 'Pause Running Mission',
+          click: () => {
+            AgentRuntime.getInstance().pause();
+          }
+        },
+        {
+          label: 'Stop Mission',
+          click: () => {
+            AgentRuntime.getInstance().cancel();
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Quit Aegis',
+          click: () => {
+            app.quit();
+          }
+        }
+      ]);
+      this.tray.setContextMenu(menu);
+      this.tray.on('double-click', () => {
+        if (this.window) {
+          this.window.show();
+          this.window.focus();
+        }
+      });
+    } catch (err: any) {
+      logger.warn('Failed to initialize system tray', { error: err.message });
+    }
   }
 
   private createWindow(): void {
@@ -325,6 +378,10 @@ class MainApp {
       async (req) => {
         logger.info('Mission start requested', { prompt: req.prompt, model: req.model });
         try {
+          if (this.powerSaveBlockerId === null) {
+            this.powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+            logger.info('PowerSaveBlocker activated for background mission', { blockerId: this.powerSaveBlockerId });
+          }
           const runtime = AgentRuntime.getInstance();
           const result = await runtime.startMission(req.prompt, req.model);
           return {
