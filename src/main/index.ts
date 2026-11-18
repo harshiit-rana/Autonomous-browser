@@ -7,6 +7,7 @@ import { getSettings, updateSettings } from '../infrastructure/settings.js';
 import { credentialVault } from '../infrastructure/credentials.js';
 import { registerTypedHandler } from '../ipc/main_handler.js';
 import { AgentRuntime } from '../agent/runtime.js';
+import { SwarmCoordinator } from '../swarm/coordinator.js';
 import {
   IPC_CHANNELS,
   TabCreateRequest,
@@ -335,12 +336,34 @@ class MainApp {
       return true;
     });
 
-    // Plan Preview (Issue #140)
+    // Plan Preview (Issue #140, #147)
     registerTypedHandler<{ prompt: string; model?: string }, any>(
       IPC_CHANNELS.MISSION_PLAN_PREVIEW,
       getChrome,
       async (req) => {
         const prompt = req.prompt.trim();
+
+        if (prompt.startsWith('/swarm') || prompt.startsWith('/research') || /compare.*across/i.test(prompt)) {
+          const coordinator = new SwarmCoordinator();
+          const swarmPlan = coordinator.planMission('preview', prompt);
+          const steps = swarmPlan.stages.flatMap((s, sIdx) => 
+            s.tasks.map((t, tIdx) => ({
+              stepNumber: sIdx * 10 + tIdx + 1,
+              title: `[${s.stageName}] ${t.name}`,
+              description: t.instruction,
+              toolHint: `${t.role} (${t.effectClass})`
+            }))
+          );
+
+          return {
+            goal: prompt,
+            justification: swarmPlan.justification,
+            steps,
+            estimatedCostUSD: 0.0075,
+            estimatedDurationSec: 25
+          };
+        }
+
         const steps = [
           {
             stepNumber: 1,
@@ -364,6 +387,7 @@ class MainApp {
 
         return {
           goal: prompt,
+          justification: 'Single linear task execution using dedicated operator agent.',
           steps,
           estimatedCostUSD: 0.0035,
           estimatedDurationSec: 12

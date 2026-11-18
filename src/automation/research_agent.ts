@@ -60,11 +60,16 @@ export class AutonomousResearchAgent {
     // 2. Post facts onto shared blackboard
     for (const fact of finding.extractedFacts) {
       this.blackboard.postEvidence({
-        workerId: 'research_agent',
-        sourceUrl: finding.sourceUrl,
+        entity: finding.query || 'Research',
+        attribute: `fact_${finding.query.slice(0, 20)}`,
         category: 'fact',
-        key: `fact_${finding.query.slice(0, 20)}`,
         value: fact,
+        source: {
+          url: finding.sourceUrl,
+          quote: finding.title,
+          sourceType: 'primary'
+        },
+        workerId: 'research_agent',
         confidence: 0.9
       });
     }

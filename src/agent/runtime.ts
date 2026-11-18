@@ -19,6 +19,9 @@ import {
   ActionLedger,
   SteeringClass
 } from './steering_and_reversibility.js';
+import { SwarmCoordinator } from '../swarm/coordinator.js';
+import { SwarmManager } from '../swarm/swarm_manager.js';
+import { SharedBlackboard } from '../swarm/blackboard.js';
 
 const logger = rootLogger.child('agent-runtime');
 
@@ -242,10 +245,68 @@ export class AgentRuntime {
     return this.actionLedger;
   }
 
+  private async runSwarmLoop(mission: Mission): Promise<void> {
+    const coordinator = new SwarmCoordinator({
+      swarm: new SwarmManager({ maxWorkers: 6 }),
+      blackboard: new SharedBlackboard()
+    });
+
+    coordinator.on('stageStarted', (ev: any) => {
+      this.emitEvidence(`[Swarm Stage Started] ${ev.stageName} (${ev.taskCount} tasks)`);
+      this.emitMissionStatus('running', `Stage: ${ev.stageName}`);
+    });
+
+    coordinator.on('taskStarted', (ev: any) => {
+      this.emitWorkerEvent({
+        id: ev.workerId,
+        name: `Agent [${ev.role}]`,
+        task: `Executing task ${ev.taskId}`,
+        progress: 30,
+        status: 'running'
+      });
+    });
+
+    coordinator.on('taskCompleted', (ev: any) => {
+      this.emitWorkerEvent({
+        id: ev.workerId,
+        name: `Agent [Worker]`,
+        task: `Completed task ${ev.taskId}`,
+        progress: 100,
+        status: 'idle'
+      });
+    });
+
+    coordinator.getBlackboard().on('evidence', (evItem: any) => {
+      const cite = `[${evItem.entity} - ${evItem.attribute}: ${evItem.normalized.text || evItem.value}] from ${evItem.source.url}`;
+      mission.evidenceCollected.push(cite);
+      this.emitEvidence(`[Blackboard Evidence] ${cite}`);
+    });
+
+    coordinator.getBlackboard().on('conflict', (conf: any) => {
+      this.emitEvidence(`[Blackboard Conflict Detected] ${conf.entity}::${conf.attribute} has contradictory claims. Escalating to verifier.`);
+    });
+
+    coordinator.getBlackboard().on('conflictResolved', (conf: any) => {
+      this.emitEvidence(`[Blackboard Conflict Resolved] ${conf.entity}::${conf.attribute} resolved to "${conf.resolvedValue}" via ${conf.resolutionMethod}.`);
+    });
+
+    const result = await coordinator.executeMission(mission.id, mission.prompt);
+    if (result.success) {
+      this.finishMission('completed', result.deliverableMarkdown);
+    } else {
+      this.finishMission('failed', undefined, result.errors.join('; '));
+    }
+  }
+
   private async runLoop(): Promise<void> {
     if (!this.activeMission) return;
     const mission = this.activeMission;
     mission.state = 'running';
+
+    if (mission.prompt.startsWith('/swarm') || mission.prompt.startsWith('/research') || /compare.*across/i.test(mission.prompt)) {
+      await this.runSwarmLoop(mission);
+      return;
+    }
 
     const tab = this.viewManager.getTab(mission.tabId || '') || this.viewManager.getActiveTab();
     if (!tab) {

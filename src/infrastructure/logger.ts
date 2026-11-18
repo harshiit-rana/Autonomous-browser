@@ -156,3 +156,4 @@ export class Logger {
 }
 
 export const rootLogger = new Logger('main');
+export const logger = rootLogger;
