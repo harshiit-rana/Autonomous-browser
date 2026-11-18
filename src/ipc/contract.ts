@@ -134,7 +134,7 @@ export const IPC_CHANNELS = {
   LAYOUT_SET: 'layout:set',
   OVERLAY_SET_ACTIVE: 'overlay:set_active',
 
-  // Tabs & Swarm Grid (Issue #135)
+  // Tabs & Swarm Grid (Issue #135, #168)
   TAB_CREATE: 'tab:create',
   TAB_NAVIGATE: 'tab:navigate',
   TAB_SWITCH: 'tab:switch',
@@ -143,7 +143,25 @@ export const IPC_CHANNELS = {
   TAB_GO_BACK: 'tab:go_back',
   TAB_GO_FORWARD: 'tab:go_forward',
   TAB_RELOAD: 'tab:reload',
+  TAB_REOPEN: 'tab:reopen',
+  TAB_DUPLICATE: 'tab:duplicate',
+  TAB_PIN: 'tab:pin',
+  TAB_MUTE: 'tab:mute',
   SWARM_PREVIEWS_GET: 'swarm:previews_get',
+
+  // Standard Browser UX & Fundamentals (Issues #169, #174, #175)
+  ZOOM_SET: 'zoom:set',
+  ZOOM_IN: 'zoom:in',
+  ZOOM_OUT: 'zoom:out',
+  ZOOM_RESET: 'zoom:reset',
+  FIND_IN_PAGE: 'find:start',
+  FIND_STOP: 'find:stop',
+  BOOKMARKS_GET: 'bookmarks:get',
+  BOOKMARK_ADD: 'bookmark:add',
+  HISTORY_GET: 'history:get',
+  HISTORY_CLEAR: 'history:clear',
+  CONTENT_BLOCKER_GET_STATS: 'content_blocker:get_stats',
+  CONTENT_BLOCKER_ALLOW_ORIGIN: 'content_blocker:allow_origin',
 
   // UI
   DRAWER_TOGGLE: 'drawer:toggle',

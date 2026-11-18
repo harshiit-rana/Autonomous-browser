@@ -9,6 +9,8 @@ import { registerTypedHandler } from '../ipc/main_handler.js';
 import { AgentRuntime } from '../agent/runtime.js';
 import { SwarmCoordinator } from '../swarm/coordinator.js';
 import { GlobalKillSwitch, AuditLog } from '../security/audit_log.js';
+import { ContentBlocker } from '../browser/content_blocker.js';
+import { BrowserUXManager } from '../browser/browser_ux.js';
 import {
   IPC_CHANNELS,
   TabCreateRequest,
@@ -334,6 +336,57 @@ class MainApp {
     registerTypedHandler(IPC_CHANNELS.TAB_RELOAD, getChrome, () => {
       const tab = this.viewManager?.getActiveTab();
       tab?.view.webContents.reload();
+      return true;
+    });
+
+    registerTypedHandler(IPC_CHANNELS.TAB_REOPEN, getChrome, () => {
+      const tab = this.viewManager?.reopenClosedTab();
+      return { id: tab?.id || '' };
+    });
+
+    registerTypedHandler<{ id: string }, { id: string }>(IPC_CHANNELS.TAB_DUPLICATE, getChrome, (req) => {
+      const tab = this.viewManager?.duplicateTab(req.id);
+      return { id: tab?.id || '' };
+    });
+
+    // Content Blocker & Browser UX
+    const contentBlocker = new ContentBlocker();
+    const browserUx = new BrowserUXManager();
+
+    registerTypedHandler(IPC_CHANNELS.CONTENT_BLOCKER_GET_STATS, getChrome, () => {
+      return contentBlocker.getStats();
+    });
+
+    registerTypedHandler<{ origin: string }, boolean>(IPC_CHANNELS.CONTENT_BLOCKER_ALLOW_ORIGIN, getChrome, (req) => {
+      contentBlocker.allowOrigin(req.origin);
+      return true;
+    });
+
+    registerTypedHandler(IPC_CHANNELS.ZOOM_IN, getChrome, () => {
+      const tab = this.viewManager?.getActiveTab();
+      if (tab) {
+        const cur = tab.view.webContents.getZoomFactor();
+        const next = Math.min(5.0, cur + 0.1);
+        tab.view.webContents.setZoomFactor(next);
+      }
+      return true;
+    });
+
+    registerTypedHandler(IPC_CHANNELS.ZOOM_OUT, getChrome, () => {
+      const tab = this.viewManager?.getActiveTab();
+      if (tab) {
+        const cur = tab.view.webContents.getZoomFactor();
+        const next = Math.max(0.25, cur - 0.1);
+        tab.view.webContents.setZoomFactor(next);
+      }
+      return true;
+    });
+
+    registerTypedHandler(IPC_CHANNELS.ZOOM_RESET, getChrome, () => {
+      const tab = this.viewManager?.getActiveTab();
+      if (tab) {
+        tab.view.webContents.setZoomFactor(1.0);
+      }
       return true;
     });
 

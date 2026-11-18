@@ -4,6 +4,8 @@
  * and natural-language goal vs browse routing.
  */
 
+import { UrlClassifier } from '../browser/url_classifier.js';
+
 export interface OmnibarIntent {
   rawInput: string;
   type: 'url' | 'search' | 'agent_command';
@@ -11,32 +13,16 @@ export interface OmnibarIntent {
   targetUrl?: string;
   prompt?: string;
   options?: Record<string, string>;
+  eTLDPlusOne?: string;
+  securityIndicator?: string;
 }
 
 export class OmnibarParser {
-  // Matches valid domains, IPs, localhost, intranet hosts with optional port and paths
-  private static readonly URL_OR_IP_REGEX = /^(?:https?:\/\/)?(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|localhost|(?:\d{1,3}\.){3}\d{1,3}|[a-zA-Z0-9_-]+)(?::\d+)?(?:\/[^\s]*)?$/i;
+  private static classifier = new UrlClassifier();
 
   public static isDirectUrl(input: string): boolean {
-    const trimmed = input.trim();
-    if (trimmed.includes(' ')) return false;
-
-    // Special schemes
-    if (/^(?:https?:\/\/|about:|chrome:|file:\/\/|view-source:)/i.test(trimmed)) {
-      return true;
-    }
-
-    // Localhost or IPv4 with port or path
-    if (/^(?:localhost|(?:\d{1,3}\.){3}\d{1,3})(?::\d+)?(?:\/.*)?$/i.test(trimmed)) {
-      return true;
-    }
-
-    // Domain with known extension (e.g. example.com, test.co.uk)
-    if (/^[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+(?::\d+)?(?:\/.*)?$/i.test(trimmed)) {
-      return true;
-    }
-
-    return false;
+    const res = OmnibarParser.classifier.classify(input);
+    return res.type === 'url';
   }
 
   public static parse(input: string, defaultSearchUrl: string = 'https://duckduckgo.com/?q='): OmnibarIntent {
@@ -72,16 +58,15 @@ export class OmnibarParser {
       }
     }
 
-    // 2. Direct URL Detection (including IPs, ports, localhost, intranet)
-    if (OmnibarParser.isDirectUrl(trimmed)) {
-      let url = trimmed;
-      if (!/^[a-zA-Z0-9+.-]+:\/\//i.test(url) && !url.startsWith('about:') && !url.startsWith('view-source:')) {
-        url = `https://${url}`;
-      }
+    // 2. Classify via UrlClassifier (IPv4, IPv6, localhost, intranet, schemes, file paths, keywords)
+    const classified = OmnibarParser.classifier.classify(trimmed);
+    if (classified.type === 'url') {
       return {
         rawInput: trimmed,
         type: 'url',
-        targetUrl: url
+        targetUrl: classified.targetUrl,
+        eTLDPlusOne: classified.eTLDPlusOne,
+        securityIndicator: classified.securityIndicator
       };
     }
 
@@ -98,13 +83,14 @@ export class OmnibarParser {
       };
     }
 
-    // 4. Default to Search Engine
-    const searchTarget = `${defaultSearchUrl}${encodeURIComponent(trimmed)}`;
+    // 4. Search Engine (using classified targetUrl which respects !g, !ddg, etc. or fallback defaultSearchUrl)
     return {
       rawInput: trimmed,
       type: 'search',
-      targetUrl: searchTarget,
-      prompt: trimmed
+      targetUrl: classified.targetUrl || `${defaultSearchUrl}${encodeURIComponent(trimmed)}`,
+      prompt: trimmed,
+      eTLDPlusOne: classified.eTLDPlusOne,
+      securityIndicator: classified.securityIndicator
     };
   }
 }

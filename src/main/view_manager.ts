@@ -2,6 +2,9 @@ import { WebContentsView, BrowserWindow } from 'electron';
 import { ActionExecutor } from '../core/action_executor.js';
 import { TabState, TabsSnapshot, TabPatch, IPC_CHANNELS, SwarmPreviewItem, PresenceEventPayload } from '../ipc/contract.js';
 import { rootLogger } from '../infrastructure/logger.js';
+import { TabGroupManager } from '../browser/tab_group_manager.js';
+import { PopupManager } from '../browser/popup_manager.js';
+import { ErrorPageRenderer } from '../browser/error_pages.js';
 
 export interface TabView {
   id: string;
@@ -22,9 +25,19 @@ export class ViewManager {
   private drawerWidth: number = 320;
   private layoutMode: 'stage' | 'grid' | 'theatre' = 'stage';
   private isOverlayActive: boolean = false;
+  private tabGroupManager: TabGroupManager = new TabGroupManager();
+  private popupManager: PopupManager = new PopupManager();
 
   constructor(window: BrowserWindow) {
     this.window = window;
+  }
+
+  public getTabGroupManager(): TabGroupManager {
+    return this.tabGroupManager;
+  }
+
+  public getPopupManager(): PopupManager {
+    return this.popupManager;
   }
 
   public createTab(url: string = 'https://duckduckgo.com', isBackgroundAgent: boolean = false, owner: string = 'user'): TabView {
@@ -149,7 +162,45 @@ export class ViewManager {
       logger.warn('Tab load failed', { id, errorCode, errorDescription, validatedURL });
       tab.state.isLoading = false;
       this.broadcastTabPatch(id, { isLoading: false });
+
+      // Render native error page unless error is normal navigation cancel (errorCode -3)
+      if (errorCode !== -3 && validatedURL && !validatedURL.startsWith('data:')) {
+        const html = ErrorPageRenderer.renderErrorPage({
+          errorCode: `ERR_${errorCode}`,
+          errorDescription,
+          failedUrl: validatedURL
+        });
+        wc.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`).catch(() => {});
+      }
     });
+
+    try {
+      wc.setWindowOpenHandler((details) => {
+        const decision = this.popupManager.evaluateWindowOpen({
+          url: details.url,
+          frameName: details.frameName,
+          features: details.features,
+          disposition: details.disposition
+        });
+
+        if (decision.action === 'adopt_tab') {
+          this.createTab(details.url, false, tab.state.owner);
+          return { action: 'deny' };
+        } else if (decision.action === 'open_oauth_window') {
+          return {
+            action: 'allow',
+            overrideBrowserWindowOptions: {
+              width: decision.features?.width || 600,
+              height: decision.features?.height || 700,
+              modal: true,
+              parent: this.window
+            }
+          };
+        } else {
+          return { action: 'deny' };
+        }
+      });
+    } catch {}
 
     wc.on('render-process-gone', (_, details) => {
       logger.error('Tab renderer process gone', undefined, { id, details });
@@ -228,6 +279,7 @@ export class ViewManager {
       (tab.view.webContents as any).close?.();
     } catch {}
 
+    this.tabGroupManager.closeTab(id);
     this.tabs.delete(id);
     if (closedIndex !== -1) {
       this.tabOrder.splice(closedIndex, 1);
@@ -247,6 +299,18 @@ export class ViewManager {
     } else {
       this.broadcastTabsSnapshot();
     }
+  }
+
+  public reopenClosedTab(): TabView | undefined {
+    const restored = this.tabGroupManager.reopenLastClosedTab();
+    if (!restored) return undefined;
+    return this.createTab(restored.url, false, restored.owner);
+  }
+
+  public duplicateTab(id: string): TabView | undefined {
+    const tab = this.tabs.get(id);
+    if (!tab) return undefined;
+    return this.createTab(tab.state.url, false, tab.state.owner);
   }
 
   public setDrawerWidth(width: number): void {
