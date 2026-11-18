@@ -188,11 +188,31 @@ async function testUsageLedger() {
   console.log('✓ UsageLedger token and cost calculations verified!');
 }
 
+async function testActionTaxonomy() {
+  console.log('Testing ActionTaxonomy (Issue #125)...');
+  const { ActionTaxonomy } = await import('../src/agent/errors.js');
+
+  const stale = ActionTaxonomy.classify('Element e5 not found in current snapshot');
+  assert.equal(stale.code, 'STALE_REF');
+  assert.equal(stale.retryable, true);
+
+  const captcha = ActionTaxonomy.classify('Page challenge: verify you are human via cloudflare turnstile');
+  assert.equal(captcha.code, 'CAPTCHA');
+  assert.equal(captcha.requiresHumanHandoff, true);
+
+  const roadblock = ActionTaxonomy.detectPageRoadblocks('Just a moment...', 'https://protected.com', 'Please verify you are human');
+  assert.notEqual(roadblock, null);
+  assert.equal(roadblock?.code, 'CAPTCHA');
+
+  console.log('✓ ActionTaxonomy error classification and roadblocks verified!');
+}
+
 async function run() {
   await testMockModelProvider();
   await testToolExecutor();
   await testModelProviderFactory();
   await testUsageLedger();
+  await testActionTaxonomy();
   console.log('✓ All Milestone M1 tests passed successfully!');
 }
 

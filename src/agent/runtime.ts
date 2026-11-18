@@ -6,6 +6,7 @@ import { ModelProviderFactory } from '../models/provider_factory.js';
 import { IModelProvider, CanonicalMessage, ContentBlock } from '../models/types.js';
 import { PerceptionEngine, PageSnapshot } from './perception.js';
 import { BROWSER_TOOLS, ToolExecutor, ToolExecutionResult } from './tools.js';
+import { ActionTaxonomy } from './errors.js';
 import { IPC_CHANNELS, WorkerEventPayload, EvidenceEventPayload, MissionStatusPayload, TelemetryEventPayload } from '../ipc/contract.js';
 import { rootLogger } from '../infrastructure/logger.js';
 import { getSettings } from '../infrastructure/settings.js';
@@ -280,6 +281,18 @@ export class AgentRuntime {
 
       // 1. Observe: Capture current page snapshot
       const snapshot: PageSnapshot = await PerceptionEngine.captureSnapshot(tab.view.webContents, false);
+
+      // Roadblock and error detection (Issue #125)
+      const roadblock = ActionTaxonomy.detectPageRoadblocks(snapshot.title, snapshot.url, snapshot.formattedTree);
+      if (roadblock) {
+        this.emitEvidence(`[Roadblock Detected] ${roadblock.message}`);
+        this.emitEvidence(`[Action Required] ${roadblock.suggestedRecovery}`);
+        this.pause();
+        this.emitMissionStatus('paused', roadblock.suggestedRecovery);
+        await new Promise(r => setTimeout(r, 600));
+        continue;
+      }
+
       const observationText = `
 [Page State]
 URL: ${snapshot.url}
@@ -387,6 +400,13 @@ ${snapshot.formattedTree}
           { tab, snapshot }
         );
 
+        let outputText = execResult.output;
+        if (!execResult.ok) {
+          const classified = ActionTaxonomy.classify(execResult.error || execResult.output);
+          outputText = `Error [${classified.code}]: ${classified.message} Suggested Recovery: ${classified.suggestedRecovery}`;
+          this.emitEvidence(`[Recovery Policy: ${classified.code}] ${classified.suggestedRecovery}`);
+        }
+
         // Append tool result block
         mission.history.push({
           role: 'tool',
@@ -395,7 +415,7 @@ ${snapshot.formattedTree}
             {
               type: 'tool_result',
               toolCallId: toolCall.id,
-              output: execResult.output,
+              output: outputText,
               isError: !execResult.ok
             }
           ]
