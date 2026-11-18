@@ -43,8 +43,8 @@ export class SwarmScheduler {
   private workerDeques: Map<string, string[]> = new Map(); // workerId -> taskIds
   private frontier: URLFrontier;
 
-  constructor(frontier?: URLFrontier) {
-    this.frontier = frontier || new URLFrontier();
+  constructor(frontierOrWorkers?: URLFrontier | number) {
+    this.frontier = (frontierOrWorkers && typeof frontierOrWorkers === 'object') ? frontierOrWorkers : new URLFrontier();
   }
 
   public registerWorker(workerId: string): void {
@@ -78,6 +78,28 @@ export class SwarmScheduler {
 
     this.tasks.set(task.id, task);
     this.refreshTaskReadiness(task);
+    return task;
+  }
+
+  public pushTask(taskInput: any, workerId?: string): ScheduledTask {
+    const task = this.addTask({
+      id: taskInput.id || `task_${Date.now()}`,
+      missionId: taskInput.missionId || 'default_mission',
+      name: taskInput.name || taskInput.id,
+      instruction: taskInput.instruction || taskInput.actionType || 'execute',
+      role: taskInput.role || 'researcher',
+      effectClass: taskInput.effectClass || (taskInput.actionType === 'scrape' ? 'read' : 'read'),
+      dependencies: taskInput.dependencies || [],
+      priority: taskInput.priority || 5,
+      maxRetries: taskInput.maxRetries ?? 3,
+      url: taskInput.url
+    });
+
+    if (workerId) {
+      this.registerWorker(workerId);
+      this.workerDeques.get(workerId)!.push(task.id);
+    }
+
     return task;
   }
 
@@ -211,9 +233,13 @@ export class SwarmScheduler {
     return task;
   }
 
-  public completeTask(taskId: string, result: any): void {
-    const task = this.tasks.get(taskId);
+  public completeTask(taskIdOrDomain: string, result?: any): void {
+    let task = this.tasks.get(taskIdOrDomain);
+    if (!task) {
+      task = Array.from(this.tasks.values()).find(t => t.url?.includes(taskIdOrDomain));
+    }
     if (!task) return;
+    const taskId = task.id;
 
     task.status = 'completed';
     task.result = result;

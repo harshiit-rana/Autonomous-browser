@@ -41,22 +41,36 @@ export class WorkerSupervisor extends EventEmitter {
   private stallThresholdMs: number;
   private maxPoisonFailures: number;
   private timer: NodeJS.Timeout | null = null;
+  private recoveryHandler?: (workerId: string) => Promise<void> | void;
 
-  constructor(options: {
-    checkIntervalMs?: number;
-    stallThresholdMs?: number;
-    maxPoisonFailures?: number;
-  } = {}) {
+  constructor(
+    optionsOrCheckInterval: {
+      checkIntervalMs?: number;
+      stallThresholdMs?: number;
+      maxPoisonFailures?: number;
+    } | number = {},
+    stallThreshold?: number
+  ) {
     super();
-    this.checkIntervalMs = options.checkIntervalMs ?? 3000;
-    this.stallThresholdMs = options.stallThresholdMs ?? 25000;
-    this.maxPoisonFailures = options.maxPoisonFailures ?? 2;
+    if (typeof optionsOrCheckInterval === 'number') {
+      this.checkIntervalMs = optionsOrCheckInterval;
+      this.stallThresholdMs = stallThreshold ?? 25000;
+      this.maxPoisonFailures = 2;
+    } else {
+      this.checkIntervalMs = optionsOrCheckInterval.checkIntervalMs ?? 3000;
+      this.stallThresholdMs = optionsOrCheckInterval.stallThresholdMs ?? 25000;
+      this.maxPoisonFailures = optionsOrCheckInterval.maxPoisonFailures ?? 2;
+    }
+  }
+
+  public setRecoveryHandler(handler: (workerId: string) => Promise<void> | void): void {
+    this.recoveryHandler = handler;
   }
 
   public registerWorker(workerId: string): void {
     this.workers.set(workerId, {
       workerId,
-      status: 'idle',
+      status: 'running',
       lastEventTime: Date.now(),
       consecutiveStalls: 0,
       startedAt: Date.now()
@@ -154,6 +168,9 @@ export class WorkerSupervisor extends EventEmitter {
             stallClass,
             action: telemetry.consecutiveStalls > 1 ? 'restart_worker' : 'reload_page'
           });
+          if (this.recoveryHandler) {
+            Promise.resolve(this.recoveryHandler(workerId)).catch(() => {});
+          }
         }
       }
     }

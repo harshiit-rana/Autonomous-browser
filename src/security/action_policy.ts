@@ -142,9 +142,9 @@ export class ActionPolicyEngine {
     }
 
     // 5. Irreversible write actions: Deletion, Submitting forms, Public posting
-    const isSubmitButton = facts?.type === 'submit' || facts?.role === 'button' && /submit|delete|remove|cancel\s+subscription|transfer/i.test(labelAndAction);
-    const irreversiblePatterns = /\b(?:delete\s+(?:account|project|team|repo|database)|cancel\s+subscription|send\s+message|transfer\s+funds)\b/i;
-    if (isSubmitButton && irreversiblePatterns.test(labelAndAction)) {
+    const irreversiblePatterns = /\b(?:(?:permanently\s+)?delete\s+(?:account|project|team|repo|database)|cancel\s+subscription|send\s+message|transfer\s+funds)\b/i;
+    const isSubmitButton = facts?.type === 'submit' || (facts?.role === 'button' && /submit|delete|remove|cancel\s+subscription|transfer/i.test(labelAndAction));
+    if (irreversiblePatterns.test(labelAndAction) || isSubmitButton) {
       return 'write-irreversible';
     }
 

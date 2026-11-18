@@ -25,7 +25,7 @@ export class OmnibarParser {
     return res.type === 'url';
   }
 
-  public static parse(input: string, defaultSearchUrl: string = 'https://duckduckgo.com/?q='): OmnibarIntent {
+  public static parse(input: string, defaultSearchUrl: string = 'https://www.google.com/search?q='): OmnibarIntent {
     const trimmed = input.trim();
     if (!trimmed) {
       return { rawInput: '', type: 'search', prompt: '' };
@@ -75,22 +75,29 @@ export class OmnibarParser {
     const isAgentPrompt = /^(find|search for|extract|compare|monitor|track|buy|book|summarize|fill|download|analyze|login to|navigate to|scrape)\b/i.test(trimmed);
 
     if (isAgentPrompt) {
+      const cmd: OmnibarIntent['command'] = /^(find|search for)\b/i.test(trimmed) ? 'do' : 'swarm';
       return {
         rawInput: trimmed,
         type: 'agent_command',
-        command: 'do',
+        command: cmd,
         prompt: trimmed
       };
     }
 
     // 4. Search Engine (using classified targetUrl which respects !g, !ddg, etc. or fallback defaultSearchUrl)
+    const firstWord = trimmed.split(/\s+/)[0]?.toLowerCase();
+    const isKeywordSearch = Boolean(firstWord && UrlClassifier.DEFAULT_SEARCH_ENGINES[firstWord]);
+    const finalSearchUrl = isKeywordSearch
+      ? classified.targetUrl
+      : `${defaultSearchUrl}${encodeURIComponent(trimmed)}`;
+
     return {
       rawInput: trimmed,
       type: 'search',
-      targetUrl: classified.targetUrl || `${defaultSearchUrl}${encodeURIComponent(trimmed)}`,
+      targetUrl: finalSearchUrl,
       prompt: trimmed,
-      eTLDPlusOne: classified.eTLDPlusOne,
-      securityIndicator: classified.securityIndicator
+      eTLDPlusOne: OmnibarParser.classifier.extractETLDPlusOne(finalSearchUrl),
+      securityIndicator: 'secure'
     };
   }
 }

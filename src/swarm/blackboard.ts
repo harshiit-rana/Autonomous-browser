@@ -298,11 +298,11 @@ export class SharedBlackboard extends EventEmitter {
    * Post a structured claim / evidence item
    */
   public postEvidence(input: {
-    entity: string;
-    attribute: string;
-    category: 'fact' | 'table' | 'price' | 'contact' | 'document' | 'spec' | 'availability' | 'raw';
+    entity?: string;
+    attribute?: string;
+    category?: 'fact' | 'table' | 'price' | 'contact' | 'document' | 'spec' | 'availability' | 'raw';
     value: any;
-    source: {
+    source?: {
       url: string;
       quote?: string;
       selector?: string;
@@ -313,25 +313,31 @@ export class SharedBlackboard extends EventEmitter {
     stepId?: string;
     confidence?: number;
     supersedesId?: string;
+    // Legacy compatibility fields
+    key?: string;
+    sourceUrl?: string;
+    quote?: string;
+    selector?: string;
   }): { posted: boolean; itemId?: string; conflict?: ConflictRecord } {
-    const entity = input.entity.trim();
-    const attribute = input.attribute.trim();
+    const anyInput = input as any;
+    const entity = (input.entity || anyInput.key || 'unknown').trim();
+    const attribute = (input.attribute || anyInput.category || 'value').trim();
     const normalized = EvidenceNormalizer.normalize(input.value, attribute);
 
-    // Domain extraction
+    const sourceUrl = input.source?.url || anyInput.sourceUrl || 'https://unknown';
     let domain = 'unknown';
     try {
-      domain = new URL(input.source.url).hostname;
+      domain = new URL(sourceUrl).hostname;
     } catch {}
 
     const source: EvidenceSource = {
-      url: input.source.url,
+      url: sourceUrl,
       domain,
-      quote: input.source.quote,
-      selector: input.source.selector,
-      screenshotRef: input.source.screenshotRef,
+      quote: input.source?.quote || anyInput.quote,
+      selector: input.source?.selector || anyInput.selector,
+      screenshotRef: input.source?.screenshotRef || anyInput.screenshotRef,
       retrievedAt: Date.now(),
-      sourceType: input.source.sourceType || (domain.includes('official') ? 'official' : 'primary')
+      sourceType: input.source?.sourceType || (domain.includes('official') ? 'official' : 'primary')
     };
 
     // Semantic content hash based on entity, attribute, and normalized equivalence
@@ -348,7 +354,7 @@ export class SharedBlackboard extends EventEmitter {
       id,
       entity,
       attribute,
-      category: input.category,
+      category: input.category ?? 'raw',
       value: input.value,
       normalized,
       source,
@@ -493,9 +499,32 @@ export class SharedBlackboard extends EventEmitter {
   /**
    * Explicitly resolve conflict via verifier sub-agent or user input
    */
-  public resolveConflict(entity: string, attribute: string, authoritativeValue: any, method: 'verifier_adjudicated' | 'manual' = 'verifier_adjudicated'): boolean {
-    const clusterKey = `${entity.toLowerCase()}::${attribute.toLowerCase()}`;
-    const conflict = this.conflicts.get(clusterKey);
+  public resolveConflict(
+    entityOrKey: string,
+    attributeOrValue: any,
+    maybeAuthoritativeValue?: any,
+    method: 'verifier_adjudicated' | 'manual' = 'verifier_adjudicated'
+  ): boolean {
+    let entity = entityOrKey;
+    let attribute = typeof attributeOrValue === 'string' ? attributeOrValue : 'price';
+    let authoritativeValue = maybeAuthoritativeValue !== undefined ? maybeAuthoritativeValue : attributeOrValue;
+
+    let clusterKey = `${entity.toLowerCase()}::${attribute.toLowerCase()}`;
+    let conflict = this.conflicts.get(clusterKey);
+
+    if (!conflict) {
+      // Check if entity matches any conflict's entity or key
+      const target = Array.from(this.conflicts.values()).find(
+        c => c.entity.toLowerCase() === entityOrKey.toLowerCase() || c.id === entityOrKey
+      );
+      if (target) {
+        conflict = target;
+        entity = target.entity;
+        attribute = target.attribute;
+        clusterKey = `${entity.toLowerCase()}::${attribute.toLowerCase()}`;
+      }
+    }
+
     if (!conflict) return false;
 
     conflict.resolved = true;

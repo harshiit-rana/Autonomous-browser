@@ -177,4 +177,14 @@ export class RedTeamHarness {
       details
     };
   }
+
+  public static runSuite(): { passedTests: number; totalTests: number; results: any[] } {
+    const harness = new RedTeamHarness();
+    const rep = harness.runEvaluation();
+    return {
+      passedTests: rep.neutralizedCount,
+      totalTests: rep.totalAttacks,
+      results: rep.details
+    };
+  }
 }

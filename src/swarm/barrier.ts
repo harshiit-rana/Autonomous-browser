@@ -176,3 +176,25 @@ export class SwarmStageBarrier extends EventEmitter {
     return this.arrivals.size >= this.minQuorum;
   }
 }
+
+export class SwarmBarrier {
+  private parties: number;
+  private waiting: Array<() => void> = [];
+
+  constructor(parties: number) {
+    this.parties = parties;
+  }
+
+  public async await(): Promise<void> {
+    return new Promise<void>((resolve) => {
+      this.waiting.push(resolve);
+      if (this.waiting.length >= this.parties) {
+        const toWake = [...this.waiting];
+        this.waiting = [];
+        for (const wake of toWake) {
+          wake();
+        }
+      }
+    });
+  }
+}
