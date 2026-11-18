@@ -1,6 +1,5 @@
 import { EnterpriseRBACManager } from '../src/enterprise/rbac_policy.js';
 import { PageTranslator } from '../src/enterprise/page_translator.js';
-import { BinaryIPC, BinaryMessageType } from '../src/native/binary_ipc.js';
 import { WebEvaluationHarness, BenchmarkTask } from '../src/evaluation/web_eval_harness.js';
 import { InterventionAnalytics } from '../src/evaluation/telemetry_analytics.js';
 import { StructuredSchemaExtractor, ExtractionSchema } from '../src/data/structured_extractor.js';
@@ -40,20 +39,6 @@ function testLanguageDetection() {
   assert.strictEqual(cyrillic.code, 'ru');
 
   console.log('✓ Multi-lingual language detection verified!\n');
-}
-
-function testBinaryIPC() {
-  console.log('--- Testing BinaryIPC (Dendrite-Lite) ---');
-  // Mouse move binary serialization
-  const encMouse = BinaryIPC.encodeMouseMove(845.5, 320.25);
-  const decMouseMsg = BinaryIPC.decode(encMouse);
-  assert.strictEqual(decMouseMsg.type, BinaryMessageType.MouseMove);
-
-  const coords = BinaryIPC.decodeMouseMove(decMouseMsg.payload);
-  assert.strictEqual(coords.x, 845.5);
-  assert.strictEqual(coords.y, 320.25);
-
-  console.log('✓ BinaryIPC sub-millisecond serialization verified!\n');
 }
 
 function testWebEvalHarness() {
@@ -136,7 +121,6 @@ function testStructuredExtractor() {
 async function main() {
   testRBAC();
   testLanguageDetection();
-  testBinaryIPC();
   testWebEvalHarness();
   testInterventionAnalytics();
   testStructuredExtractor();

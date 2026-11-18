@@ -7,12 +7,18 @@
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc -b",
     "build:ts": "tsc -b",
     "build": "tsc -b && vite build",
-    "demo:e2e": "tsx scripts/e2e_autonomous_demo.ts",
+    "test": "tsx tests/test_final_batch.ts",
+    "audit:reachability": "node scripts/audit_reachability.mjs",
+    "demo:smoke": "tsx scripts/demo/pipeline_smoke.ts",
     "start": "electron dist/main/index.js",
     "build:fuses": "node scripts/build-fuses.mjs",
     "dist": "npm run build && electron-builder --win nsis portable --publish never"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -22,6 +28,8 @@
     "@electron/fuses": "^1.8.0",
     "@types/node": "^22.20.5",
     "electron": "^33.4.11",
+    "electron-builder": "^26.18.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vite": "^6.0.1"
   },

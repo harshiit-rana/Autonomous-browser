@@ -1,0 +1,270 @@
+[
+  {
+    "path": "automation/alert_bridge.ts",
+    "isReachable": false
+  },
+  {
+    "path": "automation/batch_runner.ts",
+    "isReachable": false
+  },
+  {
+    "path": "automation/flight_recorder.ts",
+    "isReachable": false
+  },
+  {
+    "path": "automation/form_filler.ts",
+    "isReachable": false
+  },
+  {
+    "path": "automation/research_agent.ts",
+    "isReachable": false
+  },
+  {
+    "path": "automation/task_scheduler.ts",
+    "isReachable": false
+  },
+  {
+    "path": "core/action_executor.ts",
+    "isReachable": true
+  },
+  {
+    "path": "core/cdp_manager.ts",
+    "isReachable": false
+  },
+  {
+    "path": "core/dom_indexer.ts",
+    "isReachable": true
+  },
+  {
+    "path": "core/model_hub.ts",
+    "isReachable": false
+  },
+  {
+    "path": "data/clean_room.ts",
+    "isReachable": false
+  },
+  {
+    "path": "data/clipboard_hub.ts",
+    "isReachable": false
+  },
+  {
+    "path": "data/pagination_crawler.ts",
+    "isReachable": false
+  },
+  {
+    "path": "data/report_synthesizer.ts",
+    "isReachable": false
+  },
+  {
+    "path": "data/scraping_diff.ts",
+    "isReachable": false
+  },
+  {
+    "path": "data/structured_extractor.ts",
+    "isReachable": false
+  },
+  {
+    "path": "data/table_extractor.ts",
+    "isReachable": false
+  },
+  {
+    "path": "enterprise/accessibility_audit.ts",
+    "isReachable": false
+  },
+  {
+    "path": "enterprise/page_translator.ts",
+    "isReachable": false
+  },
+  {
+    "path": "enterprise/rbac_policy.ts",
+    "isReachable": false
+  },
+  {
+    "path": "evaluation/telemetry_analytics.ts",
+    "isReachable": false
+  },
+  {
+    "path": "evaluation/web_eval_harness.ts",
+    "isReachable": false
+  },
+  {
+    "path": "infrastructure/logger.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/paths.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/settings.ts",
+    "isReachable": true
+  },
+  {
+    "path": "ipc/contract.ts",
+    "isReachable": true
+  },
+  {
+    "path": "ipc/main_handler.ts",
+    "isReachable": true
+  },
+  {
+    "path": "main/index.ts",
+    "isReachable": true
+  },
+  {
+    "path": "main/preload.ts",
+    "isReachable": true
+  },
+  {
+    "path": "main/view_manager.ts",
+    "isReachable": true
+  },
+  {
+    "path": "mcp/mcp_hub.ts",
+    "isReachable": false
+  },
+  {
+    "path": "memory/memory_store.ts",
+    "isReachable": false
+  },
+  {
+    "path": "memory/vault.ts",
+    "isReachable": false
+  },
+  {
+    "path": "native/audio_loopback.ts",
+    "isReachable": false
+  },
+  {
+    "path": "native/extension_runtime.ts",
+    "isReachable": false
+  },
+  {
+    "path": "native/ocr_canvas_extractor.ts",
+    "isReachable": false
+  },
+  {
+    "path": "perception/axtree_extractor.ts",
+    "isReachable": false
+  },
+  {
+    "path": "perception/settle_detector.ts",
+    "isReachable": false
+  },
+  {
+    "path": "perception/som_overlay.ts",
+    "isReachable": false
+  },
+  {
+    "path": "perception/spatial_reasoner.ts",
+    "isReachable": false
+  },
+  {
+    "path": "planning/mcts_planner.ts",
+    "isReachable": false
+  },
+  {
+    "path": "planning/state_snapshotter.ts",
+    "isReachable": false
+  },
+  {
+    "path": "renderer/app.ts",
+    "isReachable": true
+  },
+  {
+    "path": "security/intent_guard.ts",
+    "isReachable": false
+  },
+  {
+    "path": "security/origin_guard.ts",
+    "isReachable": false
+  },
+  {
+    "path": "security/red_team_suite.ts",
+    "isReachable": false
+  },
+  {
+    "path": "security/security_shield.ts",
+    "isReachable": false
+  },
+  {
+    "path": "session/download_pipeline.ts",
+    "isReachable": false
+  },
+  {
+    "path": "session/hibernation_daemon.ts",
+    "isReachable": false
+  },
+  {
+    "path": "session/session_manager.ts",
+    "isReachable": false
+  },
+  {
+    "path": "session/tab_handoff.ts",
+    "isReachable": false
+  },
+  {
+    "path": "session/trajectory_replay.ts",
+    "isReachable": false
+  },
+  {
+    "path": "stealth/cursor_overlay.ts",
+    "isReachable": true
+  },
+  {
+    "path": "stealth/fingerprint_shield.ts",
+    "isReachable": true
+  },
+  {
+    "path": "stealth/keyboard_typer.ts",
+    "isReachable": true
+  },
+  {
+    "path": "stealth/mouse_trajectory.ts",
+    "isReachable": true
+  },
+  {
+    "path": "swarm/barrier.ts",
+    "isReachable": false
+  },
+  {
+    "path": "swarm/blackboard.ts",
+    "isReachable": false
+  },
+  {
+    "path": "swarm/coordinator.ts",
+    "isReachable": false
+  },
+  {
+    "path": "swarm/health_daemon.ts",
+    "isReachable": false
+  },
+  {
+    "path": "swarm/resource_throttler.ts",
+    "isReachable": false
+  },
+  {
+    "path": "swarm/swarm_manager.ts",
+    "isReachable": false
+  },
+  {
+    "path": "swarm/swarm_worker.ts",
+    "isReachable": false
+  },
+  {
+    "path": "swarm/work_stealing_queue.ts",
+    "isReachable": false
+  },
+  {
+    "path": "sync/mobile_sync.ts",
+    "isReachable": false
+  },
+  {
+    "path": "testing/synchronized_tester.ts",
+    "isReachable": false
+  },
+  {
+    "path": "ui/omnibar_parser.ts",
+    "isReachable": true
+  }
+]

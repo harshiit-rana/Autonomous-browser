@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
   <title>Project Aegis - Autonomous AI Browser</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
@@ -20,11 +20,7 @@
 
       <!-- Tab Strip (UI-02) -->
       <nav id="tab-strip">
-        <div class="tab active" data-tab-id="tab_1">
-          <span class="profile-badge work">Work</span>
-          <span class="tab-title">New Swarm Tab</span>
-          <button class="tab-close-btn">&times;</button>
-        </div>
+        <div id="tabs-container" style="display: flex; gap: 4px; align-items: center;"></div>
         <button id="new-tab-btn" title="Open new tab">+</button>
       </nav>
     </div>
@@ -94,48 +90,20 @@
 
       <!-- Telemetry Stats -->
       <div class="telemetry-bar">
-        <div class="stat"><span class="lbl">Workers</span><span id="worker-count-stat" class="val">3</span></div>
-        <div class="stat"><span class="lbl">Tokens</span><span id="tokens-stat" class="val">1,420</span></div>
-        <div class="stat"><span class="lbl">Cost</span><span id="cost-stat" class="val">$0.002</span></div>
+        <div class="stat"><span class="lbl">Workers</span><span id="worker-count-stat" class="val">0</span></div>
+        <div class="stat"><span class="lbl">Tokens</span><span id="tokens-stat" class="val">0</span></div>
+        <div class="stat"><span class="lbl">Cost</span><span id="cost-stat" class="val">$0.00</span></div>
       </div>
 
-      <!-- Worker Cards (UI-03) -->
+      <!-- Worker Cards Container (Rendered dynamically from state) -->
       <div id="worker-cards-container">
-        <div class="worker-card running" id="card-w1">
-          <div class="card-top">
-            <span class="w-name">Worker-1 [Coordinator]</span>
-            <span class="status-dot green"></span>
-          </div>
-          <div class="w-task">Decomposing query into sub-tasks</div>
-          <div class="progress-bar"><div class="fill" style="width: 70%;"></div></div>
-        </div>
-
-        <div class="worker-card running" id="card-w2">
-          <div class="card-top">
-            <span class="w-name">Worker-2 [Crawler]</span>
-            <span class="status-dot green"></span>
-          </div>
-          <div class="w-task">Visiting: news.ycombinator.com</div>
-          <div class="progress-bar"><div class="fill" style="width: 45%;"></div></div>
-        </div>
-
-        <div class="worker-card idle" id="card-w3">
-          <div class="card-top">
-            <span class="w-name">Worker-3 [Extractor]</span>
-            <span class="status-dot gray"></span>
-          </div>
-          <div class="w-task">Awaiting HTML table payload</div>
-          <div class="progress-bar"><div class="fill" style="width: 10%;"></div></div>
-        </div>
+        <div id="no-workers-msg" class="empty-state-text" style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 24px 0;">No active agent workers</div>
       </div>
 
       <!-- Live Evidence Feed from Blackboard -->
       <h4>Discovered Evidence</h4>
       <div id="evidence-feed">
-        <div class="evidence-item">
-          <span class="ev-time">21:20:12</span>
-          <span class="ev-text">Extracted 30 submissions from Hacker News</span>
-        </div>
+        <div id="no-evidence-msg" class="empty-state-text" style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 24px 0;">No evidence recorded</div>
       </div>
     </aside>
   </main>

@@ -1,27 +1,23 @@
 /**
- * Project Aegis - End-to-End Autonomous Multi-Agent Swarm Workflow Demo
+ * Project Aegis - Pipeline Integration Smoke Test (Synthetic Fixtures)
  * 
- * Demonstrates:
- * 1. Decomposition of high-level objective into parallel agent tasks
- * 2. SharedBlackboard real-time evidence aggregation & deduplication
- * 3. BatchJobRunner resilient execution with retry logic
- * 4. AutonomousResearchAgent knowledge synthesis & memory pre-warming
- * 5. ReportSynthesizer generating executive markdown intelligence report
+ * NOTE: This is a developer test script that exercises the Blackboard, BatchJobRunner,
+ * and ReportSynthesizer with synthetic test fixtures. These are NOT measured benchmarks.
  */
 
-import { SharedBlackboard } from '../src/swarm/blackboard.js';
-import { WorkStealingQueue, SwarmTask } from '../src/swarm/work_stealing_queue.js';
-import { BatchJobRunner, BatchItem } from '../src/automation/batch_runner.js';
-import { AutonomousResearchAgent } from '../src/automation/research_agent.js';
-import { MemoryStore } from '../src/memory/memory_store.js';
-import { ReportSynthesizer, ReportConfig } from '../src/data/report_synthesizer.js';
-import { TableExtractor, ExtractedTable } from '../src/data/table_extractor.js';
+import { SharedBlackboard } from '../../src/swarm/blackboard.js';
+import { WorkStealingQueue, SwarmTask } from '../../src/swarm/work_stealing_queue.js';
+import { BatchJobRunner, BatchItem } from '../../src/automation/batch_runner.js';
+import { AutonomousResearchAgent } from '../../src/automation/research_agent.js';
+import { MemoryStore } from '../../src/memory/memory_store.js';
+import { ReportSynthesizer, ReportConfig } from '../../src/data/report_synthesizer.js';
+import { TableExtractor, ExtractedTable } from '../../src/data/table_extractor.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 async function runEndToEndWorkflow() {
   console.log('===============================================================');
-  console.log('   PROJECT AEGIS: AUTONOMOUS MULTI-AGENT SWARM WORKFLOW DEMO   ');
+  console.log('   PIPELINE SMOKE TEST (SYNTHETIC FIXTURE DATA)                ');
   console.log('===============================================================\n');
 
   // Step 1: Initialize Swarm Infrastructure
@@ -212,14 +208,14 @@ async function runEndToEndWorkflow() {
   };
 
   const markdownReport = ReportSynthesizer.generateMarkdown(reportConfig);
-  const outputPath = path.resolve(process.cwd(), 'autonomous_browser_intelligence_report.md');
+  const outputPath = path.resolve(import.meta.dirname || process.cwd(), 'sample_synthetic_report.md');
   fs.writeFileSync(outputPath, markdownReport, 'utf8');
 
-  console.log('✓ Executive Intelligence Report generated successfully:');
+  console.log('✓ Synthetic test report generated successfully:');
   console.log(`   -> File saved at: ${outputPath}\n`);
 
   console.log('===============================================================');
-  console.log('   END-TO-END AUTONOMOUS WORKFLOW COMPLETED SUCCESSFULLY!      ');
+  console.log('   PIPELINE SMOKE TEST FINISHED (SYNTHETIC FIXTURES)           ');
   console.log('===============================================================\n');
 }
 

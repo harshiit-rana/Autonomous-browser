@@ -236,8 +236,8 @@ npx tsx tests/test_perception.ts        # AXTree pruning, Set-of-Marks, Spatial 
 npx tsx tests/test_model_hub.ts         # Multi-model routing and fallback chains
 npx tsx tests/test_final_batch.ts       # RBAC, Binary IPC, Language detection, WebArena harness
 
-# Run the live multi-agent demo:
-npm run demo:e2e
+# Run the pipeline smoke test:
+npm run demo:smoke
 ```
-* **Status:** All 10 test suites pass with **100% success rate (0 errors)**.
-* **Red-Team Immunity:** Neutralized 5 out of 5 adversarial prompt injection vectors (hidden HTML comments, zero-pixel fonts, image alt-text payloads, script exfiltration, social engineering).
+* **Module Status:** See [docs/STATUS.md](docs/STATUS.md) for the active reachability and integration ledger.
+* **Security Testing:** Unit test suite evaluates sanitization against 5 synthetic prompt injection test fixtures. Measured attack-success rates and benchmark numbers will be published following the real-app eval harness (#196).

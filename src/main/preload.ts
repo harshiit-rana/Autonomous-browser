@@ -1,43 +1,74 @@
 /**
  * Project Aegis - Secure Preload Bridge
+ * Single source of truth for renderer-to-main IPC communication.
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
+import {
+  IPC_CHANNELS,
+  TabsSnapshot,
+  TabPatch,
+  WorkerEventPayload,
+  EvidenceEventPayload,
+  MissionStatusPayload,
+  MissionStartRequest
+} from '../ipc/contract.js';
 
 contextBridge.exposeInMainWorld('aegis', {
   // Window controls
-  minimize: () => ipcRenderer.invoke('window:minimize'),
-  maximize: () => ipcRenderer.invoke('window:maximize'),
-  close: () => ipcRenderer.invoke('window:close'),
+  minimize: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_MINIMIZE),
+  maximize: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
+  close: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_CLOSE),
 
   // Tab navigation & lifecycle
-  createTab: (url: string, isBackground = false) => ipcRenderer.invoke('tab:create', { url, isBackground }),
-  navigateTab: (url: string) => ipcRenderer.invoke('tab:navigate', { url }),
-  switchTab: (id: string) => ipcRenderer.invoke('tab:switch', { id }),
-  closeTab: (id: string) => ipcRenderer.invoke('tab:close', { id }),
-  listTabs: () => ipcRenderer.invoke('tab:list'),
-  goBack: () => ipcRenderer.invoke('tab:go_back'),
-  goForward: () => ipcRenderer.invoke('tab:go_forward'),
-  reload: () => ipcRenderer.invoke('tab:reload'),
+  createTab: (url?: string, isBackground = false) =>
+    ipcRenderer.invoke(IPC_CHANNELS.TAB_CREATE, { url, isBackground }),
+  navigateTab: (url: string, tabId?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.TAB_NAVIGATE, { url, tabId }),
+  switchTab: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.TAB_SWITCH, { id }),
+  closeTab: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.TAB_CLOSE, { id }),
+  requestTabsSync: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.TAB_SYNC_REQUEST),
+  goBack: () => ipcRenderer.invoke(IPC_CHANNELS.TAB_GO_BACK),
+  goForward: () => ipcRenderer.invoke(IPC_CHANNELS.TAB_GO_FORWARD),
+  reload: () => ipcRenderer.invoke(IPC_CHANNELS.TAB_RELOAD),
 
   // UI layout
-  toggleDrawer: (open: boolean, width?: number) => ipcRenderer.invoke('drawer:toggle', { open, width }),
+  toggleDrawer: (open: boolean, width?: number) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DRAWER_TOGGLE, { open, width }),
 
-  // Swarm execution
-  executeSwarm: (command: string, prompt: string, model: string) => ipcRenderer.invoke('swarm:execute', { command, prompt, model }),
+  // Mission execution
+  startMission: (prompt: string, model?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_START, { prompt, model } as MissionStartRequest),
+  pauseMission: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_PAUSE),
+  resumeMission: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_RESUME),
+  cancelMission: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_CANCEL),
 
-  // Agent execution
-  executeAction: (tabId: string, action: string, params: any) => ipcRenderer.invoke('agent:action', { tabId, action, params }),
-  getDOM: (tabId: string) => ipcRenderer.invoke('agent:get_dom', { tabId }),
+  // Settings
+  getSettings: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET),
+  updateSettings: (settings: any) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_UPDATE, { settings }),
 
-  // Real-time events from main process
-  onWorkerEvent: (callback: (data: any) => void) => {
-    ipcRenderer.on('worker:event', (_, data) => callback(data));
+  // Push event subscriptions
+  onTabsSync: (callback: (snapshot: TabsSnapshot) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.EVENT_TABS_SYNC, (_, data) => callback(data));
   },
-  onEvidenceEvent: (callback: (data: any) => void) => {
-    ipcRenderer.on('evidence:event', (_, data) => callback(data));
+  onTabPatch: (callback: (patch: TabPatch) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.EVENT_TAB_PATCH, (_, data) => callback(data));
   },
-  onTabUpdated: (callback: (data: any) => void) => {
-    ipcRenderer.on('tab:updated', (_, data) => callback(data));
+  onWorkerEvent: (callback: (data: WorkerEventPayload) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.EVENT_WORKER, (_, data) => callback(data));
+  },
+  onEvidenceEvent: (callback: (data: EvidenceEventPayload) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.EVENT_EVIDENCE, (_, data) => callback(data));
+  },
+  onMissionStatus: (callback: (data: MissionStatusPayload) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.EVENT_MISSION_STATUS, (_, data) => callback(data));
   }
 });

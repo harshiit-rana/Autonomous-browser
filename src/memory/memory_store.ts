@@ -9,9 +9,17 @@
  * - Issue #49: MEM-04 Automated Daily Browsing Activity Summarizer (OptMem Parity)
  */
 
-import { DatabaseSync } from 'node:sqlite';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+
+let DatabaseSyncClass: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const sqlite = (typeof require === 'function' ? require : undefined)?.('node:sqlite');
+  DatabaseSyncClass = sqlite?.DatabaseSync;
+} catch {
+  // node:sqlite requires Node >= 22.5.0 (Electron 33 bundles Node 20.x - see Issue #110)
+}
 
 export interface PageRecord {
   id?: number;
@@ -107,17 +115,22 @@ export function generateLocalEmbedding(text: string, dimensions = 64): number[] 
 }
 
 export class MemoryStore {
-  private db: DatabaseSync;
+  private db: any;
   private isClosed = false;
 
   constructor(dbPath: string = ':memory:') {
+    if (!DatabaseSyncClass) {
+      throw new Error(
+        'node:sqlite DatabaseSync is not supported in the active Node runtime (requires Node >= 22.5.0). See Issue #110.'
+      );
+    }
     if (dbPath !== ':memory:') {
       const dir = path.dirname(dbPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
     }
-    this.db = new DatabaseSync(dbPath);
+    this.db = new DatabaseSyncClass(dbPath);
     this.initSchema();
   }
 
