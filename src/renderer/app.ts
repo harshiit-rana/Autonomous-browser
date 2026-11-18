@@ -1,6 +1,6 @@
 /**
  * Project Aegis - Browser Chrome Application Controller
- * Implements: UI-01, UI-02, UI-03, UI-04, UI-05, M0 Foundations
+ * Implements: UI-01, UI-02, UI-03, UI-04, UI-05, M0 Foundations, M1 Agent Controls & Settings
  */
 
 import { OmnibarParser } from '../ui/omnibar_parser.js';
@@ -28,6 +28,22 @@ class BrowserApp {
   private tokensStat: HTMLElement;
   private costStat: HTMLElement;
 
+  // Settings Modal elements
+  private settingsBtn: HTMLButtonElement;
+  private settingsModal: HTMLElement;
+  private closeSettingsBtn: HTMLButtonElement;
+  private cancelSettingsBtn: HTMLButtonElement;
+  private saveSettingsBtn: HTMLButtonElement;
+  private settingsProvider: HTMLSelectElement;
+  private settingsGeminiKey: HTMLInputElement;
+  private settingsOpenaiKey: HTMLInputElement;
+  private settingsOllamaUrl: HTMLInputElement;
+  private settingsDemoMode: HTMLInputElement;
+  private groupGeminiKey: HTMLElement;
+  private groupOpenaiKey: HTMLElement;
+  private groupOllamaUrl: HTMLElement;
+  private settingsStatusMsg: HTMLElement;
+
   private isPaused = false;
   private isTakeover = false;
   private currentTabs: TabState[] = [];
@@ -50,7 +66,24 @@ class BrowserApp {
     this.tokensStat = document.getElementById('tokens-stat') as HTMLElement;
     this.costStat = document.getElementById('cost-stat') as HTMLElement;
 
+    // Settings elements
+    this.settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
+    this.settingsModal = document.getElementById('settings-modal') as HTMLElement;
+    this.closeSettingsBtn = document.getElementById('close-settings-btn') as HTMLButtonElement;
+    this.cancelSettingsBtn = document.getElementById('cancel-settings-btn') as HTMLButtonElement;
+    this.saveSettingsBtn = document.getElementById('save-settings-btn') as HTMLButtonElement;
+    this.settingsProvider = document.getElementById('settings-provider') as HTMLSelectElement;
+    this.settingsGeminiKey = document.getElementById('settings-gemini-key') as HTMLInputElement;
+    this.settingsOpenaiKey = document.getElementById('settings-openai-key') as HTMLInputElement;
+    this.settingsOllamaUrl = document.getElementById('settings-ollama-url') as HTMLInputElement;
+    this.settingsDemoMode = document.getElementById('settings-demo-mode') as HTMLInputElement;
+    this.groupGeminiKey = document.getElementById('group-gemini-key') as HTMLElement;
+    this.groupOpenaiKey = document.getElementById('group-openai-key') as HTMLElement;
+    this.groupOllamaUrl = document.getElementById('group-ollama-url') as HTMLElement;
+    this.settingsStatusMsg = document.getElementById('settings-status-msg') as HTMLElement;
+
     this.bindEvents();
+    this.bindSettingsEvents();
     this.registerBridgeListeners();
 
     // Request initial snapshot from main process
@@ -294,6 +327,80 @@ class BrowserApp {
     });
   }
 
+  private bindSettingsEvents(): void {
+    this.settingsBtn.addEventListener('click', () => this.openSettings());
+    this.closeSettingsBtn.addEventListener('click', () => this.closeSettings());
+    this.cancelSettingsBtn.addEventListener('click', () => this.closeSettings());
+    this.saveSettingsBtn.addEventListener('click', () => this.saveSettings());
+
+    this.settingsProvider.addEventListener('change', () => this.updateProviderVisibility());
+  }
+
+  private async openSettings(): Promise<void> {
+    const aegis = (window as any).aegis;
+    if (!aegis?.getSettings) return;
+
+    try {
+      const res = await aegis.getSettings();
+      const settings = res.data || res;
+
+      if (settings) {
+        this.settingsProvider.value = settings.modelProvider || 'gemini';
+        this.settingsGeminiKey.value = settings.apiKeys?.gemini || '';
+        this.settingsOpenaiKey.value = settings.apiKeys?.openai || '';
+        this.settingsOllamaUrl.value = settings.ollamaBaseUrl || 'http://localhost:11434';
+        this.settingsDemoMode.checked = !!settings.demoMode;
+      }
+    } catch (err) {
+      console.error('Failed to load settings', err);
+    }
+
+    this.updateProviderVisibility();
+    this.settingsStatusMsg.style.display = 'none';
+    this.settingsModal.classList.remove('hidden');
+  }
+
+  private closeSettings(): void {
+    this.settingsModal.classList.add('hidden');
+  }
+
+  private updateProviderVisibility(): void {
+    const provider = this.settingsProvider.value;
+    this.groupGeminiKey.style.display = provider === 'gemini' ? 'flex' : 'none';
+    this.groupOpenaiKey.style.display = provider === 'openai' ? 'flex' : 'none';
+    this.groupOllamaUrl.style.display = provider === 'ollama' ? 'flex' : 'none';
+  }
+
+  private async saveSettings(): Promise<void> {
+    const aegis = (window as any).aegis;
+    if (!aegis?.updateSettings) return;
+
+    const provider = this.settingsProvider.value as any;
+    const patch = {
+      modelProvider: provider,
+      apiKeys: {
+        gemini: this.settingsGeminiKey.value.trim(),
+        openai: this.settingsOpenaiKey.value.trim()
+      },
+      ollamaBaseUrl: this.settingsOllamaUrl.value.trim() || 'http://localhost:11434',
+      demoMode: this.settingsDemoMode.checked
+    };
+
+    try {
+      await aegis.updateSettings(patch);
+      this.settingsStatusMsg.textContent = 'Settings saved successfully!';
+      this.settingsStatusMsg.style.display = 'block';
+
+      setTimeout(() => {
+        this.closeSettings();
+      }, 700);
+    } catch (err: any) {
+      this.settingsStatusMsg.textContent = `Error saving settings: ${err.message}`;
+      this.settingsStatusMsg.style.color = 'var(--danger)';
+      this.settingsStatusMsg.style.display = 'block';
+    }
+  }
+
   private async handleOmnibarSubmit(): Promise<void> {
     const raw = this.omnibarInput.value.trim();
     if (!raw) return;
@@ -317,8 +424,12 @@ class BrowserApp {
       if (aegis?.startMission) {
         const res = await aegis.startMission(intent.prompt, model);
         if (!res?.data?.started) {
-          const reason = res?.data?.message || 'Agent runtime is not yet configured. Please configure an LLM provider in Settings.';
+          const reason = res?.data?.message || 'Agent runtime not configured.';
           this.addEvidenceItem(`[Notice] ${reason}`);
+          if (reason.toLowerCase().includes('settings') || reason.toLowerCase().includes('api key')) {
+            // Automatically prompt the settings modal so user can enter key
+            this.openSettings();
+          }
         }
       }
     } else if (intent.type === 'url' || intent.type === 'search') {

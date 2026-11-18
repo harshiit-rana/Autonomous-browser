@@ -149,9 +149,26 @@ async function testToolExecutor() {
   console.log('✓ ToolExecutor all tools and error branches verified!');
 }
 
+async function testModelProviderFactory() {
+  console.log('Testing ModelProviderFactory...');
+  const { ModelProviderFactory } = await import('../src/models/provider_factory.js');
+
+  // Ollama provider instantiation
+  const ollamaProvider = ModelProviderFactory.createProvider('deepseek-r1:8b');
+  assert.equal(ollamaProvider.providerName, 'openai');
+  assert.equal(ollamaProvider.modelName, 'deepseek-r1:8b');
+
+  // Gemini provider instantiation
+  const geminiProvider = ModelProviderFactory.createProvider('gemini-2.0-flash');
+  assert.equal(geminiProvider.providerName, 'gemini');
+
+  console.log('✓ ModelProviderFactory dynamic resolution verified!');
+}
+
 async function run() {
   await testMockModelProvider();
   await testToolExecutor();
+  await testModelProviderFactory();
   console.log('✓ All Milestone M1 tests passed successfully!');
 }
 

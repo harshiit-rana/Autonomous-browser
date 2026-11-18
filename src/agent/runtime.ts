@@ -6,6 +6,7 @@ import { PerceptionEngine, PageSnapshot } from './perception.js';
 import { BROWSER_TOOLS, ToolExecutor, ToolExecutionResult } from './tools.js';
 import { IPC_CHANNELS, WorkerEventPayload, EvidenceEventPayload, MissionStatusPayload } from '../ipc/contract.js';
 import { rootLogger } from '../infrastructure/logger.js';
+import { getSettings } from '../infrastructure/settings.js';
 
 const logger = rootLogger.child('agent-runtime');
 
@@ -84,6 +85,30 @@ export class AgentRuntime {
       };
     }
 
+    const settings = getSettings();
+    const targetModel = modelName || settings.modelName || 'gemini-2.0-flash';
+
+    // Verify credential availability upfront
+    if (!settings.demoMode && !targetModel.includes('deepseek') && settings.modelProvider !== 'ollama') {
+      if (targetModel.startsWith('gemini') || settings.modelProvider === 'gemini') {
+        const key = settings.apiKeys?.gemini || process.env.GEMINI_API_KEY;
+        if (!key) {
+          return {
+            ok: false,
+            error: 'Google Gemini API key is not configured. Please open Settings (gear icon) to configure your API key.'
+          };
+        }
+      } else if (targetModel.startsWith('gpt-') || settings.modelProvider === 'openai') {
+        const key = settings.apiKeys?.openai || process.env.OPENAI_API_KEY;
+        if (!key) {
+          return {
+            ok: false,
+            error: 'OpenAI API key is not configured. Please open Settings (gear icon) to configure your API key.'
+          };
+        }
+      }
+    }
+
     const missionId = `m_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     this.abortController = new AbortController();
     this.isPaused = false;
@@ -96,7 +121,7 @@ export class AgentRuntime {
     this.activeMission = {
       id: missionId,
       prompt,
-      model: modelName || 'gemini-2.0-flash',
+      model: targetModel,
       state: 'planning',
       stepCount: 0,
       maxSteps: 20,
@@ -212,6 +237,9 @@ export class AgentRuntime {
         progress: progressPercent,
         status: 'running'
       });
+
+      // Settle page loading and DOM stability (Issue #121)
+      await this.waitForSettle(tab);
 
       // 1. Observe: Capture current page snapshot
       const snapshot: PageSnapshot = await PerceptionEngine.captureSnapshot(tab.view.webContents, false);
@@ -333,6 +361,15 @@ ${snapshot.formattedTree}
     if (mission.state === 'running' && mission.stepCount >= mission.maxSteps) {
       this.finishMission('failed', undefined, `Exceeded maximum step budget of ${mission.maxSteps}`);
     }
+  }
+
+  private async waitForSettle(tab: TabView, timeoutMs: number = 8000): Promise<void> {
+    const start = Date.now();
+    while (tab.state.isLoading && Date.now() - start < timeoutMs) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+    // Settle delay for dynamic DOM updates
+    await new Promise(r => setTimeout(r, 400));
   }
 
   private finishMission(state: MissionState, result?: string, error?: string): void {

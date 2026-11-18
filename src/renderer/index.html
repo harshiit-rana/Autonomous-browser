@@ -61,6 +61,14 @@
         <line x1="15" y1="3" x2="15" y2="21"/>
       </svg>
     </button>
+
+    <!-- Settings Button -->
+    <button id="settings-btn" class="icon-btn" title="AI Agent & Model Settings">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+    </button>
   </section>
 
   <!-- 3. Main Workspace: WebContents Viewport + Swarm Drawer (UI-03, M7.2) -->
@@ -107,6 +115,56 @@
       </div>
     </aside>
   </main>
+
+  <!-- 4. Settings Modal (Configures API keys and local providers) -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>AI Agent & Model Settings</h3>
+        <button id="close-settings-btn" class="icon-btn" title="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="settings-provider">Active Model Provider</label>
+          <select id="settings-provider" class="form-select">
+            <option value="gemini">Google Gemini (Recommended)</option>
+            <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+            <option value="ollama">Ollama (Local / DeepSeek-R1)</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="group-gemini-key">
+          <label for="settings-gemini-key">Google Gemini API Key</label>
+          <input type="password" id="settings-gemini-key" class="form-input" placeholder="Enter Gemini API key (AIzaSy...)">
+          <span class="field-hint">Used for Gemini models. Stored locally on your machine.</span>
+        </div>
+
+        <div class="form-group" id="group-openai-key" style="display: none;">
+          <label for="settings-openai-key">OpenAI API Key</label>
+          <input type="password" id="settings-openai-key" class="form-input" placeholder="sk-...">
+        </div>
+
+        <div class="form-group" id="group-ollama-url" style="display: none;">
+          <label for="settings-ollama-url">Ollama Base URL</label>
+          <input type="text" id="settings-ollama-url" class="form-input" value="http://localhost:11434">
+          <span class="field-hint">Run local models (e.g. ollama run deepseek-r1:8b).</span>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="settings-demo-mode">
+            <span>Demo Mode (Mock agent responses without external API keys)</span>
+          </label>
+        </div>
+
+        <div id="settings-status-msg" style="font-size: 12px; color: var(--success); display: none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancel-settings-btn" class="btn-secondary">Cancel</button>
+        <button id="save-settings-btn" class="btn-primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="./app.ts"></script>
 </body>
