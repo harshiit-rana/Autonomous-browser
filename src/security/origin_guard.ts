@@ -1,3 +1,8 @@
+/**
+ * Re-export ActionPolicyEngine as OriginGuard for backward compatibility
+ */
+import { ActionPolicyEngine, PolicyEvaluationRequest } from './action_policy.js';
+
 export interface ProposedAction {
   actionType: 'click' | 'type' | 'navigate' | 'download' | 'execute';
   targetElementId?: string;
@@ -11,12 +16,8 @@ export interface GateResult {
   reason?: string;
 }
 
-/**
- * OriginGuard & Intent Gate
- * Enforces per-task domain whitelists and blocks irreversible operations
- * (checkout, payments, file deletions) without explicit user authorization.
- */
 export class OriginGuard {
+  private engine = new ActionPolicyEngine();
   private allowedOrigins: Set<string> = new Set();
   private userGoal: string;
 
@@ -34,39 +35,24 @@ export class OriginGuard {
     this.allowedOrigins.add(origin);
   }
 
-  /**
-   * Evaluates if a navigation or click action crosses origin boundaries or triggers high-risk gates.
-   */
   public evaluateAction(action: ProposedAction): GateResult {
-    // 1. Navigation boundary check
-    if (action.actionType === 'navigate' && action.targetUrl) {
-      try {
-        const targetOrigin = new URL(action.targetUrl).origin;
-        if (this.allowedOrigins.size > 0 && !this.allowedOrigins.has(targetOrigin)) {
-          return {
-            isPermitted: false,
-            requiresHumanConfirmation: true,
-            reason: `Navigation targets external origin '${targetOrigin}' outside approved scope.`
-          };
-        }
-      } catch {
-        return { isPermitted: false, requiresHumanConfirmation: false, reason: 'Invalid URL' };
+    const evalResult = this.engine.evaluateAction({
+      missionId: 'legacy',
+      userGoal: this.userGoal,
+      allowedOrigins: Array.from(this.allowedOrigins),
+      currentUrl: action.targetUrl || '',
+      actionName: action.actionType,
+      actionArgs: { url: action.targetUrl, text: action.payload?.text },
+      targetFacts: {
+        label: action.payload?.label,
+        type: action.payload?.type
       }
-    }
+    });
 
-    // 2. High-risk irreversible action gate (Checkout / Payment / Deletion)
-    if (action.actionType === 'click' && action.payload?.label) {
-      const label = String(action.payload.label).toLowerCase();
-      const isHighRisk = /place\s+order|buy\s+now|pay\s+|confirm\s+payment|delete\s+account/i.test(label);
-      if (isHighRisk) {
-        return {
-          isPermitted: false,
-          requiresHumanConfirmation: true,
-          reason: `High-risk transaction detected: '${action.payload.label}'. Human confirmation required.`
-        };
-      }
-    }
-
-    return { isPermitted: true, requiresHumanConfirmation: false };
+    return {
+      isPermitted: evalResult.decision === 'allow',
+      requiresHumanConfirmation: evalResult.requiresUserConfirmation,
+      reason: evalResult.reason
+    };
   }
 }

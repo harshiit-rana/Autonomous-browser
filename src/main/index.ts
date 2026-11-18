@@ -8,6 +8,7 @@ import { credentialVault } from '../infrastructure/credentials.js';
 import { registerTypedHandler } from '../ipc/main_handler.js';
 import { AgentRuntime } from '../agent/runtime.js';
 import { SwarmCoordinator } from '../swarm/coordinator.js';
+import { GlobalKillSwitch, AuditLog } from '../security/audit_log.js';
 import {
   IPC_CHANNELS,
   TabCreateRequest,
@@ -505,6 +506,50 @@ class MainApp {
         const anthropic = Boolean(await credentialVault.getKey('anthropic') || process.env.ANTHROPIC_API_KEY);
         const openai = Boolean(await credentialVault.getKey('openai') || process.env.OPENAI_API_KEY);
         return { gemini, anthropic, openai };
+      }
+    );
+
+    // Global Kill Switch & Security Audit (Issue #164)
+    registerTypedHandler<{ reason?: string }, boolean>(
+      IPC_CHANNELS.KILL_SWITCH_TRIGGER,
+      getChrome,
+      (req) => {
+        GlobalKillSwitch.getInstance().triggerKill(req?.reason || 'User triggered kill switch via UI');
+        AgentRuntime.getInstance().cancel();
+        return true;
+      }
+    );
+
+    registerTypedHandler(
+      IPC_CHANNELS.KILL_SWITCH_RESET,
+      getChrome,
+      () => {
+        GlobalKillSwitch.getInstance().reset();
+        return true;
+      }
+    );
+
+    registerTypedHandler(
+      IPC_CHANNELS.KILL_SWITCH_GET_STATUS,
+      getChrome,
+      () => {
+        return GlobalKillSwitch.getInstance().getStatus();
+      }
+    );
+
+    registerTypedHandler(
+      IPC_CHANNELS.AUDIT_LOG_GET,
+      getChrome,
+      () => {
+        return new AuditLog().getRecords();
+      }
+    );
+
+    registerTypedHandler(
+      IPC_CHANNELS.AUDIT_LOG_VERIFY,
+      getChrome,
+      () => {
+        return new AuditLog().verifyIntegrity();
       }
     );
   }

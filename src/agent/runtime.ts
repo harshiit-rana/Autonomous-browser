@@ -22,6 +22,12 @@ import {
 import { SwarmCoordinator } from '../swarm/coordinator.js';
 import { SwarmManager } from '../swarm/swarm_manager.js';
 import { SharedBlackboard } from '../swarm/blackboard.js';
+import { ActionPolicyEngine } from '../security/action_policy.js';
+import { GlobalKillSwitch, AuditLog } from '../security/audit_log.js';
+import { PromptIsolationEngine } from '../security/prompt_isolation.js';
+import { PrivacyGovernor } from '../security/privacy_governor.js';
+import { SecretVault } from '../security/secret_vault.js';
+import { BotChallengeBridge } from '../security/bot_detection.js';
 
 const logger = rootLogger.child('agent-runtime');
 
@@ -386,12 +392,27 @@ export class AgentRuntime {
         continue;
       }
 
+      // Bot Challenge Detection (Issue #162)
+      const challenge = BotChallengeBridge.detectChallenge(snapshot.title, snapshot.formattedTree);
+      if (challenge.detected) {
+        this.emitEvidence(`[Anti-Bot Challenge Detected] ${challenge.message}`);
+        this.pause();
+        this.emitMissionStatus('paused', `Human verification required: ${challenge.provider}`);
+        continue;
+      }
+
+      // Privacy & PII Redaction + Secret Masking (Issues #157, #160, #166)
+      const privacyGovernor = new PrivacyGovernor('Careful');
+      const piiRedactedTree = privacyGovernor.redactPII(snapshot.formattedTree).cleaned;
+      const maskedTree = SecretVault.maskHighEntropyTokens(piiRedactedTree);
+      const safeTitle = PromptIsolationEngine.escapeXml(snapshot.title);
+
       const observationText = `
-[Page State]
+[Page State - Isolated Data Channel]
 URL: ${snapshot.url}
-Title: ${snapshot.title}
+Title: ${safeTitle}
 Interactive Elements:
-${snapshot.formattedTree}
+${maskedTree}
 `.trim();
 
       // Append observation to history as user/environment feedback
@@ -483,6 +504,73 @@ ${snapshot.formattedTree}
       let isFinished = false;
       for (const toolCall of response.toolCalls) {
         if (this.abortController?.signal.aborted) return;
+
+        // Emergency Kill Switch Check (Issue #164)
+        if (GlobalKillSwitch.getInstance().isTriggered()) {
+          this.finishMission('cancelled', undefined, 'Mission halted by Emergency Kill Switch');
+          return;
+        }
+
+        // Policy Decision Point (PDP) Action Gating (Issue #158)
+        const pdp = new ActionPolicyEngine();
+        const auditLog = new AuditLog();
+        const targetElement = toolCall.arguments?.ref ? snapshot.elements.get(toolCall.arguments.ref) : undefined;
+
+        const policyEvaluation = pdp.evaluateAction({
+          missionId: mission.id,
+          userGoal: mission.prompt,
+          allowedOrigins: [snapshot.url],
+          currentUrl: snapshot.url,
+          actionName: toolCall.name,
+          actionArgs: toolCall.arguments,
+          targetFacts: {
+            label: targetElement?.name,
+            type: targetElement?.type || targetElement?.tagName,
+            role: targetElement?.role || targetElement?.tagName
+          }
+        });
+
+        // Audit log action evaluation (Issue #164)
+        auditLog.logAction({
+          missionId: mission.id,
+          actor: 'policy',
+          action: toolCall.name,
+          decision: policyEvaluation.decision,
+          targetOrigin: snapshot.url,
+          details: { riskClass: policyEvaluation.riskClass, reason: policyEvaluation.reason }
+        });
+
+        if (policyEvaluation.decision === 'deny') {
+          this.emitEvidence(`[Security Policy Denied] ${policyEvaluation.reason}`);
+          mission.history.push({
+            role: 'user',
+            content: `Tool Execution Denied by Security Policy: ${policyEvaluation.reason}`
+          });
+          continue;
+        }
+
+        if (policyEvaluation.decision === 'ask') {
+          this.emitEvidence(`[Human Approval Required: ${policyEvaluation.riskClass}] ${policyEvaluation.reason}`);
+          this.pause();
+          this.emitMissionStatus('paused', `Awaiting user approval for ${policyEvaluation.riskClass}: ${policyEvaluation.reason}`);
+          continue;
+        }
+
+        // Secret Placeholder Substitution at Execution Layer (Issue #160)
+        if (toolCall.name === 'type' && typeof toolCall.arguments?.text === 'string' && toolCall.arguments.text.includes('{{secret:')) {
+          const secretVault = new SecretVault();
+          const subst = secretVault.substitutePlaceholder(toolCall.arguments.text, snapshot.url);
+          if (subst.substituted && subst.resolvedValue) {
+            toolCall.arguments.text = subst.resolvedValue;
+          } else {
+            this.emitEvidence(`[Secret Substitution Blocked] ${subst.reason}`);
+            mission.history.push({
+              role: 'user',
+              content: `Failed to autofill secret: ${subst.reason}`
+            });
+            continue;
+          }
+        }
 
         // Loop / repetition detection (Issue #122)
         const sig = `${toolCall.name}:${JSON.stringify(toolCall.arguments)}`;

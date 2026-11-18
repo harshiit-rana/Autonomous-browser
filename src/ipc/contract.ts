@@ -166,6 +166,13 @@ export const IPC_CHANNELS = {
   CREDENTIALS_SET: 'credentials:set',
   CREDENTIALS_GET_STATUS: 'credentials:get_status',
 
+  // Security & Audit (Issues #160, #164)
+  KILL_SWITCH_TRIGGER: 'security:kill_switch_trigger',
+  KILL_SWITCH_RESET: 'security:kill_switch_reset',
+  KILL_SWITCH_GET_STATUS: 'security:kill_switch_get_status',
+  AUDIT_LOG_GET: 'security:audit_log_get',
+  AUDIT_LOG_VERIFY: 'security:audit_log_verify',
+
   // Push Events from Main to Renderer
   EVENT_TABS_SYNC: 'tabs:sync',
   EVENT_TAB_PATCH: 'tab:patch',
