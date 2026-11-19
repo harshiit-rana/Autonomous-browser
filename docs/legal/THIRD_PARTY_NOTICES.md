@@ -13,7 +13,7 @@ Legal status: this is an engineering inventory, **not legal advice**. Licence co
 | Electron | 33.4.11 | MIT |
 | Chromium | 130.0.6723.191 | See `LICENSES.chromium.html` shipped inside the Electron distribution |
 
-## Production npm dependencies (144)
+## Production npm dependencies (179)
 
 Licence values are the `license` field recorded in `package-lock.json`. Allowed licences: MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, 0BSD, MPL-2.0.
 
@@ -42,9 +42,14 @@ Licence values are the `license` field recorded in `package-lock.json`. Allowed 
 | ajv | 8.20.0 | MIT |
 | ajv-formats | 3.0.1 | MIT |
 | base64-js | 1.5.1 | MIT |
+| better-sqlite3 | 12.11.1 | MIT |
 | bignumber.js | 9.3.1 | MIT |
+| bindings | 1.5.0 | MIT |
+| bl | 4.1.0 | MIT |
+| readable-stream | 3.6.2 | MIT |
 | body-parser | 2.4.0 | MIT |
 | content-type | 2.1.0 | MIT |
+| buffer | 5.7.1 | MIT |
 | buffer-equal-constant-time | 1.0.1 | BSD-3-Clause |
 | bytes | 3.1.2 | MIT |
 | call-bind-apply-helpers | 1.0.2 | MIT |
@@ -57,11 +62,16 @@ Licence values are the `license` field recorded in `package-lock.json`. Allowed 
 | cross-spawn | 7.0.6 | MIT |
 | data-uri-to-buffer | 4.0.1 | MIT |
 | debug | 4.4.3 | MIT |
+| decompress-response | 6.0.0 | MIT |
+| mimic-response | 3.1.0 | MIT |
+| deep-extend | 0.6.0 | MIT |
 | depd | 2.0.0 | MIT |
+| detect-libc | 2.1.2 | Apache-2.0 |
 | dunder-proto | 1.0.1 | MIT |
 | ecdsa-sig-formatter | 1.0.11 | Apache-2.0 |
 | ee-first | 1.1.1 | MIT |
 | encodeurl | 2.0.3 | MIT |
+| end-of-stream | 1.4.5 | MIT |
 | es-define-property | 1.0.1 | MIT |
 | es-errors | 1.3.0 | MIT |
 | es-object-atoms | 1.1.2 | MIT |
@@ -69,6 +79,7 @@ Licence values are the `license` field recorded in `package-lock.json`. Allowed 
 | etag | 1.8.1 | MIT |
 | eventsource | 3.0.7 | MIT |
 | eventsource-parser | 3.1.1 | MIT |
+| expand-template | 2.0.3 | (MIT OR WTFPL) |
 | express | 5.3.0 | MIT |
 | express-rate-limit | 8.7.4 | MIT |
 | content-type | 2.1.0 | MIT |
@@ -77,15 +88,19 @@ Licence values are the `license` field recorded in `package-lock.json`. Allowed 
 | fast-sha256 | 1.3.0 | Unlicense |
 | fast-uri | 3.1.9 | BSD-3-Clause |
 | fetch-blob | 3.2.0 | MIT |
+| fflate | 0.8.3 | MIT |
+| file-uri-to-path | 1.0.0 | MIT |
 | finalhandler | 2.1.1 | MIT |
 | formdata-polyfill | 4.0.10 | MIT |
 | forwarded | 0.2.0 | MIT |
 | fresh | 2.0.0 | MIT |
+| fs-constants | 1.0.0 | MIT |
 | function-bind | 1.1.2 | MIT |
 | gaxios | 7.3.1 | Apache-2.0 |
 | gcp-metadata | 8.1.2 | Apache-2.0 |
 | get-intrinsic | 1.3.0 | MIT |
 | get-proto | 1.0.1 | MIT |
+| github-from-package | 0.0.0 | MIT |
 | google-auth-library | 10.9.1 | Apache-2.0 |
 | google-logging-utils | 1.1.3 | Apache-2.0 |
 | gopd | 1.2.0 | MIT |
@@ -95,7 +110,9 @@ Licence values are the `license` field recorded in `package-lock.json`. Allowed 
 | http-errors | 2.0.1 | MIT |
 | https-proxy-agent | 7.0.6 | MIT |
 | iconv-lite | 0.7.3 | MIT |
+| ieee754 | 1.2.1 | BSD-3-Clause |
 | inherits | 2.0.4 | ISC |
+| ini | 1.3.8 | ISC |
 | ip-address | 10.7.6 | MIT |
 | ipaddr.js | 1.9.1 | MIT |
 | is-promise | 4.0.0 | MIT |
@@ -113,7 +130,10 @@ Licence values are the `license` field recorded in `package-lock.json`. Allowed 
 | merge-descriptors | 2.0.0 | MIT |
 | mime-db | 1.54.0 | MIT |
 | mime-types | 3.0.2 | MIT |
+| minimist | 1.2.8 | MIT |
+| mkdirp-classic | 0.5.3 | MIT |
 | ms | 2.1.3 | MIT |
+| napi-build-utils | 2.0.0 | MIT |
 | negotiator | 1.1.0 | MIT |
 | content-type | 2.1.0 | MIT |
 | node-domexception | 1.0.0 | MIT |
@@ -130,11 +150,16 @@ Licence values are the `license` field recorded in `package-lock.json`. Allowed 
 | path-to-regexp | 8.4.2 | MIT |
 | pkce-challenge | 5.0.1 | MIT |
 | playwright-core | 1.65.1 | Apache-2.0 |
+| prebuild-install | 7.1.3 | MIT |
+| node-abi | 3.101.0 | MIT |
+| semver | 7.8.6 | ISC |
 | protobufjs | 7.6.6 | BSD-3-Clause |
 | proxy-addr | 2.0.8 | MIT |
+| pump | 3.0.4 | MIT |
 | qs | 6.17.1 | BSD-3-Clause |
 | range-parser | 1.3.0 | MIT |
 | raw-body | 3.0.2 | MIT |
+| rc | 1.2.8 | (BSD-2-Clause OR MIT OR Apache-2.0) |
 | require-from-string | 2.0.2 | MIT |
 | router | 2.2.0 | MIT |
 | safe-buffer | 5.1.2 | MIT |
@@ -148,14 +173,24 @@ Licence values are the `license` field recorded in `package-lock.json`. Allowed 
 | side-channel-list | 1.0.1 | MIT |
 | side-channel-map | 1.0.1 | MIT |
 | side-channel-weakmap | 1.0.2 | MIT |
+| simple-concat | 1.0.1 | MIT |
+| simple-get | 4.0.1 | MIT |
 | standardwebhooks | 1.3.0 | MIT |
 | statuses | 2.0.2 | MIT |
+| string_decoder | 1.1.1 | MIT |
+| strip-json-comments | 2.0.1 | MIT |
+| tar-fs | 2.1.5 | MIT |
+| chownr | 1.1.4 | ISC |
+| tar-stream | 2.2.0 | MIT |
+| readable-stream | 3.6.2 | MIT |
 | toidentifier | 1.0.1 | MIT |
 | ts-algebra | 2.0.0 | MIT |
+| tunnel-agent | 0.6.0 | Apache-2.0 |
 | type-is | 2.1.0 | MIT |
 | content-type | 2.1.0 | MIT |
 | undici-types | 6.21.0 | MIT |
 | unpipe | 1.0.0 | MIT |
+| util-deprecate | 1.0.2 | MIT |
 | vary | 1.1.2 | MIT |
 | web-streams-polyfill | 3.3.3 | MIT |
 | which | 2.0.2 | ISC |
