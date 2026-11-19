@@ -65,13 +65,14 @@ jobs:
             exit 1
           fi
 
-      - name: Build (tsc + assets + preload bundle + renderer bundle)
-        run: npm run build
-
+      # Runs BEFORE the build: the gate's own `tsc -b` re-emits dist/main/preload.js and would undo the preload bundle.
       # Blocks tag releases when the gate is red; on PRs / dry runs it is reported but does not stop the packaging checks.
       - name: Release gate
         run: npm run gate
         continue-on-error: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Build (tsc + assets + preload bundle + renderer bundle)
+        run: npm run build
 
       - name: Supply-chain gate (licences, SBOM, notices)
         run: npm run licences
