@@ -1,88 +1,58 @@
 /**
- * Issue Verification Audit Test (Issue #222 - [TRU-04])
+ * Issue verification ledger test (#222 - [TRU-04]).
  *
- * Verifies that all 117 closed historical issues (#101-#217) are audited:
- * - docs/audits/ISSUE_VERIFICATION.md contains all 117 rows
- * - Every row maps to an active completion program issue (#218-#262)
- * - docs/audits/issue_verification.json matches markdown counts
- * - docs/STATUS.md includes the generated summary
+ * Independent of the generator's own checks, this test:
+ *  - recomputes the ledger and requires the committed files to be identical (no stale / hand-edited ledger)
+ *  - re-checks with fs that EVERY path cited in the ledger exists
+ *  - requires 117 rows (#101-#217), valid results, and an owning issue in #218-#262 for each non-verified row
+ *  - requires "verified" rows to have an evidence file, and evidence files to correspond to "verified" rows
+ *  - requires docs/STATUS.md to carry the generated counts
  */
-
 import * as assert from 'node:assert';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+// @ts-ignore - plain ESM script
+import { computeLedger } from '../scripts/build_issue_verification.mjs';
 
-console.log('--- Testing Issue Verification Audit (#222 - [TRU-04]) ---\n');
+const root = process.cwd();
+const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8').replace(/\r\n/g, '\n'); // checkouts may use CRLF
+console.log('--- Issue verification ledger (#222 TRU-04) ---');
 
-function testIssueVerificationLedger() {
-  console.log('[#222 TRU-04] Verifying docs/audits/ISSUE_VERIFICATION.md...');
-  const mdPath = path.resolve(process.cwd(), 'docs/audits/ISSUE_VERIFICATION.md');
-  const jsonPath = path.resolve(process.cwd(), 'docs/audits/issue_verification.json');
+const { json, md } = computeLedger() as { json: any; md: string };
 
-  assert.strictEqual(fs.existsSync(mdPath), true, 'docs/audits/ISSUE_VERIFICATION.md must exist');
-  assert.strictEqual(fs.existsSync(jsonPath), true, 'docs/audits/issue_verification.json must exist');
+assert.strictEqual(read('docs/audits/issue_verification.json'), JSON.stringify(json, null, 2) + '\n', 'issue_verification.json is stale: run node scripts/build_issue_verification.mjs');
+assert.strictEqual(read('docs/audits/ISSUE_VERIFICATION.md'), md, 'ISSUE_VERIFICATION.md is stale: run node scripts/build_issue_verification.mjs');
 
-  const jsonContent = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-  assert.strictEqual(jsonContent.total, 117, 'Total audited issues must be 117');
-  assert.strictEqual(jsonContent.verified, 0, 'Verified count must be 0 until #223/#254 are completed');
-  assert.strictEqual(jsonContent.partial + jsonContent.notInApp, 117, 'Sum of partial and notInApp must equal 117');
-  assert.strictEqual(jsonContent.issues.length, 117, 'Must have 117 issue entries');
+assert.strictEqual(json.total, 117);
+assert.strictEqual(json.issues.length, 117);
+assert.strictEqual(json.verified + json.partial + json.notInApp, 117);
 
-  const mdContent = fs.readFileSync(mdPath, 'utf8');
-
-  // Verify each issue from 101 to 217 is present
-  for (let num = 101; num <= 217; num++) {
-    const issueRegex = new RegExp(`\\|\\s*#${num}\\s*\\|`);
-    assert.ok(issueRegex.test(mdContent), `ISSUE_VERIFICATION.md must contain row for #${num}`);
+let cited = 0;
+for (let n = 101; n <= 217; n++) {
+  const row = json.issues.find((i: any) => i.number === n);
+  assert.ok(row, `missing row #${n}`);
+  assert.ok(['verified', 'partial', 'not-in-app'].includes(row.result), `#${n}: bad result ${row.result}`);
+  assert.ok(row.title && row.gap, `#${n}: title and gap required`);
+  assert.ok(new RegExp(`\\| #${n} \\|`).test(read('docs/audits/ISSUE_VERIFICATION.md')), `#${n}: not rendered in markdown`);
+  for (const ev of row.evidence) {
+    cited++;
+    assert.ok(fs.existsSync(path.join(root, ev.path)), `#${n}: cited path does not exist: ${ev.path}`);
   }
-
-  // Verify every issue row links to an active completion issue (#218-#262)
-  for (const item of jsonContent.issues) {
-    assert.ok(
-      item.number >= 101 && item.number <= 217,
-      `Issue number must be between 101 and 217, got ${item.number}`
-    );
-    assert.ok(item.title && typeof item.title === 'string', `Issue #${item.number} must have title`);
-    assert.ok(item.claim && typeof item.claim === 'string', `Issue #${item.number} must have claim`);
-    assert.ok(item.howVerified && typeof item.howVerified === 'string', `Issue #${item.number} must describe how verified`);
-    assert.ok(
-      item.result === 'verified' || item.result === 'partial' || item.result === 'not-in-app',
-      `Issue #${item.number} must have valid result (verified/partial/not-in-app), got: ${item.result}`
-    );
-
-    // If not verified, must link to an open program issue (#218 - #262)
-    if (item.result !== 'verified') {
-      const match = item.owningIssue.match(/#(\d+)/);
-      assert.ok(match, `Non-verified issue #${item.number} must link to owning issue in program: ${item.owningIssue}`);
-      const owningNum = parseInt(match[1], 10);
-      assert.ok(
-        owningNum >= 218 && owningNum <= 262,
-        `Owning issue #${owningNum} for #${item.number} must be within completion program (#218-#262)`
-      );
-    }
-  }
-
-  console.log(`✓ All 117 issues verified: ${jsonContent.verified} verified, ${jsonContent.partial} partial, ${jsonContent.notInApp} not-in-app`);
+  const hasEvidenceFile = fs.existsSync(path.join(root, `docs/audits/evidence/${n}.md`));
+  assert.strictEqual(row.result === 'verified', hasEvidenceFile, `#${n}: "verified" requires docs/audits/evidence/${n}.md and vice versa`);
+  assert.ok(row.owningIssues.length > 0, `#${n}: needs an owning program issue`);
+  for (const o of row.owningIssues) assert.ok(o >= 218 && o <= 262, `#${n}: owning issue #${o} outside #218-#262`);
 }
+assert.ok(cited > 200, `expected >200 cited paths, got ${cited}`);
 
-function testStatusDocSummary() {
-  console.log('[#222 TRU-04] Verifying legacy verification summary in docs/STATUS.md...');
-  const statusPath = path.resolve(process.cwd(), 'docs/STATUS.md');
-  assert.strictEqual(fs.existsSync(statusPath), true, 'docs/STATUS.md must exist');
+// Every path-looking token in the rendered markdown must exist (guards hand-edits of the .md).
+const tokens = [...md.matchAll(/`((?:src|tests|scripts|docs|attic|fixtures|\.github)\/[^`\s]+)`/g)].map((m) => m[1]);
+for (const t of new Set(tokens.filter((x) => !x.includes("<")))) assert.ok(fs.existsSync(path.join(root, t)), `markdown cites a missing path: ${t}`);
 
-  const content = fs.readFileSync(statusPath, 'utf8');
-  assert.ok(
-    content.includes('## 3. Legacy Issue Verification Summary (#101 - #217)'),
-    'docs/STATUS.md must contain section 3 for Legacy Issue Verification'
-  );
-  assert.ok(content.includes('**Total Audited**'), 'docs/STATUS.md must contain Total Audited row');
-  assert.ok(content.includes('**117**'), 'docs/STATUS.md must reflect 117 audited issues');
-  console.log('✓ docs/STATUS.md summary section verified');
-}
+const status = read('docs/STATUS.md');
+assert.ok(status.includes('## 3. Legacy Issue Verification Summary (#101 - #217)'), 'STATUS.md section 3 missing');
+assert.ok(status.includes(`| **Partial** | ${json.partial} |`), 'STATUS.md partial count differs from ledger');
+assert.ok(status.includes(`| **Not in App** | ${json.notInApp} |`), 'STATUS.md not-in-app count differs from ledger');
 
-testIssueVerificationLedger();
-testStatusDocSummary();
-
-console.log('======================================================');
-console.log('ALL ISSUE VERIFICATION TESTS PASSED (100%)');
-console.log('======================================================');
+console.log(`✓ ${json.total} rows, ${cited} cited paths all exist: ${json.verified} verified, ${json.partial} partial, ${json.notInApp} not-in-app`);
+console.log('ISSUE VERIFICATION TESTS PASSED');
