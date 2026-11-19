@@ -13,7 +13,7 @@
 
 import { EventEmitter } from 'node:events';
 import { SwarmManager } from './swarm_manager.js';
-import { WorkerHost } from './worker_host.js';
+import { IWorkerHost } from './worker_host.js';
 import { SharedBlackboard, EvidenceItem } from './blackboard.js';
 import { SwarmScheduler, ScheduledTask, TaskRole, TaskEffectClass } from './scheduler.js';
 import { URLFrontier } from './url_frontier.js';
@@ -191,7 +191,7 @@ export class SwarmCoordinator extends EventEmitter {
   public async executeMission(
     missionId: string,
     prompt: string,
-    workerExecutorFn?: (worker: WorkerHost, task: ScheduledTask) => Promise<any>
+    workerExecutorFn?: (worker: IWorkerHost, task: ScheduledTask) => Promise<any>
   ): Promise<SwarmMissionResult> {
     const startTime = Date.now();
     const plan = this.planMission(missionId, prompt);
@@ -244,7 +244,7 @@ export class SwarmCoordinator extends EventEmitter {
           const task = this.scheduler.getNextTask(worker.id);
           if (!task) break;
 
-          this.emit('taskStarted', { workerId: worker.id, taskId: task.id, role: task.role });
+          this.emit('taskStarted', { workerId: worker.id, identity: worker.identity, taskId: task.id, role: task.role });
 
           try {
             // Hazard lock handling for side-effects
@@ -267,11 +267,11 @@ export class SwarmCoordinator extends EventEmitter {
             this.scheduler.completeTask(task.id, taskResult);
             completedTasks++;
             stageBarrier.arrive(worker.id, taskResult);
-            this.emit('taskCompleted', { workerId: worker.id, taskId: task.id, result: taskResult });
+            this.emit('taskCompleted', { workerId: worker.id, identity: worker.identity, taskId: task.id, result: taskResult });
           } catch (err: any) {
             errors.push(`Task ${task.id} failed: ${err.message}`);
             this.scheduler.failTask(task.id, err.message);
-            this.emit('taskFailed', { workerId: worker.id, taskId: task.id, error: err.message });
+            this.emit('taskFailed', { workerId: worker.id, identity: worker.identity, taskId: task.id, error: err.message });
           } finally {
             if (task.effectClass !== 'read') {
               const lockKey = HazardLockManager.makeKey('form', task.url || 'default', task.id);
@@ -329,7 +329,7 @@ export class SwarmCoordinator extends EventEmitter {
   /**
    * Built-in execution logic for scoped workers
    */
-  private async defaultTaskExecution(worker: WorkerHost, task: ScheduledTask): Promise<any> {
+  private async defaultTaskExecution(worker: IWorkerHost, task: ScheduledTask): Promise<any> {
     if (task.role === 'researcher' || task.role === 'extractor') {
       const url = task.url || 'https://duckduckgo.com';
       const domState = await worker.navigate(url);

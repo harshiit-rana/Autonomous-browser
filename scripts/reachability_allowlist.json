@@ -50,7 +50,6 @@
     "native/extension_runtime.ts": "#252",
     "native/ocr_canvas_extractor.ts": "#225",
     "perception/axtree_extractor.ts": "#225",
-    "perception/settle_detector.ts": "#225",
     "perception/som_overlay.ts": "#225",
     "perception/spatial_reasoner.ts": "#225",
     "planning/state_snapshotter.ts": "#228",

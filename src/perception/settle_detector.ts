@@ -102,4 +102,25 @@ export class VisualSettleDetector {
       return false;
     }
   }
+
+  /**
+   * Like waitForPageSettle but reports whether the page really went quiet (`quiescence_achieved`)
+   * or the in-page timeout was hit (`timeout_reached`), instead of treating both as success.
+   */
+  public static async waitForPageSettleDetailed(
+    webContents: WebContents,
+    options: SettleOptions = {}
+  ): Promise<{ settled: boolean; reason: string }> {
+    if (webContents.isDestroyed()) return { settled: false, reason: 'destroyed' };
+    const timeout = options.timeoutMs ?? 3000;
+    const quiet = options.quietWindowMs ?? 150;
+    const checkAnim = options.checkAnimations !== false;
+    try {
+      const r = await webContents.executeJavaScript(VisualSettleDetector.getSettleScript(quiet, timeout, checkAnim), true);
+      const reason = String(r?.reason ?? 'unknown');
+      return { settled: reason !== 'timeout_reached', reason };
+    } catch (err: any) {
+      return { settled: false, reason: `script_error: ${err?.message ?? err}` };
+    }
+  }
 }
