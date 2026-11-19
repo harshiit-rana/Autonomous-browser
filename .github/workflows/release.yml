@@ -32,6 +32,9 @@ jobs:
       - name: Apply Electron Hardening Fuses
         run: npm run build:fuses
 
+      - name: Supply-chain gate (licences, SBOM, notices)
+        run: node scripts/supply_chain.mjs
+
       - name: Package Desktop Artifacts
         run: npx electron-builder --publish always
         env:
