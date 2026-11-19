@@ -74,12 +74,33 @@ export const MODEL_PRICING_TABLE: Record<string, ModelPricing> = {
   'deepseek-r1:8b': {
     promptPricePerMillion: 0,
     completionPricePerMillion: 0
-  },
-  'mock-model': {
-    promptPricePerMillion: 0,
-    completionPricePerMillion: 0
   }
 };
+
+/**
+ * Tokens assumed for one agent step in the first-run cost estimate. The prompt carries the page snapshot plus history,
+ * the completion is one tool call. These are round planning figures, not measurements; the UI states them next to the price.
+ */
+export const ASSUMED_STEP_PROMPT_TOKENS = 6000;
+export const ASSUMED_STEP_COMPLETION_TOKENS = 400;
+
+export interface StepCostEstimate {
+  /** null when the model has no entry in MODEL_PRICING_TABLE: the UI shows "no pricing data" instead of a guess. */
+  costUSD: number | null;
+  promptTokens: number;
+  completionTokens: number;
+}
+
+export function estimateStepCost(modelName: string): StepCostEstimate {
+  const pricing = MODEL_PRICING_TABLE[modelName];
+  const promptTokens = ASSUMED_STEP_PROMPT_TOKENS;
+  const completionTokens = ASSUMED_STEP_COMPLETION_TOKENS;
+  if (!pricing) return { costUSD: null, promptTokens, completionTokens };
+  const costUSD =
+    (promptTokens / 1_000_000) * pricing.promptPricePerMillion +
+    (completionTokens / 1_000_000) * pricing.completionPricePerMillion;
+  return { costUSD, promptTokens, completionTokens };
+}
 
 export class UsageLedger {
   private promptTokensTotal = 0;

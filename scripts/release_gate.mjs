@@ -347,7 +347,7 @@ function checkNoFakePaths() {
   const srcDir = path.join(ROOT_DIR, 'src');
   const forbiddenPatterns = [
     { name: 'createMockView', regex: /\bcreateMockView\b/ },
-    { name: 'MockModelProvider outside demo', regex: /\bMockModelProvider\b/ },
+    { name: 'MockModelProvider outside demo', regex: /\b(?:MockModelProvider|ScriptedModelProvider)\b|\bmock_provider\b|\bscripted_provider\b/ },
     { name: 'news.ycombinator.com literal', regex: /['"`]https?:\/\/news\.ycombinator\.com/ },
     { name: 'hardcoded confidence 0.95', regex: /confidence:\s*0\.95\b/ }
   ];
@@ -374,8 +374,8 @@ function checkNoFakePaths() {
 
         lines.forEach((line, idx) => {
           for (const pat of forbiddenPatterns) {
-            // Allow MockModelProvider inside designated demo provider
-            if (pat.name.startsWith('MockModelProvider') && relPath.includes('demo')) {
+            // The scripted provider may only be named inside src/models/demo/ (the factory reaches it by a dynamic import of ./demo/e2e_scripted.js)
+            if (pat.name.startsWith('MockModelProvider') && relPath.startsWith('src/models/demo/')) {
               continue;
             }
 

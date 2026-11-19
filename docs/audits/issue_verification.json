@@ -1,8 +1,8 @@
 {
   "total": 117,
   "verified": 1,
-  "partial": 69,
-  "notInApp": 47,
+  "partial": 71,
+  "notInApp": 45,
   "issues": [
     {
       "number": 101,
@@ -2209,7 +2209,7 @@
       "number": 192,
       "title": "[ORP-01] Triage: audio loopback/meeting transcription, clipboard hub, mobile approvals, testing helpers - rewire, rescope or remove",
       "kind": "code",
-      "result": "not-in-app",
+      "result": "partial",
       "evidence": [
         {
           "path": "src/data/clipboard_hub.ts",
@@ -2219,7 +2219,7 @@
         {
           "path": "src/testing/arena_server.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         },
         {
           "path": "attic/audio_loopback.ts",
@@ -2263,12 +2263,12 @@
       "number": 194,
       "title": "[QA-01] Fixture \"web arena\": deterministic local sites for every page pattern, widget, failure and attack",
       "kind": "code",
-      "result": "not-in-app",
+      "result": "partial",
       "evidence": [
         {
           "path": "src/testing/arena_server.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         },
         {
           "path": "fixtures/arena_server.ts",

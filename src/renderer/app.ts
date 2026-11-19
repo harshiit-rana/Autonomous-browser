@@ -12,7 +12,9 @@ import {
   WorkerEventPayload,
   EvidenceEventPayload,
   PresenceEventPayload,
-  SwarmPreviewItem
+  SwarmPreviewItem,
+  MissionStatusPayload,
+  MODEL_NOT_CONFIGURED
 } from '../ipc/contract.js';
 
 function sanitizeText(str: string): string {
@@ -88,7 +90,8 @@ export class BrowserApp {
   private settingsAnthropicKey: HTMLInputElement;
   private settingsOpenaiKey: HTMLInputElement;
   private settingsOllamaUrl: HTMLInputElement;
-  private settingsDemoMode: HTMLInputElement;
+  private settingsNotice: HTMLElement;
+  private demoBanner: HTMLElement;
   private groupGeminiKey: HTMLElement;
   private groupAnthropicKey: HTMLElement;
   private groupOpenaiKey: HTMLElement;
@@ -157,7 +160,8 @@ export class BrowserApp {
     this.settingsAnthropicKey = document.getElementById('settings-anthropic-key') as HTMLInputElement;
     this.settingsOpenaiKey = document.getElementById('settings-openai-key') as HTMLInputElement;
     this.settingsOllamaUrl = document.getElementById('settings-ollama-url') as HTMLInputElement;
-    this.settingsDemoMode = document.getElementById('settings-demo-mode') as HTMLInputElement;
+    this.settingsNotice = document.getElementById('settings-notice') as HTMLElement;
+    this.demoBanner = document.getElementById('demo-banner') as HTMLElement;
     this.groupGeminiKey = document.getElementById('group-gemini-key') as HTMLElement;
     this.groupAnthropicKey = document.getElementById('group-anthropic-key') as HTMLElement;
     this.groupOpenaiKey = document.getElementById('group-openai-key') as HTMLElement;
@@ -204,6 +208,16 @@ export class BrowserApp {
     aegis.onWorkerEvent((data: WorkerEventPayload) => {
       this.activeWorkers.set(data.id, data);
       this.renderWorkerCards();
+    });
+
+    // Replay demo banner (#224): shown while a demo transcript plays, and for its final result
+    aegis.onMissionStatus?.((data: MissionStatusPayload) => {
+      if (data.source === 'demo') {
+        this.demoBanner.classList.toggle('hidden', data.status !== 'running' && data.status !== 'completed' && data.status !== 'planning');
+        this.addTimelineItem(`[DEMO] ${data.message || data.status}`, undefined, 'actions');
+      } else if (data.status === 'running' || data.status === 'planning') {
+        this.demoBanner.classList.add('hidden');
+      }
     });
 
     // Evidence & Activity Timeline feed
@@ -501,6 +515,12 @@ export class BrowserApp {
     aegis.setOverlayActive?.(true); // Occlusion protection (Issue #138)
 
     const model = this.modelSelect?.value || 'gemini-2.0-flash';
+    const status = (await aegis.getModelStatus?.(model))?.data;
+    if (status && !status.configured) {
+      this.pendingPlanPrompt = '';
+      this.openSettings({ provider: status.provider, notice: status.message });
+      return;
+    }
     const res = await aegis.previewPlan(goal, model);
     const plan = res?.data || res;
 
@@ -565,10 +585,12 @@ export class BrowserApp {
 
     const res = await aegis.startMission(goal, model);
     if (!res?.data?.started) {
-      const reason = res?.data?.message || 'Agent runtime not configured.';
-      this.addTimelineItem(`[Notice] ${reason}`, undefined, 'errors');
-      if (reason.toLowerCase().includes('settings') || reason.toLowerCase().includes('api key')) {
-        this.openSettings();
+      const reason = res?.data?.message || res?.error || 'Agent runtime not configured.';
+      if (res?.data?.code === MODEL_NOT_CONFIGURED) {
+        // Typed first-run error (#224): open Settings on the provider with the message, no mission started
+        this.openSettings({ provider: res.data.provider, notice: reason });
+      } else {
+        this.addTimelineItem(`[Notice] ${reason}`, undefined, 'errors');
       }
     }
   }
@@ -582,6 +604,11 @@ export class BrowserApp {
     this.cancelSettingsBtn.addEventListener('click', () => this.closeSettings());
     this.saveSettingsBtn.addEventListener('click', () => this.saveSettings());
     this.settingsProvider.addEventListener('change', () => this.updateProviderVisibility());
+    document.getElementById('replay-demo-btn')?.addEventListener('click', () => this.startReplayDemo());
+    document.getElementById('settings-replay-demo-btn')?.addEventListener('click', () => {
+      this.closeSettings();
+      void this.startReplayDemo();
+    });
 
     // Plan Preview buttons
     this.closePlanBtn.addEventListener('click', () => this.closePlanPreview());
@@ -593,6 +620,28 @@ export class BrowserApp {
     document.getElementById('test-anthropic-btn')?.addEventListener('click', () => this.testKey('anthropic'));
     document.getElementById('test-openai-btn')?.addEventListener('click', () => this.testKey('openai'));
     document.getElementById('test-ollama-btn')?.addEventListener('click', () => this.testKey('ollama'));
+  }
+
+  private unverifiedKeyArmed = '';
+
+  /** Rough per-step cost from the main-process pricing table; states its assumptions, never guesses a missing price. */
+  private estimateText(data: any): string {
+    const e = data?.estimate;
+    if (!e) return '';
+    const basis = `assumes ~${e.promptTokens} prompt + ${e.completionTokens} completion tokens per step`;
+    if (e.costUSD === null) return ` | no pricing data for ${data.model}`;
+    return ` | ~${e.costUSD.toFixed(4)} per step on ${data.model} (${basis})`;
+  }
+
+  private showEstimate(data: any): void {
+    this.settingsStatusMsg.textContent = `✓ ${data.message}${this.estimateText(data)}`;
+    this.settingsStatusMsg.style.color = 'var(--success)';
+  }
+
+  /** The model picker decides the model per mission, so keep it on a model of the provider just saved. */
+  private syncModelPickerToProvider(provider: string): void {
+    const wanted: Record<string, string> = { gemini: 'gemini-2.0-flash', anthropic: 'claude-3-7-sonnet-latest', openai: 'gpt-4o', ollama: 'deepseek-r1:8b' };
+    if (this.modelSelect && wanted[provider]) this.modelSelect.value = wanted[provider];
   }
 
   private async testKey(provider: string): Promise<void> {
@@ -618,7 +667,7 @@ export class BrowserApp {
     const data = res?.data || res;
 
     if (data?.valid) {
-      this.settingsStatusMsg.textContent = `✓ ${data.message}`;
+      this.settingsStatusMsg.textContent = `✓ ${data.message}${this.estimateText(data)}`;
       this.settingsStatusMsg.style.color = 'var(--success)';
     } else {
       this.settingsStatusMsg.textContent = `✗ ${data?.message || 'Verification failed'}`;
@@ -626,7 +675,20 @@ export class BrowserApp {
     }
   }
 
-  private async openSettings(): Promise<void> {
+  private async startReplayDemo(): Promise<void> {
+    const aegis = (window as any).aegis;
+    const welcome = document.querySelector('.welcome-screen') as HTMLElement;
+    if (welcome) welcome.style.display = 'none';
+    this.swarmDrawer.classList.remove('closed');
+    this.drawerToggleBtn.classList.add('active');
+    aegis?.toggleDrawer(true, this.drawerWidth);
+    const res = await aegis?.startDemo?.();
+    if (!res?.data?.started) {
+      this.addTimelineItem(`[Notice] ${res?.data?.message || res?.error || 'Replay demo could not start.'}`, undefined, 'errors');
+    }
+  }
+
+  private async openSettings(opts?: { provider?: string; notice?: string }): Promise<void> {
     const aegis = (window as any).aegis;
     if (!aegis?.getSettings) return;
 
@@ -642,13 +704,16 @@ export class BrowserApp {
         this.settingsAnthropicKey.value = settings.apiKeys?.anthropic || '';
         this.settingsOpenaiKey.value = settings.apiKeys?.openai || '';
         this.settingsOllamaUrl.value = settings.ollamaBaseUrl || 'http://localhost:11434';
-        this.settingsDemoMode.checked = !!settings.demoMode;
       }
     } catch (err) {
       console.error('Failed to load settings', err);
     }
 
+    // The provider the failed mission needed wins over the saved one, and the message must survive the load above
+    if (opts?.provider) this.settingsProvider.value = opts.provider === 'ollama' ? 'ollama' : opts.provider;
     this.updateProviderVisibility();
+    this.settingsNotice.textContent = opts?.notice || '';
+    this.settingsNotice.classList.toggle('hidden', !opts?.notice);
     this.settingsStatusMsg.style.display = 'none';
     this.settingsModal.classList.remove('hidden');
   }
@@ -678,9 +743,28 @@ export class BrowserApp {
         anthropic: this.settingsAnthropicKey.value.trim(),
         openai: this.settingsOpenaiKey.value.trim()
       },
-      ollamaBaseUrl: this.settingsOllamaUrl.value.trim() || 'http://localhost:11434',
-      demoMode: this.settingsDemoMode.checked
+      ollamaBaseUrl: this.settingsOllamaUrl.value.trim() || 'http://localhost:11434'
     };
+
+    // Validate the selected provider's key before saving (CREDENTIALS_TEST). A second Save on the same
+    // unchanged, unverified key stores it anyway (offline, or a provider the probe cannot reach).
+    const typedKey = provider === 'gemini' ? patch.apiKeys.gemini : provider === 'anthropic' ? patch.apiKeys.anthropic : provider === 'openai' ? patch.apiKeys.openai : '';
+    if (typedKey && aegis.testCredentials && this.unverifiedKeyArmed !== typedKey) {
+      this.settingsStatusMsg.textContent = `Validating ${provider} key...`;
+      this.settingsStatusMsg.style.color = 'var(--text-muted)';
+      this.settingsStatusMsg.style.display = 'block';
+      const test = await aegis.testCredentials(provider, typedKey);
+      const data = test?.data || test;
+      if (!data?.valid) {
+        this.unverifiedKeyArmed = typedKey;
+        this.settingsStatusMsg.textContent = `\u2717 ${data?.message || 'Key could not be verified'}. Press Save again to store it unverified.`;
+        this.settingsStatusMsg.style.color = 'var(--danger)';
+        return;
+      }
+      this.showEstimate(data);
+    }
+    this.unverifiedKeyArmed = '';
+    this.syncModelPickerToProvider(provider);
 
     try {
       await aegis.updateSettings(patch);

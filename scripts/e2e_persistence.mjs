@@ -99,7 +99,7 @@ let missionId;
 let recorded;
 {
   const { app, page } = await launch(profile);
-  await ipc(page, 'updateSettings', { modelProvider: 'ollama', ollamaBaseUrl: 'http://127.0.0.1:9/v1', demoMode: false, apiKeys: { openai: SECRET } });
+  await ipc(page, 'updateSettings', { modelProvider: 'ollama', ollamaBaseUrl: 'http://127.0.0.1:9/v1', apiKeys: { openai: SECRET } });
   const started = await ipc(page, 'startMission', 'persistence e2e: summarise the current page', 'llama3');
   assert.ok(started.started, `mission did not start: ${JSON.stringify(started)}`);
   missionId = started.missionId;

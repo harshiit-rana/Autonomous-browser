@@ -1,15 +1,15 @@
 import { strict as assert } from 'node:assert';
-import { MockModelProvider } from '../src/models/mock_provider.js';
+import { ScriptedModelProvider } from '../src/models/demo/scripted_provider.js';
 import { ModelRequest, CanonicalMessage } from '../src/models/types.js';
 import { BROWSER_TOOLS, ToolExecutor } from '../src/agent/tools.js';
 import { PageSnapshot } from '../src/agent/perception.js';
 
 console.log('--- Testing Milestone M1: Agent Runtime & Model Layer ---');
 
-async function testMockModelProvider() {
-  console.log('Testing MockModelProvider...');
+async function testScriptedModelProvider() {
+  console.log('Testing ScriptedModelProvider...');
 
-  const provider = new MockModelProvider([
+  const provider = new ScriptedModelProvider([
     {
       text: 'Searching for laptops...',
       toolCalls: [
@@ -60,7 +60,7 @@ async function testMockModelProvider() {
   assert.equal(res2.toolCalls[0].arguments.result, 'Found 3 top posts');
   assert.equal(res2.finishReason, 'tool_calls');
 
-  console.log('✓ MockModelProvider multi-turn tool calling verified!');
+  console.log('✓ ScriptedModelProvider multi-turn tool calling verified!');
 }
 
 async function testToolExecutor() {
@@ -159,13 +159,16 @@ async function testModelProviderFactory() {
   const { ModelProviderFactory } = await import('../src/models/provider_factory.js');
 
   // Ollama provider instantiation
-  const ollamaProvider = ModelProviderFactory.createProvider('deepseek-r1:8b');
-  assert.equal(ollamaProvider.providerName, 'openai');
+  const ollamaProvider = await ModelProviderFactory.createProvider('deepseek-r1:8b');
+  assert.equal(ollamaProvider.providerName, 'ollama');
   assert.equal(ollamaProvider.modelName, 'deepseek-r1:8b');
 
-  // Gemini provider instantiation
-  const geminiProvider = ModelProviderFactory.createProvider('gemini-2.0-flash');
+  // Gemini provider instantiation needs a key (no key -> MODEL_NOT_CONFIGURED, see test_provider_factory.ts)
+  const { updateSettings } = await import('../src/infrastructure/settings.js');
+  updateSettings({ apiKeys: { gemini: 'AIza-unit-test-key' } });
+  const geminiProvider = await ModelProviderFactory.createProvider('gemini-2.0-flash');
   assert.equal(geminiProvider.providerName, 'gemini');
+  updateSettings({ apiKeys: { gemini: '' } });
 
   console.log('✓ ModelProviderFactory dynamic resolution verified!');
 }
@@ -208,7 +211,7 @@ async function testActionTaxonomy() {
 }
 
 async function run() {
-  await testMockModelProvider();
+  await testScriptedModelProvider();
   await testToolExecutor();
   await testModelProviderFactory();
   await testUsageLedger();

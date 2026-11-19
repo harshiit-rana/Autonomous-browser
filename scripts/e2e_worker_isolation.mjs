@@ -335,7 +335,7 @@ try {
   console.log('phase 8 leak ok', `heap +${leak.heapGrowthMB.toFixed(2)} MB, rss ${leak.rssGrowthMB.toFixed(1)} MB, renderer working set ${leak.before.rendererWorkingSetKB} -> ${leak.after.rendererWorkingSetKB} KB`);
 
   // -------------------------------------------------------------------------- phase 9: a real /swarm mission through the app
-  await page.evaluate(() => window.aegis.updateSettings({ modelProvider: 'ollama', ollamaBaseUrl: 'http://127.0.0.1:9/v1', demoMode: false }));
+  await page.evaluate(() => window.aegis.updateSettings({ modelProvider: 'ollama', ollamaBaseUrl: 'http://127.0.0.1:9/v1' }));
   const started = await page.evaluate(() => window.aegis.startMission('/swarm compare prices across shops', 'llama3'));
   assert.ok(started.ok && started.data.started, `mission did not start: ${JSON.stringify(started)}`);
   const missionId = started.data.missionId;

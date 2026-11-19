@@ -1,0 +1,32 @@
+{
+  "schema": "aegis-demo-transcript/1",
+  "fixture": true,
+  "label": "Hand-written fixture transcript. NOT recorded from a live model run; it replays against the bundled local test shop only.",
+  "goal": "Which in-stock item in the demo shop is the cheapest?",
+  "startPath": "/shop",
+  "steps": [
+    {
+      "text": "The page lists three products. I will scroll to make sure I have seen every product before comparing prices.",
+      "toolCalls": [
+        { "id": "demo_1", "name": "scroll", "arguments": { "direction": "down" } }
+      ]
+    },
+    {
+      "text": "All three products are visible. The Intel Arc A770 is Out of Stock, so it is excluded. Of the two in-stock items the AMD Radeon RX 7900 XTX at $999.00 is cheaper than the NVIDIA GeForce RTX 4090 at $1,599.00.",
+      "toolCalls": [
+        {
+          "id": "demo_2",
+          "name": "done",
+          "arguments": {
+            "result": "AMD Radeon RX 7900 XTX at $999.00 is the cheapest in-stock item (Intel Arc A770 at $289.00 is out of stock).",
+            "evidence": [
+              "NVIDIA GeForce RTX 4090 - $1,599.00 - In Stock",
+              "AMD Radeon RX 7900 XTX - $999.00 - Low Stock (2 left)",
+              "Intel Arc A770 - $289.00 - Out of Stock"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

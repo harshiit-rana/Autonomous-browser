@@ -61,10 +61,47 @@ export interface MissionStartRequest {
   options?: Record<string, any>;
 }
 
+/**
+ * Typed error code (#224): no usable model for the selected provider. It is a normal, expected first-run state, not a
+ * failure: the renderer opens Settings on the provider section with `message` and no mission is started.
+ */
+export const MODEL_NOT_CONFIGURED = 'MODEL_NOT_CONFIGURED' as const;
+
+/** Resolved model provider behind a model name + saved settings. */
+export type ModelProviderId = 'gemini' | 'anthropic' | 'openai' | 'ollama';
+
 export interface MissionStartResponse {
   started: boolean;
   missionId?: string;
   reason?: 'agent-runtime-not-available' | 'no-api-key' | 'invalid-request' | 'error';
+  /** Set when the mission was refused because no model is usable. */
+  code?: typeof MODEL_NOT_CONFIGURED;
+  provider?: ModelProviderId;
+  message?: string;
+}
+
+export interface ModelStatusRequest {
+  model?: string;
+}
+
+export interface ModelStatusResponse {
+  configured: boolean;
+  provider: ModelProviderId;
+  model: string;
+  code?: typeof MODEL_NOT_CONFIGURED;
+  /** Actionable text shown in Settings when `configured` is false. */
+  message?: string;
+  /** Ollama only: the base URL that was tried. */
+  baseUrl?: string;
+  /** Rough cost of one agent step; `costUSD` is null when the model has no pricing entry. */
+  estimate: { costUSD: number | null; promptTokens: number; completionTokens: number };
+}
+
+/** Where mission output came from. `demo` = recorded transcript replay, no model ran. */
+export type MissionSource = 'live' | 'demo';
+
+export interface DemoStartResponse {
+  started: boolean;
   message?: string;
 }
 
@@ -89,6 +126,8 @@ export interface MissionStatusPayload {
   missionId?: string;
   status: 'idle' | 'planning' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
   message?: string;
+  /** `demo` while a recorded replay is playing: the renderer shows the DEMO banner. Absent means a live mission. */
+  source?: MissionSource;
 }
 
 export interface TelemetryEventPayload {
@@ -229,6 +268,9 @@ export const IPC_CHANNELS = {
   CREDENTIALS_TEST: 'credentials:test',
   CREDENTIALS_SET: 'credentials:set',
   CREDENTIALS_GET_STATUS: 'credentials:get_status',
+  MODEL_STATUS: 'model:status',
+  DEMO_START: 'demo:start',
+  DEMO_STOP: 'demo:stop',
 
   // Security & Audit (Issues #160, #164)
   KILL_SWITCH_TRIGGER: 'security:kill_switch_trigger',
