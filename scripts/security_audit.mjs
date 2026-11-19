@@ -8,8 +8,10 @@
  * 4. Electron fuses and security setting validation
  */
 
+import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 console.log('--- Running Security & Supply-Chain Hygiene Audit (#200 - [QA-07]) ---\n');
 
@@ -56,46 +58,17 @@ if (issuesFound === 0) {
   throw new Error(`SAST audit failed with ${issuesFound} issues.`);
 }
 
-// 2. Generate SPDX SBOM
-console.log('[SBOM] Generating Software Bill of Materials (SPDX 2.3 JSON)...');
-const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'));
-
-const sbom = {
-  spdxVersion: 'SPDX-2.3',
-  dataLicense: 'CC0-1.0',
-  SPDXID: 'SPDXRef-DOCUMENT',
-  name: pkg.name,
-  documentNamespace: `https://spdx.org/spdxdocs/${pkg.name}-${pkg.version}`,
-  creationInfo: {
-    creators: ['Tool: Aegis-Security-Audit-2.0', `Person: ${pkg.author}`],
-    created: new Date().toISOString()
-  },
-  packages: [
-    {
-      name: pkg.name,
-      SPDXID: 'SPDXRef-Package-AutonomousBrowser',
-      versionInfo: pkg.version,
-      downloadLocation: 'git+https://github.com/harshiit-rana/Autonomous-browser.git',
-      licenseConcluded: pkg.license,
-      licenseDeclared: pkg.license
-    },
-    ...Object.entries(pkg.dependencies || {}).map(([dep, ver], i) => ({
-      name: dep,
-      SPDXID: `SPDXRef-Dep-${i}`,
-      versionInfo: ver,
-      downloadLocation: `https://registry.npmjs.org/${dep}/-/${dep}-${ver}.tgz`,
-      licenseConcluded: 'NOASSERTION'
-    }))
-  ]
-};
-
-const sbomDir = path.resolve(process.cwd(), 'release');
-if (!fs.existsSync(sbomDir)) {
-  fs.mkdirSync(sbomDir, { recursive: true });
+// 2. SBOM from package-lock.json + licence gate (Issue #260 - [PKG-03]).
+// Delegated to scripts/supply_chain.mjs: it fails on forbidden licences and on any
+// SBOM that does not list every production package in the lockfile.
+console.log('[SBOM] Generating SPDX 2.3 SBOM from package-lock.json and checking licences...');
+const supply = spawnSync(process.execPath, [path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'supply_chain.mjs')], {
+  stdio: 'inherit'
+});
+if (supply.status !== 0) {
+  throw new Error(`Supply-chain gate failed (exit ${supply.status})`);
 }
-const sbomPath = path.join(sbomDir, 'sbom.spdx.json');
-fs.writeFileSync(sbomPath, JSON.stringify(sbom, null, 2), 'utf8');
-console.log(`✓ SPDX SBOM written to ${sbomPath} (${sbom.packages.length} packages tracked)\n`);
+console.log('');
 
 console.log('========================================================');
 console.log('ALL SECURITY AND SUPPLY-CHAIN AUDITS PASSED (100%)');

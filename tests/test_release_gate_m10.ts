@@ -117,7 +117,7 @@ function testLegalComplianceAndPolicies() {
 
   const noticesContent = fs.readFileSync(noticesPath, 'utf8');
   assert.strictEqual(noticesContent.includes('Electron'), true);
-  assert.strictEqual(noticesContent.includes('Playwright-Core'), true);
+  assert.strictEqual(noticesContent.includes('playwright-core'), true);
   assert.strictEqual(noticesContent.includes('MIT License'), true);
 
   console.log('✓ Legal policies, robots.txt posture, AI disclosure, and license notices verified\n');
