@@ -71,6 +71,9 @@ export interface MissionStartResponse {
 export interface WorkerEventPayload {
   id: string;
   name?: string;
+  /** Stable per-worker identity (#229): CSS colour and glyph shown next to the name everywhere. */
+  color?: string;
+  glyph?: string;
   task: string;
   progress: number;
   status: 'running' | 'done' | 'idle' | 'failed';

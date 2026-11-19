@@ -329,7 +329,7 @@
   },
   {
     "path": "perception/settle_detector.ts",
-    "isReachable": false
+    "isReachable": true
   },
   {
     "path": "perception/som_overlay.ts",
@@ -468,6 +468,10 @@
     "isReachable": true
   },
   {
+    "path": "swarm/agent_tab_guards.ts",
+    "isReachable": true
+  },
+  {
     "path": "swarm/barrier.ts",
     "isReachable": true
   },
@@ -481,6 +485,10 @@
   },
   {
     "path": "swarm/hazards_and_locks.ts",
+    "isReachable": true
+  },
+  {
+    "path": "swarm/page_settle.ts",
     "isReachable": true
   },
   {
@@ -509,6 +517,10 @@
   },
   {
     "path": "swarm/worker_host.ts",
+    "isReachable": true
+  },
+  {
+    "path": "swarm/worker_identity.ts",
     "isReachable": true
   },
   {

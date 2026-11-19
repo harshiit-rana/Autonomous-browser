@@ -26,6 +26,7 @@ import { SpeculativeBranchingEngine } from '../src/swarm/speculative_branching.j
 import { SwarmStageBarrier, CountDownLatch } from '../src/swarm/barrier.js';
 import { SwarmCoordinator } from '../src/swarm/coordinator.js';
 import { SwarmManager } from '../src/swarm/swarm_manager.js';
+import { fakeWorkerFactory } from './helpers/fake_worker_host.js';
 
 async function runSwarmTests() {
   console.log('--- Testing Milestone M3: Real Swarm (#147 - #155) ---');
@@ -407,7 +408,10 @@ async function runSwarmTests() {
   // =========================================================================
   console.log('\n[#147 SWM-01] Testing Orchestrator-Worker SwarmCoordinator...');
 
-  const coordinator = new SwarmCoordinator();
+  // Product code has no mock view; this test drives the scheduling logic with the FakeWorkerHost test helper.
+  const fakes = fakeWorkerFactory();
+  const fakeSwarm = new SwarmManager({ missionId: 'm_test_exec', workerFactory: fakes.factory });
+  const coordinator = new SwarmCoordinator({ swarm: fakeSwarm });
 
   // Test 1: Linear mission -> 1 worker justified
   const linearPlan = coordinator.planMission('m_linear', 'Go to https://duckduckgo.com and search for AI');
@@ -443,6 +447,10 @@ async function runSwarmTests() {
   assert(execResult.evidence.length > 0, 'Evidence must be gathered and stored in blackboard');
   assert(execResult.deliverableMarkdown.includes('Verified Findings & Evidence Table'), 'Deliverable must include verified findings table');
   assert(execResult.deliverableMarkdown.includes('Sony WH-1000XM5'), 'Deliverable table must include entities');
+
+  assert(fakes.built.length >= 3, 'stage fan-out should have spawned at least 3 workers');
+  await fakeSwarm.shutdown();
+  assert(fakes.built.every(w => w.tornDown), 'shutdown must tear down every worker, including pooled ones');
 
   console.log('✓ SwarmCoordinator plan decomposition, parallel stage execution, and cited report synthesis verified');
 

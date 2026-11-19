@@ -13,10 +13,9 @@
    ],
    "tests": [],
    "files": [],
-   "gap": "Mock provider fallback (provider_factory) and createMockView / title-as-evidence (worker_host, coordinator) are still on product paths.",
+   "gap": "Mock provider fallback (provider_factory) and title-as-evidence (coordinator) are still on product paths; the mock worker view was removed by #229.",
    "owning": [
     224,
-    229,
     227
    ]
   },
@@ -777,9 +776,14 @@
     "swarm/worker_host.ts",
     "swarm/swarm_manager.ts"
    ],
-   "tests": [],
-   "files": [],
-   "gap": "createMockView still present; real teardown not verified.",
+   "tests": [
+    "test_worker_isolation.ts"
+   ],
+   "files": [
+    "scripts/e2e_worker_isolation.mjs",
+    "docs/audits/evidence/SWX-03/report.json"
+   ],
+   "gap": "Verified in the running app by scripts/e2e_worker_isolation.mjs (#229): distinct partitions and sessions, cookie isolation, guards, crash recovery and teardown back to baseline. Open: worker views are not shown in the UI (#232), no ResourceGovernor hibernation (#231), downloads are cancelled rather than routed to a mission folder (#252).",
    "owning": [
     229
    ]

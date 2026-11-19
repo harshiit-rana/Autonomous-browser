@@ -71,6 +71,7 @@ export class AgentRuntime {
   private static instance: AgentRuntime | null = null;
   private activeMission: Mission | null = null;
   private abortController: AbortController | null = null;
+  private activeSwarm: SwarmManager | null = null;
   private isPaused: boolean = false;
   private pausePromiseResolve: (() => void) | null = null;
   private usageLedger: UsageLedger = new UsageLedger();
@@ -232,6 +233,7 @@ export class AgentRuntime {
     if (this.activeMission) {
       logger.info('Cancelling mission', { missionId: this.activeMission.id });
       this.abortController?.abort();
+      void this.activeSwarm?.shutdown();
       if (this.pausePromiseResolve) {
         this.pausePromiseResolve();
         this.pausePromiseResolve = null;
@@ -254,8 +256,12 @@ export class AgentRuntime {
   }
 
   private async runSwarmLoop(mission: Mission): Promise<void> {
+    // One manager per mission: its workers get `agent-<missionId>-<workerId>` in-memory partitions and are all
+    // torn down in the finally below (also when the window closes or the mission is cancelled).
+    const swarm = new SwarmManager({ maxWorkers: 6, missionId: mission.id, parentWindow: this.window });
+    this.activeSwarm = swarm;
     const coordinator = new SwarmCoordinator({
-      swarm: new SwarmManager({ maxWorkers: 6 }),
+      swarm,
       blackboard: new SharedBlackboard({ missionId: mission.id })
     });
 
@@ -267,7 +273,9 @@ export class AgentRuntime {
     coordinator.on('taskStarted', (ev: any) => {
       this.emitWorkerEvent({
         id: ev.workerId,
-        name: `Agent [${ev.role}]`,
+        name: `${ev.identity.name} [${ev.role}]`,
+        color: ev.identity.color,
+        glyph: ev.identity.glyph,
         task: `Executing task ${ev.taskId}`,
         progress: 30,
         status: 'running'
@@ -277,10 +285,24 @@ export class AgentRuntime {
     coordinator.on('taskCompleted', (ev: any) => {
       this.emitWorkerEvent({
         id: ev.workerId,
-        name: `Agent [Worker]`,
+        name: ev.identity.name,
+        color: ev.identity.color,
+        glyph: ev.identity.glyph,
         task: `Completed task ${ev.taskId}`,
         progress: 100,
         status: 'idle'
+      });
+    });
+
+    coordinator.on('taskFailed', (ev: any) => {
+      this.emitWorkerEvent({
+        id: ev.workerId,
+        name: ev.identity.name,
+        color: ev.identity.color,
+        glyph: ev.identity.glyph,
+        task: `Failed task ${ev.taskId}: ${String(ev.error).slice(0, 80)}`,
+        progress: 100,
+        status: 'failed'
       });
     });
 
@@ -298,7 +320,13 @@ export class AgentRuntime {
       this.emitEvidence(`[Blackboard Conflict Resolved] ${conf.entity}::${conf.attribute} resolved to "${conf.resolvedValue}" via ${conf.resolutionMethod}.`);
     });
 
-    const result = await coordinator.executeMission(mission.id, mission.prompt);
+    let result;
+    try {
+      result = await coordinator.executeMission(mission.id, mission.prompt);
+    } finally {
+      this.activeSwarm = null;
+      await swarm.shutdown();
+    }
     if (result.success) {
       this.finishMission('completed', result.deliverableMarkdown);
     } else {

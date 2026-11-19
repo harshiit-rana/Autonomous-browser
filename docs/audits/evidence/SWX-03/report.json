@@ -1,0 +1,360 @@
+{
+  "startedAt": "2026-11-19T10:31:54.363Z",
+  "electron": {
+    "electron": "33.4.11",
+    "node": "20.18.3",
+    "chrome": "130.0.6723.191",
+    "platform": "win32"
+  },
+  "phases": {
+    "isolation": {
+      "workers": [
+        {
+          "id": "iso_1",
+          "partition": "agent-e2e-iso-iso_1",
+          "identity": {
+            "ordinal": 1,
+            "name": "Ada",
+            "color": "#38BDF8",
+            "glyph": "▲"
+          },
+          "storagePath": null,
+          "isInMemory": true,
+          "sameAsFromPartition": true,
+          "isDefaultSession": false
+        },
+        {
+          "id": "iso_2",
+          "partition": "agent-e2e-iso-iso_2",
+          "identity": {
+            "ordinal": 2,
+            "name": "Bram",
+            "color": "#F472B6",
+            "glyph": "●"
+          },
+          "storagePath": null,
+          "isInMemory": true,
+          "sameAsFromPartition": true,
+          "isDefaultSession": false
+        },
+        {
+          "id": "iso_3",
+          "partition": "agent-e2e-iso-iso_3",
+          "identity": {
+            "ordinal": 3,
+            "name": "Cleo",
+            "color": "#A3E635",
+            "glyph": "◆"
+          },
+          "storagePath": null,
+          "isInMemory": true,
+          "sameAsFromPartition": true,
+          "isDefaultSession": false
+        }
+      ],
+      "pairwiseDistinctSessions": true,
+      "counts": {
+        "webContents": 5,
+        "childViews": 4
+      }
+    },
+    "cookies": {
+      "worker1": {
+        "documentCookie": "owner=worker1",
+        "localStorageOwner": "worker1",
+        "printed": "\"owner=worker1\"",
+        "sessionCookies": [
+          "owner=worker1"
+        ]
+      },
+      "worker2": {
+        "documentCookie": "",
+        "localStorageOwner": null,
+        "printed": "\"\"",
+        "sessionCookies": []
+      },
+      "worker3": {
+        "documentCookie": "",
+        "localStorageOwner": null,
+        "printed": "\"\"",
+        "sessionCookies": []
+      },
+      "serverSawCookieHeader": [
+        {
+          "worker": "worker1",
+          "cookie": "owner=worker1"
+        },
+        {
+          "worker": "worker2",
+          "cookie": ""
+        },
+        {
+          "worker": "worker3",
+          "cookie": ""
+        }
+      ]
+    },
+    "settle": {
+      "slowMs": 1725,
+      "late": "rendered after a 700 ms request",
+      "slowSettle": {
+        "settled": true,
+        "reason": "quiescent",
+        "waitedMs": 1707,
+        "inFlightAtEnd": 0
+      },
+      "busyMs": 10053,
+      "busySettle": {
+        "settled": false,
+        "reason": "deadline",
+        "waitedMs": 10033,
+        "inFlightAtEnd": 0
+      }
+    },
+    "guards": {
+      "urlBefore": "http://127.0.0.1:64951/read?w=guards",
+      "urlAfter": "http://127.0.0.1:64951/read?w=guards",
+      "refused": {
+        "file:///C:/Windows/win.ini": "Navigation blocked: scheme \"file:\" is not allowed in agent tabs",
+        "chrome://gpu": "Navigation blocked: scheme \"chrome:\" is not allowed in agent tabs",
+        "javascript:alert(1)": "Navigation blocked: scheme \"javascript:\" is not allowed in agent tabs",
+        "devtools://devtools/bundled/inspector.html": "Navigation blocked: scheme \"devtools:\" is not allowed in agent tabs"
+      },
+      "permissions": {
+        "geolocation": "error code 1",
+        "notifications": "denied"
+      },
+      "popupBlocked": true,
+      "countBeforePopup": 5,
+      "countAfterPopup": 5,
+      "download": "ERR_FAILED (-2) loading 'http://127.0.0.1:64951/file.bin'",
+      "events": [
+        {
+          "type": "navigation-blocked",
+          "workerId": "iso_1",
+          "name": "Ada",
+          "glyph": "▲",
+          "detail": {
+            "url": "file:///C:/Windows/win.ini",
+            "reason": "scheme \"file:\" is not allowed in agent tabs"
+          }
+        },
+        {
+          "type": "navigation-blocked",
+          "workerId": "iso_1",
+          "name": "Ada",
+          "glyph": "▲",
+          "detail": {
+            "url": "chrome://gpu",
+            "reason": "scheme \"chrome:\" is not allowed in agent tabs"
+          }
+        },
+        {
+          "type": "navigation-blocked",
+          "workerId": "iso_1",
+          "name": "Ada",
+          "glyph": "▲",
+          "detail": {
+            "url": "javascript:alert(1)",
+            "reason": "scheme \"javascript:\" is not allowed in agent tabs"
+          }
+        },
+        {
+          "type": "navigation-blocked",
+          "workerId": "iso_1",
+          "name": "Ada",
+          "glyph": "▲",
+          "detail": {
+            "url": "devtools://devtools/bundled/inspector.html",
+            "reason": "scheme \"devtools:\" is not allowed in agent tabs"
+          }
+        },
+        {
+          "type": "permission-denied",
+          "workerId": "iso_1",
+          "name": "Ada",
+          "glyph": "▲",
+          "detail": {
+            "permission": "geolocation"
+          }
+        },
+        {
+          "type": "permission-denied",
+          "workerId": "iso_1",
+          "name": "Ada",
+          "glyph": "▲",
+          "detail": {
+            "permission": "notifications"
+          }
+        },
+        {
+          "type": "popup-denied",
+          "workerId": "iso_1",
+          "name": "Ada",
+          "glyph": "▲",
+          "detail": {
+            "url": "http://127.0.0.1:64951/read?w=popup"
+          }
+        },
+        {
+          "type": "download-cancelled",
+          "workerId": "iso_1",
+          "name": "Ada",
+          "glyph": "▲",
+          "detail": {
+            "fileName": "file.bin"
+          }
+        }
+      ]
+    },
+    "crash": {
+      "urlBefore": "http://127.0.0.1:64951/read?w=after-crash-setup",
+      "recovered": true,
+      "status": "idle",
+      "crashes": 1,
+      "urlAfter": "http://127.0.0.1:64951/read?w=after-crash-setup",
+      "usable": "worker: after-crash",
+      "events": [
+        {
+          "type": "render-process-gone",
+          "workerId": "iso_3",
+          "name": "Cleo",
+          "glyph": "◆",
+          "detail": {
+            "reason": "crashed",
+            "exitCode": 2,
+            "crashCount": 1
+          }
+        },
+        {
+          "type": "recovered",
+          "workerId": "iso_3",
+          "name": "Cleo",
+          "glyph": "◆",
+          "detail": {
+            "url": "http://127.0.0.1:64951/read?w=after-crash-setup",
+            "crashCount": 1
+          }
+        }
+      ]
+    },
+    "teardown": {
+      "confirmed": [
+        true,
+        true,
+        true
+      ],
+      "destroyed": [
+        true,
+        true,
+        true
+      ],
+      "partitions": [
+        "agent-e2e-iso-iso_1",
+        "agent-e2e-iso-iso_2",
+        "agent-e2e-iso-iso_3"
+      ],
+      "counts": {
+        "webContents": 2,
+        "childViews": 1
+      }
+    },
+    "windowClosed": {
+      "before": 2,
+      "during": 5,
+      "after": 2,
+      "allDestroyed": true,
+      "active": 0
+    },
+    "leak": {
+      "workersSpawnedAndTornDown": 20,
+      "allConfirmedDestroyed": true,
+      "before": {
+        "heapUsed": 15790840,
+        "rss": 182784000,
+        "rendererWorkingSetKB": 285468,
+        "counts": {
+          "webContents": 2,
+          "childViews": 1
+        }
+      },
+      "after": {
+        "heapUsed": 15968160,
+        "rss": 202760192,
+        "rendererWorkingSetKB": 285504,
+        "counts": {
+          "webContents": 2,
+          "childViews": 1
+        }
+      },
+      "heapGrowthMB": 0.16910552978515625,
+      "rssGrowthMB": 19.05078125
+    },
+    "mission": {
+      "missionId": "m_1795084344889_gdqc",
+      "state": "completed",
+      "error": null,
+      "workerEvents": 10,
+      "otherEvents": 2,
+      "sample": [
+        {
+          "id": "swarm_worker_1",
+          "name": "Ada [researcher]",
+          "color": "#38BDF8",
+          "glyph": "▲",
+          "task": "Executing task m_1795084344889_gdqc_t1",
+          "progress": 30,
+          "status": "running"
+        },
+        {
+          "id": "swarm_worker_2",
+          "name": "Bram [researcher]",
+          "color": "#F472B6",
+          "glyph": "●",
+          "task": "Executing task m_1795084344889_gdqc_t2",
+          "progress": 30,
+          "status": "running"
+        },
+        {
+          "id": "swarm_worker_3",
+          "name": "Cleo [researcher]",
+          "color": "#A3E635",
+          "glyph": "◆",
+          "task": "Executing task m_1795084344889_gdqc_t3",
+          "progress": 30,
+          "status": "running"
+        }
+      ],
+      "identities": [
+        {
+          "id": "swarm_worker_1",
+          "name": "Ada",
+          "color": "#38BDF8",
+          "glyph": "▲"
+        },
+        {
+          "id": "swarm_worker_2",
+          "name": "Bram",
+          "color": "#F472B6",
+          "glyph": "●"
+        },
+        {
+          "id": "swarm_worker_3",
+          "name": "Cleo",
+          "color": "#A3E635",
+          "glyph": "◆"
+        }
+      ],
+      "countsAfter": {
+        "webContents": 2,
+        "childViews": 1
+      }
+    }
+  },
+  "baseline": {
+    "webContents": 2,
+    "childViews": 1
+  },
+  "result": "PASS",
+  "finishedAt": "2026-11-19T10:32:38.843Z"
+}
