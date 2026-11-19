@@ -22,5 +22,7 @@
   { "id": "sbom", "cmd": "tsx tests/test_sbom.ts", "area": "supply-chain" },
   { "id": "docs_truth", "cmd": "tsx tests/test_docs_truth.ts", "area": "docs" },
   { "id": "reachability_audit", "cmd": "tsx tests/test_reachability_audit.ts", "area": "audit" },
-  { "id": "issue_verification", "cmd": "tsx tests/test_issue_verification.ts", "area": "audit" }
+  { "id": "issue_verification", "cmd": "tsx tests/test_issue_verification.ts", "area": "audit" },
+  { "id": "db", "cmd": "tsx tests/test_db.ts", "area": "persistence" },
+  { "id": "persistence", "cmd": "tsx tests/test_persistence.ts", "area": "persistence" }
 ]

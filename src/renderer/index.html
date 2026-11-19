@@ -70,6 +70,14 @@
       </svg>
     </button>
 
+    <!-- Mission History Button (Issue #239: persisted missions and events) -->
+    <button id="history-btn" class="icon-btn" title="Mission history (saved across restarts)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="9"></circle>
+        <polyline points="12 7 12 12 15 14"></polyline>
+      </svg>
+    </button>
+
     <!-- Settings Button -->
     <button id="settings-btn" class="icon-btn" title="AI Agent & Model Settings">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -244,11 +252,40 @@
           </label>
         </div>
 
+        <div class="form-group">
+          <label>Backup &amp; restore</label>
+          <div style="display: flex; gap: 8px;">
+            <button id="export-data-btn" class="btn-secondary" title="Zip with database, missions and deliverables. API keys are not included.">Export data</button>
+            <button id="import-data-btn" class="btn-secondary" title="Replace current data with an exported archive (restarts the app)">Import data</button>
+          </div>
+          <span class="field-hint">Exports exclude API keys and the credential vault.</span>
+        </div>
+
         <div id="settings-status-msg" style="font-size: 12px; margin-top: 8px; display: none;"></div>
       </div>
       <div class="modal-footer">
         <button id="cancel-settings-btn" class="btn-secondary">Cancel</button>
         <button id="save-settings-btn" class="btn-primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Mission History Modal (Issue #239) -->
+  <div id="history-modal" class="modal-overlay hidden">
+    <div class="modal-card history-card">
+      <div class="modal-header">
+        <h3>Mission History</h3>
+        <button id="close-history-btn" class="icon-btn" title="Close">&times;</button>
+      </div>
+      <div class="modal-body history-body">
+        <div id="history-mission-list" class="history-mission-list"></div>
+        <div class="history-events-pane">
+          <h4 id="history-events-title">Select a mission to see its recorded events</h4>
+          <ol id="history-event-list" class="history-event-list"></ol>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="history-status-msg" class="field-hint"></span>
       </div>
     </div>
   </div>

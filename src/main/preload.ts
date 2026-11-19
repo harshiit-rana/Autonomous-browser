@@ -65,6 +65,16 @@ contextBridge.exposeInMainWorld('aegis', {
   undoAction: () =>
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_UNDO),
 
+  // Persistence: mission history, backup/restore (Issue #239)
+  listMissions: (limit?: number) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSIONS_LIST, { limit }),
+  getMissionEvents: (missionId: string, afterSeq?: number, limit?: number) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_EVENTS_GET, { missionId, afterSeq, limit }),
+  exportData: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DATA_EXPORT),
+  importData: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DATA_IMPORT),
+
   // Settings & Credentials (Issue #133)
   getSettings: () =>
     ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET),

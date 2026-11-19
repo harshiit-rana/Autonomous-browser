@@ -2,7 +2,7 @@
  * Project Aegis - Shared Blackboard & Distributed Evidence Store
  * 
  * Implements Issue #150 [SWM-04]:
- * - Persistent SQLite / append-only store for typed claims and evidence
+ * - Persistent SQLite (shared better-sqlite3 layer) / append-only store for typed claims and evidence
  * - Typed schema: claim, entity, attribute, typed value, source provenance, workerId
  * - Normalisation: currency, numbers, dates, units
  * - Semantic deduplication and clustering by (entity, attribute)
@@ -12,10 +12,10 @@
 
 import { EventEmitter } from 'node:events';
 import * as crypto from 'node:crypto';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { getAppPaths } from '../infrastructure/paths.js';
 import { logger } from '../infrastructure/logger.js';
+import { hasDb } from '../infrastructure/db.js';
+import { getRepos } from '../infrastructure/repos/index.js';
+import type { EvidenceRepo } from '../infrastructure/repos/evidence_repo.js';
 
 export type SourceType = 'official' | 'primary' | 'aggregator' | 'ugc';
 
@@ -202,95 +202,34 @@ export class SharedBlackboard extends EventEmitter {
   private clusterIndex: Map<string, string[]> = new Map(); // "entity::attribute" -> item ids
   private contentHashes: Set<string> = new Set();
   private conflicts: Map<string, ConflictRecord> = new Map(); // "entity::attribute" -> conflict
-  private storagePath: string | null = null;
-  private sqliteDb: any = null;
+  private repo: EvidenceRepo | null = null;
+  private missionId: string | null = null;
 
-  constructor(options: { storageDir?: string; inMemory?: boolean } = {}) {
+  /**
+   * Evidence is persisted to the shared SQLite `evidence` table (tagged with `missionId`) when the app database
+   * is open or an explicit `evidenceRepo` is supplied; otherwise the blackboard is purely in-memory.
+   * Only evidence of the same `missionId` is reloaded, so one mission never dedupes against another's claims.
+   */
+  constructor(options: { inMemory?: boolean; missionId?: string; evidenceRepo?: EvidenceRepo } = {}) {
     super();
-    if (!options.inMemory) {
-      this.initPersistence(options.storageDir);
-    }
-  }
-
-  private initPersistence(customDir?: string): void {
+    this.missionId = options.missionId ?? null;
+    if (options.inMemory) return;
     try {
-      const baseDir = customDir || getAppPaths().userData;
-      this.storagePath = path.join(baseDir, 'evidence_blackboard.json');
-      
-      // Attempt node:sqlite if available
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const sqlite = require('node:sqlite');
-        if (sqlite && sqlite.DatabaseSync) {
-          const dbPath = path.join(baseDir, 'evidence_blackboard.sqlite');
-          this.sqliteDb = new sqlite.DatabaseSync(dbPath);
-          this.sqliteDb.exec(`
-            CREATE TABLE IF NOT EXISTS evidence (
-              id TEXT PRIMARY KEY,
-              entity TEXT NOT NULL,
-              attribute TEXT NOT NULL,
-              category TEXT NOT NULL,
-              value TEXT NOT NULL,
-              normalized TEXT NOT NULL,
-              source TEXT NOT NULL,
-              worker_id TEXT NOT NULL,
-              confidence REAL NOT NULL,
-              content_hash TEXT NOT NULL,
-              timestamp INTEGER NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS conflicts (
-              id TEXT PRIMARY KEY,
-              entity TEXT NOT NULL,
-              attribute TEXT NOT NULL,
-              resolved INTEGER NOT NULL,
-              resolved_value TEXT,
-              resolution_method TEXT,
-              detected_at INTEGER NOT NULL
-            );
-          `);
-          logger.info('Blackboard SQLite persistence initialized', { dbPath });
-          return;
-        }
-      } catch {
-        // node:sqlite fallback to JSON file
-      }
-
-      if (fs.existsSync(this.storagePath)) {
-        const raw = fs.readFileSync(this.storagePath, 'utf8');
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed.evidence)) {
-          for (const item of parsed.evidence) {
-            this.evidence.set(item.id, item);
-            this.contentHashes.add(item.contentHash);
-            const clusterKey = `${item.entity.toLowerCase()}::${item.attribute.toLowerCase()}`;
-            const ids = this.clusterIndex.get(clusterKey) || [];
-            ids.push(item.id);
-            this.clusterIndex.set(clusterKey, ids);
-          }
+      this.repo = options.evidenceRepo ?? (hasDb() ? getRepos().evidence : null);
+      if (this.repo && this.missionId) {
+        for (const row of this.repo.listByMission(this.missionId)) {
+          const item = row as unknown as EvidenceItem;
+          this.evidence.set(item.id, item);
+          this.contentHashes.add(item.contentHash);
+          const clusterKey = `${item.entity.toLowerCase()}::${item.attribute.toLowerCase()}`;
+          const ids = this.clusterIndex.get(clusterKey) || [];
+          ids.push(item.id);
+          this.clusterIndex.set(clusterKey, ids);
         }
       }
     } catch (err: any) {
       logger.warn('Failed to load persistent blackboard state, continuing with in-memory', { error: err.message });
-    }
-  }
-
-  private persistState(): void {
-    if (this.sqliteDb) {
-      // Already written in transaction/statement
-      return;
-    }
-    if (!this.storagePath) return;
-
-    try {
-      const payload = {
-        updatedAt: Date.now(),
-        evidence: Array.from(this.evidence.values()),
-        conflicts: Array.from(this.conflicts.values())
-      };
-      fs.mkdirSync(path.dirname(this.storagePath), { recursive: true });
-      fs.writeFileSync(this.storagePath, JSON.stringify(payload, null, 2), 'utf8');
-    } catch (err: any) {
-      logger.warn('Failed to flush blackboard to disk', { error: err.message });
+      this.repo = null;
     }
   }
 
@@ -369,28 +308,11 @@ export class SharedBlackboard extends EventEmitter {
     this.evidence.set(id, fullItem);
     this.contentHashes.add(contentHash);
 
-    // Save to SQLite if enabled
-    if (this.sqliteDb) {
+    if (this.repo) {
       try {
-        const stmt = this.sqliteDb.prepare(`
-          INSERT INTO evidence (id, entity, attribute, category, value, normalized, source, worker_id, confidence, content_hash, timestamp)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        stmt.run(
-          id,
-          entity,
-          attribute,
-          input.category,
-          JSON.stringify(input.value),
-          JSON.stringify(normalized),
-          JSON.stringify(source),
-          input.workerId,
-          fullItem.confidence,
-          contentHash,
-          fullItem.timestamp
-        );
+        this.repo.insert(fullItem as any, this.missionId);
       } catch (err: any) {
-        logger.warn('SQLite insert evidence error', { error: err.message });
+        logger.warn('Failed to persist evidence', { error: err.message });
       }
     }
 
@@ -427,8 +349,6 @@ export class SharedBlackboard extends EventEmitter {
 
     clusterIds.push(id);
     this.clusterIndex.set(clusterKey, clusterIds);
-    this.persistState();
-
     this.emit('evidence', fullItem);
     return { posted: true, itemId: id, conflict: detectedConflict };
   }
@@ -547,7 +467,6 @@ export class SharedBlackboard extends EventEmitter {
       confidence: 1.0
     });
 
-    this.persistState();
     this.emit('conflictResolved', conflict);
     return true;
   }
@@ -602,8 +521,5 @@ export class SharedBlackboard extends EventEmitter {
     this.clusterIndex.clear();
     this.contentHashes.clear();
     this.conflicts.clear();
-    if (this.storagePath && fs.existsSync(this.storagePath)) {
-      try { fs.unlinkSync(this.storagePath); } catch {}
-    }
   }
 }

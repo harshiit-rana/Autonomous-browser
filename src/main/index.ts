@@ -9,6 +9,7 @@ import { registerTypedHandler } from '../ipc/main_handler.js';
 import { AgentRuntime } from '../agent/runtime.js';
 import { SwarmCoordinator } from '../swarm/coordinator.js';
 import { GlobalKillSwitch, AuditLog } from '../security/audit_log.js';
+import { initialisePersistence, registerPersistenceIPC } from './persistence.js';
 import { ContentBlocker } from '../browser/content_blocker.js';
 import { BrowserUXManager } from '../browser/browser_ux.js';
 import {
@@ -56,6 +57,7 @@ class MainApp {
     this.registerProcessErrorHandlers();
 
     await app.whenReady();
+    if (!initialisePersistence()) return; // database could not be opened; the user was told and the app is exiting
     logger.info('Electron app ready. Creating primary window...');
     this.createWindow();
     this.registerIPC();
@@ -561,6 +563,8 @@ class MainApp {
         return { gemini, anthropic, openai };
       }
     );
+
+    registerPersistenceIPC(() => this.window);
 
     // Global Kill Switch & Security Audit (Issue #164)
     registerTypedHandler<{ reason?: string }, boolean>(

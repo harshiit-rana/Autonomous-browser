@@ -22,6 +22,7 @@ import {
 import { SwarmCoordinator } from '../swarm/coordinator.js';
 import { SwarmManager } from '../swarm/swarm_manager.js';
 import { SharedBlackboard } from '../swarm/blackboard.js';
+import { MissionRecorder } from '../infrastructure/mission_recorder.js';
 import { ActionPolicyEngine } from '../security/action_policy.js';
 import { GlobalKillSwitch, AuditLog } from '../security/audit_log.js';
 import { PromptIsolationEngine } from '../security/prompt_isolation.js';
@@ -155,6 +156,7 @@ export class AgentRuntime {
       tabId: targetTab.id,
       evidenceCollected: []
     };
+    MissionRecorder.checkpoint(this.activeMission); // mission row must exist before its first event (FK)
 
     logger.info('Starting mission', { missionId, prompt, model: this.activeMission.model, tabId: targetTab.id });
 
@@ -254,7 +256,7 @@ export class AgentRuntime {
   private async runSwarmLoop(mission: Mission): Promise<void> {
     const coordinator = new SwarmCoordinator({
       swarm: new SwarmManager({ maxWorkers: 6 }),
-      blackboard: new SharedBlackboard()
+      blackboard: new SharedBlackboard({ missionId: mission.id })
     });
 
     coordinator.on('stageStarted', (ev: any) => {
@@ -674,31 +676,7 @@ ${maskedTree}
   }
 
   private saveCheckpoint(mission: Mission): void {
-    try {
-      const paths = getAppPaths();
-      const missionsDir = path.join(paths.userData, 'missions');
-      if (!fs.existsSync(missionsDir)) {
-        fs.mkdirSync(missionsDir, { recursive: true });
-      }
-      const checkpointFile = path.join(missionsDir, `${mission.id}.json`);
-      const tempFile = `${checkpointFile}.tmp`;
-      const data = {
-        id: mission.id,
-        prompt: mission.prompt,
-        model: mission.model,
-        state: mission.state,
-        stepCount: mission.stepCount,
-        tabId: mission.tabId,
-        result: mission.result,
-        error: mission.error,
-        evidenceCount: mission.evidenceCollected.length,
-        updatedAt: Date.now()
-      };
-      fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
-      fs.renameSync(tempFile, checkpointFile);
-    } catch (err: any) {
-      logger.warn('Failed to save checkpoint', { error: err.message });
-    }
+    MissionRecorder.checkpoint(mission);
   }
 
   private saveDeliverableReport(mission: Mission): void {
@@ -782,6 +760,8 @@ ${maskedTree}
           status,
           message
         };
+        if (this.activeMission) MissionRecorder.checkpoint(this.activeMission);
+        MissionRecorder.event(this.activeMission?.id, 'status', payload);
         this.window.webContents.send(IPC_CHANNELS.EVENT_MISSION_STATUS, payload);
       }
     } catch {}
@@ -790,6 +770,7 @@ ${maskedTree}
   private emitWorkerEvent(payload: WorkerEventPayload): void {
     try {
       if (!this.window.isDestroyed()) {
+        MissionRecorder.event(this.activeMission?.id, 'worker', payload);
         this.window.webContents.send(IPC_CHANNELS.EVENT_WORKER, payload);
       }
     } catch {}
@@ -802,6 +783,7 @@ ${maskedTree}
           text,
           timestamp: new Date().toTimeString().slice(0, 8)
         };
+        MissionRecorder.event(this.activeMission?.id, 'evidence', payload);
         this.window.webContents.send(IPC_CHANNELS.EVENT_EVIDENCE, payload);
       }
     } catch {}
@@ -810,6 +792,7 @@ ${maskedTree}
   private emitTelemetry(payload: TelemetryEventPayload): void {
     try {
       if (!this.window.isDestroyed()) {
+        MissionRecorder.event(this.activeMission?.id, 'telemetry', payload);
         this.window.webContents.send(IPC_CHANNELS.EVENT_TELEMETRY, payload);
       }
     } catch {}

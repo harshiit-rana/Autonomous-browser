@@ -7,7 +7,7 @@
  * - Content hygiene: PII and secret stripping via PrivacyGovernor
  * - Sensitive domain & incognito exclusion lists
  * - Hybrid RAG retrieval: BM25 lexical score + Dense vector cosine similarity + Recency decay
- * - Electron 33 compatible: uses node:sqlite when available with in-memory JSON fallback
+ * - Electron 33 compatible: pure in-memory store (durable storage is MemoryStore / #240)
  */
 
 import * as crypto from 'node:crypto';

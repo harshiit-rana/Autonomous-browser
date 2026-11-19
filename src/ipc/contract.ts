@@ -126,6 +126,43 @@ export interface PlanPreviewResponse {
   estimatedDurationSec: number;
 }
 
+export interface MissionHistoryItem {
+  id: string;
+  prompt: string;
+  model: string;
+  state: string;
+  stepCount: number;
+  result?: string;
+  error?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface MissionEventsRequest {
+  missionId: string;
+  afterSeq?: number;
+  limit?: number;
+}
+
+export interface MissionEventItem {
+  seq: number;
+  ts: number;
+  kind: string;
+  data: unknown;
+}
+
+export interface MissionEventsResponse {
+  events: MissionEventItem[];
+  nextAfterSeq: number | null;
+  total: number;
+}
+
+export interface DataTransferResult {
+  cancelled?: boolean;
+  path?: string;
+  message: string;
+}
+
 export const IPC_CHANNELS = {
   // Window & Layout (Issue #138)
   WINDOW_MINIMIZE: 'window:minimize',
@@ -176,6 +213,12 @@ export const IPC_CHANNELS = {
   MISSION_HANDBACK: 'mission:handback',
   MISSION_STEER: 'mission:steer',
   MISSION_UNDO: 'mission:undo',
+
+  // Persistence: mission history and backup/restore (Issue #239)
+  MISSIONS_LIST: 'missions:list',
+  MISSION_EVENTS_GET: 'mission:events_get',
+  DATA_EXPORT: 'data:export',
+  DATA_IMPORT: 'data:import',
 
   // Settings & Credentials
   SETTINGS_GET: 'settings:get',

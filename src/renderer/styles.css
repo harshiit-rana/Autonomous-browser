@@ -892,4 +892,17 @@ body.dark-theme {
   }
 }
 
-
+/* Mission history (Issue #239) */
+.history-card { width: min(960px, 92vw); max-height: 86vh; }
+.history-body { display: flex; gap: 12px; min-height: 320px; max-height: 60vh; }
+.history-mission-list { flex: 0 0 38%; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.history-mission { text-align: left; background: var(--bg-elevated, #161b26); border: 1px solid var(--border, #263042); color: inherit; border-radius: 6px; padding: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.history-mission.selected { border-color: var(--accent, #6d8dff); }
+.history-mission-prompt { font-size: 13px; }
+.history-mission-meta { font-size: 11px; color: var(--text-muted, #94a3b8); }
+.history-events-pane { flex: 1; overflow-y: auto; }
+.history-event-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.history-event { display: grid; grid-template-columns: 56px 80px 1fr; gap: 6px; }
+.history-event-seq { color: var(--text-muted, #94a3b8); }
+.history-event-kind { color: var(--accent, #6d8dff); }
+.history-event-text { overflow-wrap: anywhere; }
