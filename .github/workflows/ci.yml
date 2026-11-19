@@ -64,7 +64,6 @@ jobs:
   gate:
     name: Release Gate Audit
     runs-on: ubuntu-latest
-    continue-on-error: ${{ github.ref != 'refs/heads/release' && !startsWith(github.ref, 'refs/heads/release/') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -80,6 +79,7 @@ jobs:
 
       - name: Run Programmatic Release Gate
         run: npm run gate
+        continue-on-error: ${{ github.ref != 'refs/heads/release' && !startsWith(github.ref, 'refs/heads/release/') }}
 
       - name: Upload Gate Report
         uses: actions/upload-artifact@v4
