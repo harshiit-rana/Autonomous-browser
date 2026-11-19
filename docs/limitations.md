@@ -66,3 +66,18 @@ Measured in the real app on Windows 11 / Electron 33.4.11; details and evidence 
 | Approvals | A navigation to a new origin pauses the mission with no UI to approve it. | #238 |
 | Credentials | The vault is encrypted at rest, but `getSettings()` returns the decrypted key to the renderer. | #248 |
 | Window | At the declared minimum size 800x600 the chrome overflows horizontally and the Theatre button is clipped. | #237 |
+
+## Model setup and replay demo (#224 RUN-02)
+
+`tests/test_provider_factory.ts` covers: no key for each provider, a stale `demoMode` value, a key for a different provider than the selected one, an invalid env-var key (401 from a local stub and `CREDENTIALS_TEST`), Ollama not running (error names the base URL), Ollama model not installed, and Ollama serving only `/v1/chat/completions`. The rest is recorded here.
+
+| Area | Limitation | Reason / owner |
+|---|---|---|
+| Replay demo | The shipped transcript `fixtures/demo/shop_cheapest_in_stock.json` is hand-written, not recorded from a live model run, and is labelled as such. The player shows its steps and opens the local test shop in a tab; it does not execute the recorded actions in the page. | A transcript from a real run needs a real key and the e2e harness (#254, #255). Replacing the file needs no code change. |
+| Replay demo | "Never saved to memory" holds today because no mission result is written to the memory store (`memory/memory_store.ts` is not wired, #240). The player also bypasses mission persistence and deliverables. | When #240 wires memory, it must skip anything tagged `source: "demo"`. |
+| Key rotated mid-mission | The next model call fails and the mission ends with `Model error: ...`; there is no pause-and-ask-for-a-new-key flow. | Mission lifecycle and error pausing belong to #226. |
+| Offline | Saving a key validates it first; offline the check fails and the user must press Save a second time to store it unverified. No separate offline mode. | Accepted trade-off; the second Save is deliberate. |
+| Invalid env-var key for Gemini/Anthropic | An env-var key counts as configured. If it is wrong the first model call fails with the provider's error. Only the OpenAI-compatible path is tested against a local 401 stub. | Gemini and Anthropic SDKs do not take a base URL override here; no network calls to real providers in CI. |
+| Model name the provider does not serve | Ollama: checked against `/api/tags` before a mission (message tells the user to `ollama pull`). Cloud providers: the provider's own error is shown. No model list is validated for cloud providers before the first call. | Provider model lists change; revisit with #225. |
+| Provider vs model picker | The model picker decides the provider for a known cloud model prefix (`gemini`, `claude-`, `gpt-`); the saved provider only applies to unknown names, and Ollama wins when selected. Saving settings moves the picker to a model of the saved provider. | Keeps one rule; a per-provider model field is future work. |
+| Cost estimate | Rough per-step figure from `models/pricing.ts` with stated assumptions (6000 prompt + 400 completion tokens); models without a pricing entry show "no pricing data". | Estimate only; real cost is tracked by the usage ledger. |

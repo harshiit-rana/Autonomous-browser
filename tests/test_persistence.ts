@@ -44,7 +44,7 @@ async function testSettingsAcrossRestartAndSecrets(): Promise<void> {
   let db = AegisDb.open(file);
   const mgr = SettingsManager.getInstance();
   mgr.attachRepo(createRepos(db).settings);
-  mgr.updateSettings({ modelProvider: 'ollama', ollamaBaseUrl: 'http://127.0.0.1:1', demoMode: true, apiKeys: { gemini: SECRET } });
+  mgr.updateSettings({ modelProvider: 'ollama', ollamaBaseUrl: 'http://127.0.0.1:1', demoMode: true, apiKeys: { gemini: SECRET } } as any); // demoMode was removed in #224: a caller or stale row must not revive it
   assert.strictEqual(mgr.getSettings().apiKeys.gemini, SECRET, 'keys are available to the runtime synchronously');
   db.close();
   mgr.detachRepo();
@@ -54,10 +54,11 @@ async function testSettingsAcrossRestartAndSecrets(): Promise<void> {
   const loaded = mgr.attachRepo(createRepos(db).settings);
   assert.strictEqual(loaded.modelProvider, 'ollama');
   assert.strictEqual(loaded.ollamaBaseUrl, 'http://127.0.0.1:1');
-  assert.strictEqual(loaded.demoMode, true);
+  assert.ok(!('demoMode' in loaded), 'removed demoMode setting is not loaded back');
   assert.strictEqual(loaded.maxConcurrency, DEFAULT_SETTINGS.maxConcurrency, 'untouched fields keep defaults');
   const stored = createRepos(db).settings.all();
   assert.ok(!('apiKeys' in stored), 'apiKeys is never a database row');
+  assert.ok(!('demoMode' in stored), 'removed demoMode setting is never persisted');
   db.close();
   assert.ok(!dbBytes(file).includes(SECRET), 'API key does not appear anywhere in the database or WAL');
   mgr.detachRepo();

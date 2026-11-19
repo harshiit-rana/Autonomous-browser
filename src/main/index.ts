@@ -7,6 +7,9 @@ import { getSettings, updateSettings } from '../infrastructure/settings.js';
 import { credentialVault } from '../infrastructure/credentials.js';
 import { registerTypedHandler } from '../ipc/main_handler.js';
 import { AgentRuntime } from '../agent/runtime.js';
+import { ModelProviderFactory } from '../models/provider_factory.js';
+import { estimateStepCost } from '../models/pricing.js';
+import type { DemoHost, ReplayDemoSession } from '../models/demo/replay_player.js';
 import { SwarmCoordinator } from '../swarm/coordinator.js';
 import { GlobalKillSwitch, AuditLog } from '../security/audit_log.js';
 import { initialisePersistence, registerPersistenceIPC } from './persistence.js';
@@ -20,8 +23,20 @@ import {
   TabCloseRequest,
   DrawerToggleRequest,
   MissionStartRequest,
-  MissionStartResponse
+  MissionStartResponse,
+  ModelStatusRequest,
+  ModelStatusResponse,
+  DemoStartResponse,
+  MODEL_NOT_CONFIGURED
 } from '../ipc/contract.js';
+
+/** Model used for the cost estimate shown after a successful "Test Key" for each provider. */
+const KEY_TEST_ESTIMATE_MODEL: Record<string, string> = {
+  gemini: 'gemini-2.0-flash',
+  anthropic: 'claude-3-7-sonnet-latest',
+  openai: 'gpt-4o',
+  ollama: 'deepseek-r1:8b'
+};
 
 const logger = rootLogger.child('main');
 
@@ -30,6 +45,7 @@ class MainApp {
   private viewManager: ViewManager | null = null;
   private tray: Tray | null = null;
   private powerSaveBlockerId: number | null = null;
+  private demoSession: ReplayDemoSession | null = null;
 
   public async init(): Promise<void> {
     logger.info('Initializing Autonomous Browser...');
@@ -68,6 +84,21 @@ class MainApp {
         app.quit();
       }
     });
+  }
+
+  /** Adapter between the Electron-free replay player and the window / tab strip. */
+  private createDemoHost(): DemoHost {
+    let tabId: string | null = null;
+    const send = (channel: string, payload: unknown) => {
+      if (this.window && !this.window.isDestroyed()) this.window.webContents.send(channel, payload);
+    };
+    return {
+      openTab: (url) => { tabId = this.viewManager?.createTab(url, false, 'agent:demo-replay').id ?? null; },
+      closeTab: () => { if (tabId) { this.viewManager?.closeTab(tabId); tabId = null; } },
+      emitStatus: (p) => send(IPC_CHANNELS.EVENT_MISSION_STATUS, p),
+      emitEvidence: (p) => send(IPC_CHANNELS.EVENT_EVIDENCE, p),
+      emitWorker: (p) => send(IPC_CHANNELS.EVENT_WORKER, p)
+    };
   }
 
   private registerProcessErrorHandlers(): void {
@@ -458,6 +489,15 @@ class MainApp {
       async (req) => {
         logger.info('Mission start requested', { prompt: req.prompt, model: req.model });
         try {
+          if (this.demoSession?.isActive()) {
+            return { started: false, reason: 'error', message: 'A replay demo is playing. Stop it before starting a mission.' };
+          }
+          // No usable model: a normal first-run state, answered with a typed code so the renderer opens Settings (#224).
+          const modelCheck = await ModelProviderFactory.checkConfigured(req.model);
+          if (!modelCheck.configured) {
+            logger.info('Mission not started: model not configured', { provider: modelCheck.provider });
+            return { started: false, code: MODEL_NOT_CONFIGURED, provider: modelCheck.provider, message: modelCheck.message };
+          }
           if (this.powerSaveBlockerId === null) {
             this.powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
             logger.info('PowerSaveBlocker activated for background mission', { blockerId: this.powerSaveBlockerId });
@@ -467,6 +507,8 @@ class MainApp {
           return {
             started: result.ok,
             missionId: result.missionId,
+            code: result.code,
+            provider: result.provider,
             message: result.error
           };
         } catch (err: any) {
@@ -540,9 +582,46 @@ class MainApp {
       IPC_CHANNELS.CREDENTIALS_TEST,
       getChrome,
       async (req) => {
-        return credentialVault.testCredentials(req.provider, req.key, req.baseUrl);
+        const result = await credentialVault.testCredentials(req.provider, req.key, req.baseUrl);
+        const model = KEY_TEST_ESTIMATE_MODEL[req.provider];
+        return model ? { ...result, model, estimate: estimateStepCost(model) } : result;
       }
     );
+
+    // First-run readiness: is a model usable, and roughly what does one step cost (#224)
+    registerTypedHandler<ModelStatusRequest, ModelStatusResponse>(
+      IPC_CHANNELS.MODEL_STATUS,
+      getChrome,
+      (req) => ModelProviderFactory.describe(req?.model)
+    );
+
+    // Replay demo: labelled playback of a recorded transcript, no model (#224)
+    registerTypedHandler<void, DemoStartResponse>(
+      IPC_CHANNELS.DEMO_START,
+      getChrome,
+      async () => {
+        const liveState = AgentRuntime.getInstance().getActiveMission()?.state;
+        if (liveState === 'running' || liveState === 'planning') {
+          return { started: false, message: 'A mission is running. Cancel it before starting the replay demo.' };
+        }
+        try {
+          if (!this.demoSession) {
+            const { ReplayDemoSession: Session } = await import('../models/demo/replay_player.js');
+            this.demoSession = new Session(this.createDemoHost());
+          }
+          const { goal } = await this.demoSession.start();
+          return { started: true, message: goal };
+        } catch (err: any) {
+          logger.error('Replay demo failed to start', err);
+          return { started: false, message: err.message };
+        }
+      }
+    );
+
+    registerTypedHandler<void, boolean>(IPC_CHANNELS.DEMO_STOP, getChrome, async () => {
+      await this.demoSession?.stop();
+      return true;
+    });
 
     registerTypedHandler<{ provider: string; key: string }, boolean>(
       IPC_CHANNELS.CREDENTIALS_SET,

@@ -17,6 +17,7 @@
         </svg>
         <span>Aegis</span>
       </div>
+      <div id="demo-banner" class="demo-banner hidden" role="status">DEMO - recorded session, no AI model is running</div>
 
       <!-- Tab Strip -->
       <nav id="tab-strip">
@@ -101,6 +102,7 @@
         <h1>Autonomous Multi-Agent AI Browser</h1>
         <p>Type a URL or describe a complex web task to spawn an elastic parallel swarm.</p>
         <div class="quick-prompts">
+          <button id="replay-demo-btn" class="pill" title="Plays a hand-written transcript against a local test shop. No AI model runs.">Replay demo (no AI model)</button>
           <button class="pill" data-prompt="Find top 5 articles from Hacker News with score > 100">Top Hacker News Posts</button>
           <button class="pill" data-prompt="Research web agent autonomous benchmark papers">Research Web Agents</button>
           <button class="pill" data-prompt="Compare GitHub trending repositories in TypeScript">Trending Repositories</button>
@@ -196,6 +198,7 @@
         <button id="close-settings-btn" class="icon-btn" title="Close">&times;</button>
       </div>
       <div class="modal-body">
+        <div id="settings-notice" class="settings-notice hidden" role="alert"></div>
         <div class="form-group">
           <label for="settings-provider">Active Model Provider</label>
           <select id="settings-provider" class="form-select">
@@ -246,10 +249,11 @@
         </div>
 
         <div class="form-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="settings-demo-mode">
-            <span>Demo Mode (Mock responses without external API calls)</span>
-          </label>
+          <label>No API key?</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button id="settings-replay-demo-btn" class="btn-secondary">Replay demo</button>
+            <span class="field-hint">Plays a recorded transcript. No AI model runs; nothing is saved.</span>
+          </div>
         </div>
 
         <div class="form-group">

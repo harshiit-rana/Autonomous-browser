@@ -12,7 +12,6 @@ export interface AppSettings {
     openai?: string;
   };
   ollamaBaseUrl?: string;
-  demoMode: boolean;
   defaultSearchEngine: string;
   maxConcurrency: number;
   telemetryEnabled: boolean;
@@ -26,7 +25,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   modelName: 'gemini-2.0-flash',
   apiKeys: {},
   ollamaBaseUrl: 'http://localhost:11434',
-  demoMode: false,
   defaultSearchEngine: 'https://duckduckgo.com/?q=',
   maxConcurrency: 3,
   telemetryEnabled: false
@@ -34,7 +32,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 const logger = rootLogger.child('settings');
 
-const API_KEY_PROVIDERS = ['gemini', 'anthropic', 'openai'] as const;
+/** Settings removed from the product (demoMode, #224): ignored on load and on update so a stale stored value cannot revive them. */
+const REMOVED_SETTING_KEYS = new Set(['demoMode']);
+
+const API_KEY_PROVIDERS =['gemini', 'anthropic', 'openai'] as const;
 
 /**
  * Settings live in the SQLite `settings` table (one row per field). API keys are never written to the database:
@@ -71,7 +72,7 @@ export class SettingsManager {
       try {
         const stored = this.repo.all();
         for (const [k, v] of Object.entries(stored)) {
-          if (k === 'apiKeys') continue;
+          if (k === 'apiKeys' || REMOVED_SETTING_KEYS.has(k)) continue;
           (merged as any)[k] = v;
         }
         if (!stored.version || (stored.version as number) < CURRENT_SETTINGS_VERSION) {
@@ -105,6 +106,7 @@ export class SettingsManager {
 
   public updateSettings(patch: Partial<AppSettings>): AppSettings {
     const { apiKeys, ...rest } = patch;
+    for (const k of REMOVED_SETTING_KEYS) delete (rest as Record<string, unknown>)[k];
     this.currentSettings = {
       ...this.currentSettings,
       ...rest,

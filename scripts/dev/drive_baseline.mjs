@@ -392,8 +392,8 @@ await scenario(3, 'Settings modal opens visibly (vs native page view) and the cr
 await scenario(4, 'No API key and demoMode=false: starting a mission gives a clear "configure a model" error, not a crash',
   'The mission is refused with a readable message (and Settings opens); main process stays alive and responsive.',
   async ({ obs, shots }) => {
-    const st = await ipc(A, 'getSettings'); obs(`settings at first run: provider=${st.data.modelProvider} model=${st.data.modelName} demoMode=${st.data.demoMode} keys=${JSON.stringify(Object.keys(st.data.apiKeys || {}))}`);
-    check('first-run settings have demoMode=false and no key', st.data.demoMode === false && Object.keys(st.data.apiKeys || {}).length === 0);
+    const st = await ipc(A, 'getSettings'); obs(`settings at first run: provider=${st.data.modelProvider} model=${st.data.modelName} keys=${JSON.stringify(Object.keys(st.data.apiKeys || {}))}`);
+    check('first-run settings have no demoMode setting (removed in #224) and no key', st.data.demoMode === undefined && Object.keys(st.data.apiKeys || {}).length === 0);
     const envKeys = ['GEMINI_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY'].filter(k => process.env[k]);
     check('no model API key present in the environment', envKeys.length === 0, envKeys.join(',') || 'none set');
     // The issue's own example phrase, typed the way a user would:
@@ -423,15 +423,7 @@ await scenario(4, 'No API key and demoMode=false: starting a mission gives a cle
     const pageErrs = A.log.split('\n').filter(l => /CONSOLE.*Uncaught/.test(l)).length;
     obs(`electron.log: app-level crash/unhandled markers=${appCrash}; "Uncaught" console errors raised by web pages (e.g. Google's own captcha page) = ${pageErrs}`);
     await A.chrome.click('#cancel-settings-btn');
-    // Demo mode path (not the issue's scenario, observed because it is the "silent mock" question in #224)
-    await ipc(A, 'updateSettings', { demoMode: true });
-    const d = await startViaUi(A, '/do open example.com and tell me the page heading');
-    await sleep(5000);
-    const dItems = await timelineItems(A);
-    const m = await missionStates(A);
-    obs(`demoMode=true, still no key: mission state=${m[0]?.state}; result/feed: ${JSON.stringify(dItems.slice(0, 6))}`);
-    extra.demoModeObservation = { state: m[0]?.state, feed: dItems.slice(0, 8) };
-    await ipc(A, 'updateSettings', { demoMode: false });
+    // demoMode was removed in #224: there is no silent mock path to observe any more.
     await A.chrome.click('#cancel-plan-btn').catch(() => {});
   });
 

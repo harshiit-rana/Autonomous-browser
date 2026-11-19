@@ -86,6 +86,14 @@ contextBridge.exposeInMainWorld('aegis', {
     ipcRenderer.invoke(IPC_CHANNELS.CREDENTIALS_SET, { provider, key }),
   getCredentialStatus: () =>
     ipcRenderer.invoke(IPC_CHANNELS.CREDENTIALS_GET_STATUS),
+  getModelStatus: (model?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MODEL_STATUS, { model }),
+
+  // Replay demo: recorded transcript, no model (#224)
+  startDemo: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEMO_START),
+  stopDemo: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEMO_STOP),
 
   // Push event subscriptions
   onTabsSync: (callback: (snapshot: TabsSnapshot) => void) => {

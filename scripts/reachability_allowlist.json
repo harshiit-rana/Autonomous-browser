@@ -4,7 +4,6 @@
     "evaluation/web_eval_harness.ts",
     "security/red_team_harness.ts",
     "security/red_team_suite.ts",
-    "testing/arena_server.ts",
     "testing/fault_injector.ts"
   ],
   "attic": [

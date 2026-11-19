@@ -7,7 +7,7 @@ import { IModelProvider, CanonicalMessage, ContentBlock } from '../models/types.
 import { PerceptionEngine, PageSnapshot } from './perception.js';
 import { BROWSER_TOOLS, ToolExecutor, ToolExecutionResult } from './tools.js';
 import { ActionTaxonomy } from './errors.js';
-import { IPC_CHANNELS, WorkerEventPayload, EvidenceEventPayload, MissionStatusPayload, TelemetryEventPayload } from '../ipc/contract.js';
+import { IPC_CHANNELS, ModelProviderId, WorkerEventPayload, EvidenceEventPayload, MissionStatusPayload, TelemetryEventPayload } from '../ipc/contract.js';
 import { rootLogger } from '../infrastructure/logger.js';
 import { getSettings } from '../infrastructure/settings.js';
 import { getAppPaths } from '../infrastructure/paths.js';
@@ -104,7 +104,7 @@ export class AgentRuntime {
     return this.activeMission;
   }
 
-  public async startMission(prompt: string, modelName?: string): Promise<{ ok: boolean; missionId?: string; error?: string }> {
+  public async startMission(prompt: string, modelName?: string): Promise<{ ok: boolean; missionId?: string; error?: string; code?: 'MODEL_NOT_CONFIGURED'; provider?: ModelProviderId }> {
     if (this.activeMission && (this.activeMission.state === 'running' || this.activeMission.state === 'planning')) {
       return {
         ok: false,
@@ -115,25 +115,10 @@ export class AgentRuntime {
     const settings = getSettings();
     const targetModel = modelName || settings.modelName || 'gemini-2.0-flash';
 
-    // Verify credential availability upfront
-    if (!settings.demoMode && !targetModel.includes('deepseek') && settings.modelProvider !== 'ollama') {
-      if (targetModel.startsWith('gemini') || settings.modelProvider === 'gemini') {
-        const key = settings.apiKeys?.gemini || process.env.GEMINI_API_KEY;
-        if (!key) {
-          return {
-            ok: false,
-            error: 'Google Gemini API key is not configured. Please open Settings (gear icon) to configure your API key.'
-          };
-        }
-      } else if (targetModel.startsWith('gpt-') || settings.modelProvider === 'openai') {
-        const key = settings.apiKeys?.openai || process.env.OPENAI_API_KEY;
-        if (!key) {
-          return {
-            ok: false,
-            error: 'OpenAI API key is not configured. Please open Settings (gear icon) to configure your API key.'
-          };
-        }
-      }
+    // Verify credential availability upfront (typed MODEL_NOT_CONFIGURED, #224)
+    const modelCheck = ModelProviderFactory.inspect(targetModel);
+    if (!modelCheck.configured) {
+      return { ok: false, error: modelCheck.message, code: 'MODEL_NOT_CONFIGURED', provider: modelCheck.provider };
     }
 
     const missionId = `m_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
@@ -354,7 +339,7 @@ export class AgentRuntime {
       await tab.executor.attachCDP();
     } catch {}
 
-    const provider: IModelProvider = ModelProviderFactory.createProvider(mission.model);
+    const provider: IModelProvider = await ModelProviderFactory.createProvider(mission.model);
 
     // Seed initial user prompt
     mission.history.push({

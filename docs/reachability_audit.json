@@ -288,6 +288,18 @@
     "isReachable": true
   },
   {
+    "path": "models/demo/e2e_scripted.ts",
+    "isReachable": true
+  },
+  {
+    "path": "models/demo/replay_player.ts",
+    "isReachable": true
+  },
+  {
+    "path": "models/demo/scripted_provider.ts",
+    "isReachable": true
+  },
+  {
     "path": "models/gemini_provider.ts",
     "isReachable": true
   },
@@ -296,7 +308,11 @@
     "isReachable": true
   },
   {
-    "path": "models/mock_provider.ts",
+    "path": "models/ollama_provider.ts",
+    "isReachable": true
+  },
+  {
+    "path": "models/ollama_url.ts",
     "isReachable": true
   },
   {
@@ -525,7 +541,7 @@
   },
   {
     "path": "testing/arena_server.ts",
-    "isReachable": false
+    "isReachable": true
   },
   {
     "path": "testing/fault_injector.ts",

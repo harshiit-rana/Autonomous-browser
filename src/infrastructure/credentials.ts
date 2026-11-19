@@ -9,6 +9,7 @@ import * as path from 'node:path';
 import { safeStorage } from 'electron';
 import { getAppPaths } from './paths.js';
 import { rootLogger } from './logger.js';
+import { ollamaRootUrl } from '../models/ollama_url.js';
 
 const logger = rootLogger.child('credential-vault');
 
@@ -204,8 +205,13 @@ export class CredentialVault {
           return { valid: true, message: 'Successfully authenticated with Anthropic API', models: ['claude-3-7-sonnet-latest', 'claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'] };
         }
       } else if (provider === 'ollama' || provider === 'local') {
-        const targetUrl = baseUrl || 'http://localhost:11434';
-        const res = await fetch(`${targetUrl}/api/tags`);
+        const targetUrl = ollamaRootUrl(baseUrl);
+        let res: Response;
+        try {
+          res = await fetch(`${targetUrl}/api/tags`, { signal: AbortSignal.timeout(5000) });
+        } catch (netErr: any) {
+          return { valid: false, message: `Cannot reach Ollama at ${targetUrl} (${netErr?.cause?.code || netErr?.message}). Start it with "ollama serve" or correct the base URL.` };
+        }
         if (res.ok) {
           const data = await res.json() as any;
           const models = data.models ? data.models.map((m: any) => m.name) : [];

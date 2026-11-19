@@ -1,0 +1,75 @@
+{
+  "at": "2026-11-19T16:41:41.755Z",
+  "results": [
+    {
+      "name": "fresh profile: no key, no demoMode setting",
+      "ok": true,
+      "detail": "{\"provider\":\"gemini\",\"keys\":[]}"
+    },
+    {
+      "name": "Settings modal opened on Run with no key",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "notice says \"Add an API key to run missions\"",
+      "ok": true,
+      "detail": "Add an API key to run missions. No Google Gemini API key is configured for model \"gemini-2.0-flash\"."
+    },
+    {
+      "name": "plan preview did not open",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "provider section is the one needing the key",
+      "ok": true,
+      "detail": "gemini"
+    },
+    {
+      "name": "no mission was created",
+      "ok": true,
+      "detail": "missions=0"
+    },
+    {
+      "name": "startMission returns typed MODEL_NOT_CONFIGURED (no throw)",
+      "ok": true,
+      "detail": "{\"started\":false,\"code\":\"MODEL_NOT_CONFIGURED\",\"provider\":\"gemini\",\"message\":\"Add an API key to run missions. No Google Gemini API key is configured for model \\\"gemini-2.0-flash\\\".\"}"
+    },
+    {
+      "name": "main process still answers IPC",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "replay demo starts",
+      "ok": true,
+      "detail": "{\"started\":true,\"message\":\"Which in-stock item in the demo shop is the cheapest?\"}"
+    },
+    {
+      "name": "DEMO banner visible in the titlebar",
+      "ok": true,
+      "detail": "DEMO - recorded session, no AI model is running"
+    },
+    {
+      "name": "feed shows the recorded result with the demo label",
+      "ok": true,
+      "detail": "[DEMO] Replay finished. DEMO - recorded session, no AI model is running. Recorded result: AMD Radeon RX 7900 XTX at $999.00 is the cheapest in-stock item (Intel Arc A770 at $289.00 is out of stock). | [DEMO] DEMO - recorded session, no AI m"
+    },
+    {
+      "name": "replay demo created no mission row (nothing persisted)",
+      "ok": true,
+      "detail": "missions=0"
+    },
+    {
+      "name": "log has no scripted/mock provider line",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "log has no unhandled error",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}
