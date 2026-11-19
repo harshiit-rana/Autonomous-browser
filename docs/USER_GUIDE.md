@@ -1,6 +1,6 @@
 # Project Aegis - User Guide & Quick Start
 
-Welcome to Project Aegis, the next-generation autonomous browser built for high-reliability web tasks, multi-agent swarms, and injection immunity.
+Welcome to Project Aegis, the client-side autonomous desktop browser built for reliable web execution, observable agent tasks, and verifiable safety controls.
 
 ---
 

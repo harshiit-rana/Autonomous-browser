@@ -476,12 +476,12 @@
     "isReachable": true
   },
   {
-    "path": "swarm/worker_host.ts",
-    "isReachable": true
-  },
-  {
     "path": "swarm/work_stealing_queue.ts",
     "isReachable": false
+  },
+  {
+    "path": "swarm/worker_host.ts",
+    "isReachable": true
   },
   {
     "path": "testing/arena_server.ts",

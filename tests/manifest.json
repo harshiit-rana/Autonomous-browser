@@ -18,5 +18,6 @@
   { "id": "quality_m8", "cmd": "tsx tests/test_quality_m8.ts", "area": "quality" },
   { "id": "perf_soak_suite", "cmd": "tsx tests/perf_soak_suite.ts", "area": "performance" },
   { "id": "edge_cases", "cmd": "tsx tests/test_edge_cases.ts", "area": "edge_cases" },
-  { "id": "security_audit", "cmd": "node scripts/security_audit.mjs", "area": "security" }
+  { "id": "security_audit", "cmd": "node scripts/security_audit.mjs", "area": "security" },
+  { "id": "docs_truth", "cmd": "tsx tests/test_docs_truth.ts", "area": "docs" }
 ]

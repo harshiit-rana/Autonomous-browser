@@ -45,7 +45,7 @@ function getAllFiles(dir) {
   return results;
 }
 
-const allSrc = getAllFiles(path.resolve('src'));
+const allSrc = getAllFiles(path.resolve('src')).sort((a, b) => a.localeCompare(b));
 const reachableCount = [...reachable].filter(f => f.startsWith(path.resolve('src'))).length;
 console.log(`Total modules: ${allSrc.length}`);
 console.log(`Reachable modules: ${reachableCount}`);
@@ -55,7 +55,7 @@ const report = allSrc.map(f => {
   const isReachable = reachable.has(f);
   const rel = path.relative('src', f).replace(/\\/g, '/');
   return { path: rel, isReachable };
-});
+}).sort((a, b) => a.path.localeCompare(b.path));
 
 fs.writeFileSync('docs/reachability_audit.json', JSON.stringify(report, null, 2), 'utf8');
 console.log('Saved audit report to docs/reachability_audit.json');
