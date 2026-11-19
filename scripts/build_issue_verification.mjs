@@ -170,8 +170,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename
     const mdPath = path.join(ROOT_DIR, 'docs', 'audits', 'ISSUE_VERIFICATION.md');
     const stale =
       !fs.existsSync(jsonPath) || !fs.existsSync(mdPath) ||
-      fs.readFileSync(jsonPath, 'utf8') !== JSON.stringify(ledger.json, null, 2) + '\n' ||
-      fs.readFileSync(mdPath, 'utf8') !== ledger.md;
+      fs.readFileSync(jsonPath, 'utf8').replace(/
+/g, '
+') !== JSON.stringify(ledger.json, null, 2) + '\n' ||
+      fs.readFileSync(mdPath, 'utf8').replace(/
+/g, '
+') !== ledger.md;
     if (stale) {
       console.error('✗ docs/audits/ISSUE_VERIFICATION.md or issue_verification.json is stale; run node scripts/build_issue_verification.mjs');
       process.exit(1);
