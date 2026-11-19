@@ -1,0 +1,51 @@
+
+[2026-11-19T14:20:14.274Z] [INFO] [main:main] Initializing Autonomous Browser... 
+[2026-11-19T14:20:14.285Z] [INFO] [main:main] App paths initialized {
+  paths: {
+    isPortable: false,
+    userData: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-noisolate-aNqWNK',
+    sessionData: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-noisolate-aNqWNK\\session',
+    diskCache: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-noisolate-aNqWNK\\cache',
+    database: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-noisolate-aNqWNK\\aegis.sqlite',
+    vault: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-noisolate-aNqWNK\\vault.enc',
+    logs: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-noisolate-aNqWNK\\logs',
+    recordings: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-noisolate-aNqWNK\\recordings',
+    downloads: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-noisolate-aNqWNK\\downloads'
+  }
+}
+
+DevTools listening on ws://127.0.0.1:9334/devtools/browser/f4c3461f-320d-4b99-9faa-5e25edbf3105
+[2026-11-19T14:20:14.376Z] [INFO] [main:persistence] Persistence ready {
+  file: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-noisolate-aNqWNK\\aegis.sqlite',
+  schemaVersion: 4,
+  interruptedMissions: 0
+}
+[2026-11-19T14:20:14.378Z] [INFO] [main:main] Electron app ready. Creating primary window... 
+[2026-11-19T14:20:14.434Z] [INFO] [main:tab-group-manager] Created tab group {
+  id: 'group_1795098014434_aznd8',
+  name: 'General',
+  color: '#4A90E2',
+  ownerMissionId: undefined
+}
+[2026-11-19T14:20:14.435Z] [INFO] [main:main] Loading chrome renderer HTML { rendererHtml: 'D:\\REA\\wt-RUN-01\\dist\\renderer\\index.html' }
+[2026-11-19T14:20:14.775Z] [INFO] [main:main] Chrome renderer loaded successfully 
+[2026-11-19T14:20:14.777Z] [INFO] [main:view-manager] Creating tab {
+  id: 'tab_1795098014777_3pbky',
+  url: 'https://duckduckgo.com',
+  isBackgroundAgent: false,
+  owner: 'user'
+}
+[23216:1119/195015.683:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[23216:1119/195019.243:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-1-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)
+[23216:1119/195019.243:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-2-dark-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)
+[23216:1119/195019.243:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-1-dark-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)
+[23216:1119/195019.243:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-3-dark-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)
+[23216:1119/195019.243:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-3-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)
+[23216:1119/195019.243:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-2-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)

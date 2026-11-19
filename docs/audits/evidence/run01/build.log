@@ -1,0 +1,18 @@
+
+> autonomous-browser@0.1.0 build
+> tsc -b && node scripts/copy_assets.mjs && node scripts/bundle_preload.mjs && vite build
+
+copied src/infrastructure/migrations -> dist/infrastructure/migrations
+
+  dist\main\preload.js  8.2kb
+
+⚡ Done in 28ms
+vite v6.4.6 building for production...
+transforming...
+✓ 7 modules transformed.
+rendering chunks...
+computing gzip size...
+../../dist/renderer/index.html                 15.05 kB │ gzip: 4.17 kB
+../../dist/renderer/assets/index-DcCLr-WV.css  12.83 kB │ gzip: 3.18 kB
+../../dist/renderer/assets/index-CE8bNNg2.js   33.04 kB │ gzip: 8.97 kB
+✓ built in 176ms
