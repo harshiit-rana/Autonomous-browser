@@ -1,5 +1,5 @@
-import { EnterpriseRBACManager } from '../src/enterprise/rbac_policy.js';
-import { PageTranslator } from '../src/enterprise/page_translator.js';
+import { EnterpriseRBACManager } from '../attic/rbac_policy.js';
+import { PageTranslator } from '../attic/page_translator.js';
 import { WebEvaluationHarness, BenchmarkTask } from '../src/evaluation/web_eval_harness.js';
 import { InterventionAnalytics } from '../src/evaluation/telemetry_analytics.js';
 import { StructuredSchemaExtractor, ExtractionSchema } from '../src/data/structured_extractor.js';
