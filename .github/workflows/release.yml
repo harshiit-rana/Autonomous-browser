@@ -68,8 +68,10 @@ jobs:
       - name: Build (tsc + assets + preload bundle + renderer bundle)
         run: npm run build
 
+      # Blocks tag releases when the gate is red; on PRs / dry runs it is reported but does not stop the packaging checks.
       - name: Release gate
         run: npm run gate
+        continue-on-error: ${{ !startsWith(github.ref, 'refs/tags/v') }}
 
       - name: Supply-chain gate (licences, SBOM, notices)
         run: npm run licences
