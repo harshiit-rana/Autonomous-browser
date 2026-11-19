@@ -22,16 +22,8 @@ export function generateStatusDoc() {
   const allowlistPath = path.join(ROOT_DIR, 'scripts', 'reachability_allowlist.json');
   const statusPath = path.join(ROOT_DIR, 'docs', 'STATUS.md');
 
-  // Ensure issue verification ledger is up to date
-  let issueVer = null;
-  try {
-    issueVer = buildIssueVerification();
-  } catch (err) {
-    const issueVerPath = path.join(ROOT_DIR, 'docs', 'audits', 'issue_verification.json');
-    if (fs.existsSync(issueVerPath)) {
-      issueVer = JSON.parse(fs.readFileSync(issueVerPath, 'utf8'));
-    }
-  }
+  // Regenerate the issue verification ledger. Do not swallow errors: a ledger citing missing files must fail the build.
+  const issueVer = buildIssueVerification();
 
   if (!fs.existsSync(auditPath)) {
     throw new Error('docs/reachability_audit.json not found. Run node scripts/audit_reachability.mjs first.');
@@ -124,8 +116,8 @@ export function generateStatusDoc() {
     lines.push('| Category | Count | Percentage | Definition & Verification Gate |');
     lines.push('|:---|:---:|:---:|:---|');
     lines.push(`| **Fully Verified** | ${issueVer.verified} | ${Math.round((issueVer.verified / issueVer.total) * 100)}% | Requires live Playwright \`_electron\` E2E test (#254) or manual run log/screenshot (#223). |`);
-    lines.push(`| **Partial** | ${issueVer.partial} | ${Math.round((issueVer.partial / issueVer.total) * 100)}% | Code and unit tests exist; live running-app e2e verification pending in completion program. |`);
-    lines.push(`| **Not in App** | ${issueVer.notInApp} | ${Math.round((issueVer.notInApp / issueVer.total) * 100)}% | Orphaned, quarantined in \`attic/\`, mock-only, or pure specification/doc not in runtime. |`);
+    lines.push(`| **Partial** | ${issueVer.partial} | ${Math.round((issueVer.partial / issueVer.total) * 100)}% | At least one cited module is reachable from the app (or a process deliverable exists); running-app verification pending. |`);
+    lines.push(`| **Not in App** | ${issueVer.notInApp} | ${Math.round((issueVer.notInApp / issueVer.total) * 100)}% | No cited module is reachable: orphaned, test-only, moved to \`attic/\`, or a document-only deliverable. |`);
     lines.push(`| **Total Audited** | **${issueVer.total}** | **100%** | All non-verified rows are mapped to active completion issues (#218–#262). |`);
   }
 

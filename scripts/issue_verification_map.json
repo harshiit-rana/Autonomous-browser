@@ -1,0 +1,1881 @@
+{
+ "_comment": "Hand-curated pointers (issue -> code/tests/files + observed gap). Every path is verified to exist and results are computed by scripts/build_issue_verification.mjs; nothing here asserts a result.",
+ "issues": [
+  {
+   "n": 101,
+   "title": "[FND-01] Remove the scripted demo from product paths (replace `swarm:execute` keyword hack, fake HN scrape, fake fallback evidence)",
+   "kind": "code",
+   "modules": [
+    "main/index.ts",
+    "swarm/coordinator.ts",
+    "swarm/worker_host.ts",
+    "models/provider_factory.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Mock provider fallback (provider_factory) and createMockView / title-as-evidence (worker_host, coordinator) are still on product paths.",
+   "owning": [
+    224,
+    229,
+    227
+   ]
+  },
+  {
+   "n": 102,
+   "title": "[TRK-00] Audit: #1-#100 were closed without a working product - reachability map, findings, and the new program",
+   "kind": "doc",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "docs/audits/AUDIT_FINAL_TRACEABILITY.md"
+   ],
+   "gap": "Historical audit document; superseded by the program tracker.",
+   "owning": [
+    218
+   ]
+  },
+  {
+   "n": 103,
+   "title": "[CMP-01] Product spec: what \"industry-grade, better than Strawberry\" means - measurable goals, personas, non-goals",
+   "kind": "doc",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "docs/PRODUCT_SPEC.md"
+   ],
+   "gap": "Specification only; its targets are not measured anywhere.",
+   "owning": [
+    255,
+    257
+   ]
+  },
+  {
+   "n": 104,
+   "title": "[FND-02] Purge fabricated benchmarks/claims; make README, architecture doc and report truthful",
+   "kind": "doc",
+   "modules": [],
+   "tests": [
+    "test_docs_truth.ts"
+   ],
+   "files": [
+    "README.md",
+    "scripts/banned_claims.json",
+    "docs/PRODUCT_SPEC.md"
+   ],
+   "gap": "Claims are screened by a keyword list, not checked against behaviour.",
+   "owning": [
+    220
+   ]
+  },
+  {
+   "n": 105,
+   "title": "[FND-03] Fix the IPC contract: typed channel registry, validation, sender checks; remove `binary_ipc`",
+   "kind": "code",
+   "modules": [
+    "ipc/contract.ts",
+    "ipc/main_handler.ts",
+    "main/preload.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "No sender-frame (senderFrame) validation found anywhere in src/.",
+   "owning": [
+    247
+   ]
+  },
+  {
+   "n": 106,
+   "title": "[FND-04] Single source of truth for tab state (main process) - renderer tab strip is driven by events",
+   "kind": "code",
+   "modules": [
+    "browser/tab_group_manager.ts",
+    "main/view_manager.ts",
+    "renderer/app.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Not exercised in a running app (no e2e).",
+   "owning": [
+    252,
+    254
+   ]
+  },
+  {
+   "n": 107,
+   "title": "[FND-05] Harden the chrome renderer: remove `innerHTML` sinks, strict CSP, sandbox, navigation guards",
+   "kind": "code",
+   "modules": [
+    "renderer/app.ts",
+    "main/index.ts",
+    "security/electron_hardening.ts",
+    "stealth/cursor_overlay.ts"
+   ],
+   "tests": [],
+   "files": [
+    "src/renderer/index.html"
+   ],
+   "gap": "stealth/cursor_overlay.ts still uses innerHTML; electron_hardening.ts is orphaned; CSP unverified at runtime.",
+   "owning": [
+    247
+   ]
+  },
+  {
+   "n": 108,
+   "title": "[FND-06] App data locations, portability and first-run migration (stop using `process.cwd()` / hardcoded D: drive)",
+   "kind": "code",
+   "modules": [
+    "infrastructure/paths.ts",
+    "session/session_manager.ts",
+    "browser/profile_manager.ts",
+    "session/download_pipeline.ts",
+    "browser/file_transfer.ts",
+    "automation/task_scheduler.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "process.cwd() is still used in task_scheduler, file_transfer, profile_manager, download_pipeline and session_manager.",
+   "owning": [
+    239
+   ]
+  },
+  {
+   "n": 109,
+   "title": "[FND-07] Make build, test, CI and release honest and reproducible",
+   "kind": "process",
+   "modules": [],
+   "tests": [],
+   "files": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/release.yml",
+    "package.json"
+   ],
+   "gap": "CI never launches the app; release workflow gaps are tracked in the packaging issues.",
+   "owning": [
+    256,
+    258
+   ]
+  },
+  {
+   "n": 110,
+   "title": "[FND-08] Electron/Node runtime compatibility: pick an Electron version policy and an Electron-compatible SQLite",
+   "kind": "code",
+   "modules": [
+    "memory/memory_store.ts"
+   ],
+   "tests": [],
+   "files": [
+    "package.json"
+   ],
+   "gap": "memory_store uses node:sqlite (unavailable on Electron 33 / Node 20); package.json has no SQLite dependency.",
+   "owning": [
+    239
+   ]
+  },
+  {
+   "n": 111,
+   "title": "[FND-09] Observability: structured logging, error boundaries, crash reporting, diagnostics bundle",
+   "kind": "code",
+   "modules": [
+    "infrastructure/logger.ts",
+    "agent/errors.ts",
+    "main/index.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Process-level error handlers exist in main/index.ts; no crashReporter and no diagnostics bundle found.",
+   "owning": [
+    226
+   ]
+  },
+  {
+   "n": 112,
+   "title": "[FND-10] Typed settings, versioned data & migrations, backup/restore",
+   "kind": "code",
+   "modules": [
+    "infrastructure/settings.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "No backup/restore and no schema-version field found.",
+   "owning": [
+    239
+   ]
+  },
+  {
+   "n": 113,
+   "title": "[FND-11] Module triage program: rewire, rewrite or remove each of the 52 orphaned modules",
+   "kind": "process",
+   "modules": [],
+   "tests": [
+    "test_reachability_audit.ts"
+   ],
+   "files": [
+    "scripts/audit_reachability.mjs",
+    "scripts/reachability_allowlist.json",
+    "docs/reachability_audit.json"
+   ],
+   "gap": "Most orphans are only allow-listed as pending; they are not wired or removed yet.",
+   "owning": [
+    221
+   ]
+  },
+  {
+   "n": 114,
+   "title": "[FND-12] Repository hygiene: LICENSE, community files, artifact policy, branch protection",
+   "kind": "process",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    ".github/workflows/ci.yml"
+   ],
+   "gap": "No LICENSE file in the repository root.",
+   "owning": [
+    260
+   ]
+  },
+  {
+   "n": 115,
+   "title": "[AGT-01] Agent runtime architecture: mission -> task -> step state machine with observe/plan/act/verify loop and event bus",
+   "kind": "code",
+   "modules": [
+    "agent/runtime.ts"
+   ],
+   "tests": [
+    "test_agent_runtime.ts"
+   ],
+   "files": [],
+   "gap": "Loop is one monolithic runLoop; no mission state machine or event bus.",
+   "owning": [
+    225,
+    226
+   ]
+  },
+  {
+   "n": 116,
+   "title": "[AGT-02] Browser tool surface (action space): typed, strict, minimal, and complete",
+   "kind": "code",
+   "modules": [
+    "agent/tools.ts",
+    "core/action_executor.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Tool set not compared against the spec; no live run.",
+   "owning": [
+    225
+   ]
+  },
+  {
+   "n": 117,
+   "title": "[AGT-03] Prompting & context contract: system prompt, observation format, trust boundaries",
+   "kind": "code",
+   "modules": [
+    "agent/runtime.ts",
+    "security/prompt_isolation.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Prompt contract never evaluated against a live model.",
+   "owning": [
+    225,
+    245
+   ]
+  },
+  {
+   "n": 118,
+   "title": "[AGT-04] Perception v2: hybrid page snapshot (a11y tree + DOM snapshot + screenshot + Set-of-Marks), frames and shadow DOM",
+   "kind": "code",
+   "modules": [
+    "agent/perception.ts",
+    "core/dom_indexer.ts",
+    "perception/axtree_extractor.ts",
+    "perception/som_overlay.ts"
+   ],
+   "tests": [
+    "test_perception.ts"
+   ],
+   "files": [],
+   "gap": "axtree_extractor and som_overlay are orphaned; the running path is agent/perception.ts only.",
+   "owning": [
+    225
+   ]
+  },
+  {
+   "n": 119,
+   "title": "[AGT-05] Stable element references: fix duplicate-id bug, stop mutating the page, handle staleness",
+   "kind": "code",
+   "modules": [
+    "core/dom_indexer.ts",
+    "agent/perception.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Staleness handling not exercised in the app.",
+   "owning": [
+    225
+   ]
+  },
+  {
+   "n": 120,
+   "title": "[AGT-06] Action executor v2: actionability, scroll-into-view, occlusion, iframes, widgets, text entry",
+   "kind": "code",
+   "modules": [
+    "core/action_executor.ts",
+    "perception/spatial_reasoner.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "spatial_reasoner is orphaned.",
+   "owning": [
+    225
+   ]
+  },
+  {
+   "n": 121,
+   "title": "[AGT-07] Settle/wait engine: network-idle, DOM-stability, SPA navigation and loading-state detection (replace fixed sleeps)",
+   "kind": "code",
+   "modules": [
+    "perception/settle_detector.ts",
+    "swarm/worker_host.ts",
+    "agent/runtime.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "settle_detector is orphaned; worker_host waitForSettle is a fixed 600 ms timeout.",
+   "owning": [
+    225,
+    227
+   ]
+  },
+  {
+   "n": 122,
+   "title": "[AGT-08] Planner, task state and verification: decomposition, replanning, stuck/loop detection, independent success check",
+   "kind": "code",
+   "modules": [
+    "agent/runtime.ts",
+    "planning/state_snapshotter.ts",
+    "swarm/coordinator.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Swarm plan chosen by regex in coordinator.planMission; no independent success verifier.",
+   "owning": [
+    225,
+    228
+   ]
+  },
+  {
+   "n": 123,
+   "title": "[AGT-09] Context management for long missions: history compaction, observation pruning, caching, screenshot policy",
+   "kind": "code",
+   "modules": [
+    "agent/runtime.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "No dedicated context-management module exists.",
+   "owning": [
+    225
+   ]
+  },
+  {
+   "n": 124,
+   "title": "[AGT-10] Results, evidence and artifacts: structured outputs with citations and file deliverables",
+   "kind": "code",
+   "modules": [
+    "data/verified_report.ts",
+    "data/report_synthesizer.ts",
+    "swarm/blackboard.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Report modules are orphaned; swarm evidence is the page title.",
+   "owning": [
+    230,
+    251
+   ]
+  },
+  {
+   "n": 125,
+   "title": "[AGT-11] Error taxonomy and recovery policies (element missing, nav failure, crash, dialogs, popups, auth walls, timeouts)",
+   "kind": "code",
+   "modules": [
+    "agent/errors.ts",
+    "agent/runtime.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Recovery policies not exercised in the app.",
+   "owning": [
+    226
+   ]
+  },
+  {
+   "n": 126,
+   "title": "[AGT-12] Human-in-the-loop protocol: ask_user, approvals, pause/resume/cancel, takeover and hand-back with state reconciliation",
+   "kind": "code",
+   "modules": [
+    "agent/steering_and_reversibility.ts",
+    "agent/runtime.ts",
+    "ipc/contract.ts"
+   ],
+   "tests": [
+    "test_steering_and_reversibility.ts"
+   ],
+   "files": [],
+   "gap": "Not demonstrated in the running app.",
+   "owning": [
+    238,
+    226
+   ]
+  },
+  {
+   "n": 127,
+   "title": "[AGT-13] Mission persistence, checkpoints, crash recovery and page-state snapshots",
+   "kind": "code",
+   "modules": [
+    "agent/runtime.ts",
+    "planning/state_snapshotter.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "saveCheckpoint exists; crash-recovery resume not exercised.",
+   "owning": [
+    226
+   ]
+  },
+  {
+   "n": 128,
+   "title": "[MDL-01] Model layer rewrite: provider-neutral interface with streaming, tool calling, vision and a real tool-result round-trip",
+   "kind": "code",
+   "modules": [
+    "models/types.ts",
+    "models/provider_factory.ts"
+   ],
+   "tests": [
+    "test_anthropic_provider.ts"
+   ],
+   "files": [],
+   "gap": "No live-model run recorded.",
+   "owning": [
+    224
+   ]
+  },
+  {
+   "n": 129,
+   "title": "[MDL-02] Anthropic adapter: current models, adaptive thinking/effort, refusal fallbacks, prompt caching, compaction",
+   "kind": "code",
+   "modules": [
+    "models/anthropic_provider.ts"
+   ],
+   "tests": [
+    "test_anthropic_provider.ts"
+   ],
+   "files": [],
+   "gap": "Not run against the live API from this repo.",
+   "owning": [
+    224
+   ]
+  },
+  {
+   "n": 130,
+   "title": "[MDL-03] OpenAI, Gemini, Ollama and OpenAI-compatible adapters on official SDKs",
+   "kind": "code",
+   "modules": [
+    "models/openai_provider.ts",
+    "models/gemini_provider.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Ollama is only reachable through the OpenAI-compatible base URL; no dedicated adapter.",
+   "owning": [
+    224
+   ]
+  },
+  {
+   "n": 131,
+   "title": "[MDL-04] Reliability: retries, rate limits, concurrency governor, failover, truncation and offline behaviour",
+   "kind": "code",
+   "modules": [
+    "models/governor.ts"
+   ],
+   "tests": [
+    "test_governor.ts"
+   ],
+   "files": [],
+   "gap": "Behaviour under real rate limits not observed.",
+   "owning": [
+    224,
+    231
+   ]
+  },
+  {
+   "n": 132,
+   "title": "[MDL-05] Real usage, cost and budget accounting (replace fake counters)",
+   "kind": "code",
+   "modules": [
+    "models/pricing.ts",
+    "models/governor.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Costs never reconciled against provider billing.",
+   "owning": [
+    231
+   ]
+  },
+  {
+   "n": 133,
+   "title": "[MDL-06] Credentials, model catalog, per-role routing and onboarding (BYOK first run)",
+   "kind": "code",
+   "modules": [
+    "infrastructure/credentials.ts",
+    "models/provider_factory.ts"
+   ],
+   "tests": [
+    "test_credentials.ts"
+   ],
+   "files": [],
+   "gap": "Key storage at rest not verified; no onboarding UI check.",
+   "owning": [
+    248
+   ]
+  },
+  {
+   "n": 134,
+   "title": "[MCX-01] Mission Control design system & UX spec: visual language, motion, information architecture",
+   "kind": "code",
+   "modules": [
+    "ui/motion_engine.ts",
+    "renderer/app.ts"
+   ],
+   "tests": [
+    "test_workspace_and_motion.ts"
+   ],
+   "files": [],
+   "gap": "motion_engine is orphaned; no design-system spec check.",
+   "owning": [
+    234
+   ]
+  },
+  {
+   "n": 135,
+   "title": "[MCX-02] Live worker view: verify how background views paint/throttle, then ship a live Swarm Grid with real per-worker frames",
+   "kind": "code",
+   "modules": [
+    "main/view_manager.ts",
+    "renderer/app.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Grid polls capturePage thumbnails; no screencast / live frame stream.",
+   "owning": [
+    232
+   ]
+  },
+  {
+   "n": 136,
+   "title": "[MCX-03] Agent presence layer: per-worker cursors, highlights, typing and scroll indicators rendered outside the page DOM",
+   "kind": "code",
+   "modules": [
+    "stealth/cursor_overlay.ts",
+    "renderer/app.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Presence is drawn in the chrome DOM, which is probably underneath the native page view.",
+   "owning": [
+    233
+   ]
+  },
+  {
+   "n": 137,
+   "title": "[MCX-04] Live step timeline & thought stream: truthful, filterable, inspectable",
+   "kind": "code",
+   "modules": [
+    "renderer/app.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "No structured event log with sequence numbers.",
+   "owning": [
+    235
+   ]
+  },
+  {
+   "n": 138,
+   "title": "[MCX-05] Window & layout architecture: single titlebar, native-view z-order, resizable panes, Stage/Grid/Theatre layouts",
+   "kind": "code",
+   "modules": [
+    "main/view_manager.ts",
+    "renderer/app.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "z-order of DOM modals against native views unverified.",
+   "owning": [
+    237
+   ]
+  },
+  {
+   "n": 139,
+   "title": "[MCX-06] Real controls: pause/resume/step, stop, kill-all, takeover/hand-back, speed control, per-worker and global",
+   "kind": "code",
+   "modules": [
+    "agent/steering_and_reversibility.ts",
+    "ipc/contract.ts",
+    "agent/runtime.ts"
+   ],
+   "tests": [
+    "test_steering_and_reversibility.ts"
+   ],
+   "files": [],
+   "gap": "Controls not driven end to end in the app.",
+   "owning": [
+    238
+   ]
+  },
+  {
+   "n": 140,
+   "title": "[MCX-07] Mission composer & lifecycle UX: natural-language input, plan preview, clarifying questions, templates, omnibar intent routing",
+   "kind": "code",
+   "modules": [
+    "ui/omnibar_parser.ts",
+    "renderer/app.ts"
+   ],
+   "tests": [
+    "test_omnibar_parser.ts"
+   ],
+   "files": [],
+   "gap": "No composer / prompt workspace UI.",
+   "owning": [
+    241
+   ]
+  },
+  {
+   "n": 141,
+   "title": "[MCX-08] Live telemetry: tokens, cost, latency, steps, worker utilisation - truthful and budget-aware",
+   "kind": "code",
+   "modules": [
+    "models/governor.ts",
+    "renderer/app.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Telemetry values not checked against real runs.",
+   "owning": [
+    231
+   ]
+  },
+  {
+   "n": 142,
+   "title": "[MCX-09] Results & evidence panel: reports, tables, files, click-through citations with highlighted sources",
+   "kind": "code",
+   "modules": [
+    "data/verified_report.ts",
+    "renderer/app.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "No results / evidence panel in the renderer.",
+   "owning": [
+    230,
+    251
+   ]
+  },
+  {
+   "n": 143,
+   "title": "[MCX-10] Flight recorder & replay: record screencast + events, scrub timeline, export shareable replay",
+   "kind": "code",
+   "modules": [
+    "automation/flight_recorder.ts",
+    "session/trajectory_replay.ts"
+   ],
+   "tests": [
+    "test_flight_recorder.ts"
+   ],
+   "files": [],
+   "gap": "Both modules are orphaned; no recording or replay UI.",
+   "owning": [
+    236
+   ]
+  },
+  {
+   "n": 144,
+   "title": "[MCX-11] First-run, empty states, honest demo mode and guided examples",
+   "kind": "code",
+   "modules": [
+    "renderer/app.ts",
+    "infrastructure/settings.ts",
+    "models/provider_factory.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Demo mode flag selects MockModelProvider.",
+   "owning": [
+    224
+   ]
+  },
+  {
+   "n": 145,
+   "title": "[MCX-12] Chrome UI quality bar: performance, motion, accessibility, internationalisation",
+   "kind": "code",
+   "modules": [
+    "renderer/app.ts"
+   ],
+   "tests": [
+    "test_ui.ts"
+   ],
+   "files": [
+    "src/renderer/styles.css"
+   ],
+   "gap": "No performance / accessibility measurement.",
+   "owning": [
+    237
+   ]
+  },
+  {
+   "n": 146,
+   "title": "[MCX-13] Background missions, tray, notifications and \"keep working when I look away\"",
+   "kind": "code",
+   "modules": [
+    "main/index.ts",
+    "agent/runtime.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Tray and Notification code exists; background missions not verified.",
+   "owning": [
+    246
+   ]
+  },
+  {
+   "n": 147,
+   "title": "[SWM-01] Orchestrator-worker architecture: lead agent decomposes, spawns scoped sub-agents, aggregates evidence",
+   "kind": "code",
+   "modules": [
+    "swarm/coordinator.ts",
+    "swarm/swarm_manager.ts"
+   ],
+   "tests": [
+    "test_swarm_m3.ts"
+   ],
+   "files": [],
+   "gap": "Workers do not run the model-driven loop.",
+   "owning": [
+    227,
+    228
+   ]
+  },
+  {
+   "n": 148,
+   "title": "[SWM-02] Worker isolation & lifecycle: dedicated views, session partitions, spawn/retire, correct teardown",
+   "kind": "code",
+   "modules": [
+    "swarm/worker_host.ts",
+    "swarm/swarm_manager.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "createMockView still present; real teardown not verified.",
+   "owning": [
+    229
+   ]
+  },
+  {
+   "n": 149,
+   "title": "[SWM-03] Scheduler & work distribution: priorities, dependencies, per-origin politeness, shared URL frontier",
+   "kind": "code",
+   "modules": [
+    "swarm/scheduler.ts",
+    "swarm/url_frontier.ts"
+   ],
+   "tests": [
+    "test_swarm_infrastructure.ts"
+   ],
+   "files": [],
+   "gap": "Not driven by a real mission.",
+   "owning": [
+    227
+   ]
+  },
+  {
+   "n": 150,
+   "title": "[SWM-04] Shared evidence blackboard: provenance, semantic dedupe, conflict adjudication, persistence",
+   "kind": "code",
+   "modules": [
+    "swarm/blackboard.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Evidence is the page title at a fixed confidence; no quote verification.",
+   "owning": [
+    230
+   ]
+  },
+  {
+   "n": 151,
+   "title": "[SWM-05] Cross-worker hazards: shared accounts, carts, locks, idempotency and side-effect serialisation",
+   "kind": "code",
+   "modules": [
+    "swarm/hazards_and_locks.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Not exercised by real workers.",
+   "owning": [
+    231
+   ]
+  },
+  {
+   "n": 152,
+   "title": "[SWM-06] Resource governance: concurrency, memory/CPU limits, hibernation, adaptive width",
+   "kind": "code",
+   "modules": [
+    "swarm/resource_governor.ts",
+    "session/hibernation_daemon.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "hibernation_daemon is orphaned.",
+   "owning": [
+    231
+   ]
+  },
+  {
+   "n": 153,
+   "title": "[SWM-07] Worker supervision: heartbeats, stall detection, restart-from-checkpoint, poison tasks, circuit breakers",
+   "kind": "code",
+   "modules": [
+    "swarm/supervisor.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Not exercised by real workers.",
+   "owning": [
+    231
+   ]
+  },
+  {
+   "n": 154,
+   "title": "[SWM-08] Speculative search & backtracking: decide on MCTS vs. best-of-N vs. branching with evidence, then implement the winner",
+   "kind": "code",
+   "modules": [
+    "swarm/speculative_branching.ts"
+   ],
+   "tests": [],
+   "files": [
+    "docs/decisions/ADR-004-speculative-search-strategy.md"
+   ],
+   "gap": "speculative_branching is orphaned.",
+   "owning": [
+    221
+   ]
+  },
+  {
+   "n": 155,
+   "title": "[SWM-09] Synchronisation patterns for multi-stage swarms (map-reduce, fan-out/fan-in, barriers) and live \"data flows\"",
+   "kind": "code",
+   "modules": [
+    "swarm/barrier.ts",
+    "swarm/coordinator.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Fan-out/fan-in not demonstrated with real workers.",
+   "owning": [
+    228
+   ]
+  },
+  {
+   "n": 156,
+   "title": "[SEC-01] Threat model & security architecture for an autonomous browser",
+   "kind": "doc",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "docs/security/threat-model.md"
+   ],
+   "gap": "Document only; controls it lists are not all wired.",
+   "owning": [
+    247
+   ]
+  },
+  {
+   "n": 157,
+   "title": "[SEC-02] Structural prompt-injection defence: provenance, channel separation, escaping, and removal of regex-as-security",
+   "kind": "code",
+   "modules": [
+    "security/prompt_isolation.ts",
+    "security/intent_guard.ts"
+   ],
+   "tests": [
+    "test_security_m4.ts"
+   ],
+   "files": [],
+   "gap": "intent_guard is orphaned; no live injection run.",
+   "owning": [
+    247,
+    249
+   ]
+  },
+  {
+   "n": 158,
+   "title": "[SEC-03] Action policy engine: goal-conditioned gating, per-task origin scope, risk classes and user-editable rules",
+   "kind": "code",
+   "modules": [
+    "security/action_policy.ts",
+    "security/origin_guard.ts"
+   ],
+   "tests": [
+    "test_security_m4.ts"
+   ],
+   "files": [],
+   "gap": "origin_guard is orphaned.",
+   "owning": [
+    247
+   ]
+  },
+  {
+   "n": 159,
+   "title": "[SEC-04] Payments, subscriptions and irreversible actions: confirmation UX, spend limits, virtual cards",
+   "kind": "code",
+   "modules": [
+    "security/payment_guard.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "payment_guard is orphaned.",
+   "owning": [
+    247
+   ]
+  },
+  {
+   "n": 160,
+   "title": "[SEC-05] Secrets: OS-keystore-backed vault, placeholder substitution, redaction everywhere",
+   "kind": "code",
+   "modules": [
+    "security/secret_vault.ts",
+    "infrastructure/credentials.ts"
+   ],
+   "tests": [
+    "test_credentials.ts"
+   ],
+   "files": [],
+   "gap": "Storage at rest not verified.",
+   "owning": [
+    248
+   ]
+  },
+  {
+   "n": 161,
+   "title": "[SEC-06] Authentication handling: logins, 2FA/OTP/passkeys, SSO/OAuth, session reuse with explicit consent",
+   "kind": "code",
+   "modules": [
+    "security/auth_manager.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "auth_manager is orphaned.",
+   "owning": [
+    247
+   ]
+  },
+  {
+   "n": 162,
+   "title": "[SEC-07] Bot challenges and anti-automation: detect, hand off to the human, and keep browser identity coherent (no arms race)",
+   "kind": "code",
+   "modules": [
+    "security/bot_detection.ts",
+    "stealth/fingerprint_shield.ts"
+   ],
+   "tests": [
+    "test_stealth.ts"
+   ],
+   "files": [],
+   "gap": "Challenge hand-off not demonstrated.",
+   "owning": [
+    247
+   ]
+  },
+  {
+   "n": 163,
+   "title": "[SEC-08] Electron & Chromium hardening checklist (sandbox, permissions, navigation, protocols, fuses, updates, debugger exposure)",
+   "kind": "code",
+   "modules": [
+    "security/electron_hardening.ts",
+    "main/index.ts"
+   ],
+   "tests": [],
+   "files": [
+    "scripts/build-fuses.mjs"
+   ],
+   "gap": "electron_hardening is orphaned; fuse script is not run by the build.",
+   "owning": [
+    247,
+    259
+   ]
+  },
+  {
+   "n": 164,
+   "title": "[SEC-09] Audit log, kill switch, budgets and safety limits",
+   "kind": "code",
+   "modules": [
+    "security/audit_log.ts",
+    "models/governor.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Kill switch / budgets not demonstrated.",
+   "owning": [
+    231
+   ]
+  },
+  {
+   "n": 165,
+   "title": "[SEC-10] Red-team harness: live injection/exfiltration fixtures against the real agent, attack-success-rate tracking in CI",
+   "kind": "code",
+   "modules": [
+    "security/red_team_harness.ts",
+    "security/red_team_suite.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Test-only modules; not run against the real agent.",
+   "owning": [
+    249
+   ]
+  },
+  {
+   "n": 166,
+   "title": "[SEC-11] Privacy & data governance: what leaves the machine, local-only mode, redaction, retention, deletion",
+   "kind": "code",
+   "modules": [
+    "security/privacy_governor.ts",
+    "memory/history_recall.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "history_recall is orphaned; retention/deletion not demonstrated.",
+   "owning": [
+    248
+   ]
+  },
+  {
+   "n": 167,
+   "title": "[SEC-12] Mobile sync relay: disable now (unauthenticated approval endpoint), then redesign or remove",
+   "kind": "code",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "attic/mobile_sync.ts"
+   ],
+   "gap": "Quarantined in attic/; not shipped.",
+   "owning": [
+    221
+   ]
+  },
+  {
+   "n": 168,
+   "title": "[BRW-01] Tab, window and workspace model: grouping, ownership, history, discard, multi-window",
+   "kind": "code",
+   "modules": [
+    "browser/tab_group_manager.ts",
+    "browser/multi_window_manager.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "multi_window_manager is orphaned.",
+   "owning": [
+    252
+   ]
+  },
+  {
+   "n": 169,
+   "title": "[BRW-02] Navigation & address bar: URL parsing, search engines, HTTPS, error pages, security indicators",
+   "kind": "code",
+   "modules": [
+    "browser/url_classifier.ts",
+    "browser/error_pages.ts",
+    "browser/browser_ux.ts"
+   ],
+   "tests": [
+    "test_browser_m5.ts"
+   ],
+   "files": [],
+   "gap": "Not exercised in the running app.",
+   "owning": [
+    252
+   ]
+  },
+  {
+   "n": 170,
+   "title": "[BRW-03] Popups, new windows, `target=_blank`, OAuth windows and `window.open` handling (user and agent)",
+   "kind": "code",
+   "modules": [
+    "browser/popup_manager.ts"
+   ],
+   "tests": [
+    "test_browser_m5.ts"
+   ],
+   "files": [],
+   "gap": "Not exercised in the running app.",
+   "owning": [
+    252
+   ]
+  },
+  {
+   "n": 171,
+   "title": "[BRW-04] Downloads, uploads, file chooser, PDF viewing and printing",
+   "kind": "code",
+   "modules": [
+    "browser/download_manager.ts",
+    "browser/file_transfer.ts",
+    "session/download_pipeline.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "All three modules are orphaned.",
+   "owning": [
+    252
+   ]
+  },
+  {
+   "n": 172,
+   "title": "[BRW-05] Permissions, dialogs, certificates, HTTP auth, protocol and external-link handling",
+   "kind": "code",
+   "modules": [
+    "browser/dialog_permission_manager.ts",
+    "main/index.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "dialog_permission_manager is orphaned.",
+   "owning": [
+    252
+   ]
+  },
+  {
+   "n": 173,
+   "title": "[BRW-06] Profiles, sessions, cookies, incognito/agent sandbox, import and session restore",
+   "kind": "code",
+   "modules": [
+    "browser/profile_manager.ts",
+    "session/session_manager.ts"
+   ],
+   "tests": [
+    "test_session_and_pipeline.ts"
+   ],
+   "files": [],
+   "gap": "Both modules are orphaned.",
+   "owning": [
+    252
+   ]
+  },
+  {
+   "n": 174,
+   "title": "[BRW-07] Standard browser UX: find, zoom, bookmarks, history, context menus, devtools, shortcuts, settings, command palette",
+   "kind": "code",
+   "modules": [
+    "browser/browser_ux.ts",
+    "main/index.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "No findInPage usage found; zoom handled only in main/index.ts.",
+   "owning": [
+    252
+   ]
+  },
+  {
+   "n": 175,
+   "title": "[BRW-08] Extensions & content blocking: define the honest scope of MV3 support; built-in ad/tracker blocking",
+   "kind": "code",
+   "modules": [
+    "browser/content_blocker.ts",
+    "browser/extension_compatibility.ts",
+    "native/extension_runtime.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "extension_compatibility and extension_runtime are orphaned.",
+   "owning": [
+    252
+   ]
+  },
+  {
+   "n": 176,
+   "title": "[BRW-09] Hard surfaces: canvas apps, Google Docs/Sheets, WebGL, video, maps, PDFs, Flash-like plugins, virtual desktops",
+   "kind": "code",
+   "modules": [
+    "browser/hard_surfaces.ts",
+    "native/ocr_canvas_extractor.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Both modules are orphaned.",
+   "owning": [
+    252
+   ]
+  },
+  {
+   "n": 177,
+   "title": "[BRW-10] International text input & locale edge cases: Unicode typing, IME, RTL, locale/timezone coherence, translation",
+   "kind": "code",
+   "modules": [
+    "browser/international_input.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "international_input is orphaned.",
+   "owning": [
+    252
+   ]
+  },
+  {
+   "n": 178,
+   "title": "[MEM-01] Memory store: real embeddings, vector index, Electron-compatible SQLite, retrieval quality evals",
+   "kind": "code",
+   "modules": [
+    "memory/memory_store.ts",
+    "memory/semantic_memory.ts"
+   ],
+   "tests": [
+    "test_memory_and_vault.ts"
+   ],
+   "files": [],
+   "gap": "Embeddings are hash buckets; storage uses node:sqlite; both modules orphaned.",
+   "owning": [
+    239,
+    240
+   ]
+  },
+  {
+   "n": 179,
+   "title": "[MEM-02] Task memory, learned skills and preferences: remember what worked, safely",
+   "kind": "code",
+   "modules": [
+    "memory/task_memory.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "task_memory is orphaned.",
+   "owning": [
+    240
+   ]
+  },
+  {
+   "n": 180,
+   "title": "[MEM-03] Browsing history recall (\"what was that page about X?\") with consent, exclusions and encryption",
+   "kind": "code",
+   "modules": [
+    "memory/history_recall.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "history_recall is orphaned.",
+   "owning": [
+    240
+   ]
+  },
+  {
+   "n": 181,
+   "title": "[DAT-01] Extraction pipeline: tables, lists, pagination, infinite scroll, structured schemas, export",
+   "kind": "code",
+   "modules": [
+    "data/structured_extractor.ts",
+    "data/table_extractor.ts",
+    "data/pagination_crawler.ts",
+    "data/advanced_extraction.ts"
+   ],
+   "tests": [
+    "test_data_and_security.ts"
+   ],
+   "files": [],
+   "gap": "All extraction modules are orphaned.",
+   "owning": [
+    251
+   ]
+  },
+  {
+   "n": 182,
+   "title": "[DAT-02] Report synthesis with verified citations (no fabricated sources), charts and export",
+   "kind": "code",
+   "modules": [
+    "data/verified_report.ts",
+    "data/report_synthesizer.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Both modules are orphaned.",
+   "owning": [
+    251
+   ]
+  },
+  {
+   "n": 183,
+   "title": "[DAT-03] Scheduling & triggers: cron/recurring missions, webhooks, missed runs, sleep/wake, notifications",
+   "kind": "code",
+   "modules": [
+    "automation/scheduler_and_triggers.ts",
+    "automation/task_scheduler.ts"
+   ],
+   "tests": [
+    "test_automation.ts"
+   ],
+   "files": [],
+   "gap": "Both modules are orphaned.",
+   "owning": [
+    246
+   ]
+  },
+  {
+   "n": 184,
+   "title": "[DAT-04] Forms & document workflows: autonomous form filling with consent, validation handling, uploads",
+   "kind": "code",
+   "modules": [
+    "automation/form_filler.ts",
+    "automation/autonomous_forms.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Both modules are orphaned.",
+   "owning": [
+    251
+   ]
+  },
+  {
+   "n": 185,
+   "title": "[PLT-01] Automation API, CLI and MCP **server** (drive the browser from other agents); harden MCP **client** use",
+   "kind": "code",
+   "modules": [
+    "platform/mcp_server.ts",
+    "platform/cli_runner.ts",
+    "mcp/mcp_hub.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "All three modules are orphaned.",
+   "owning": [
+    253
+   ]
+  },
+  {
+   "n": 186,
+   "title": "[PLT-02] Skills & workflow recorder: record by demonstration, parameterise, share safely",
+   "kind": "code",
+   "modules": [
+    "platform/workflow_recorder.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "workflow_recorder is orphaned.",
+   "owning": [
+    253
+   ]
+  },
+  {
+   "n": 187,
+   "title": "[PLT-03] Voice, global shortcuts, quick-action pill and companion UX",
+   "kind": "code",
+   "modules": [
+    "platform/companion_pill.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "No globalShortcut or speech usage found in src/.",
+   "owning": [
+    253
+   ]
+  },
+  {
+   "n": 188,
+   "title": "[PLT-04] Installers, auto-update, code signing, release channels, crash symbolication",
+   "kind": "code",
+   "modules": [
+    "platform/auto_updater.ts"
+   ],
+   "tests": [],
+   "files": [
+    ".github/workflows/release.yml"
+   ],
+   "gap": "No autoUpdater usage; no signing step in the release workflow.",
+   "owning": [
+    259,
+    260
+   ]
+  },
+  {
+   "n": 189,
+   "title": "[PLT-05] Cross-platform parity: Windows, macOS, Linux (paths, shortcuts, titlebar, GPU, packaging, permissions)",
+   "kind": "code",
+   "modules": [
+    "platform/platform_parity.ts"
+   ],
+   "tests": [
+    "test_platform_m7.ts"
+   ],
+   "files": [],
+   "gap": "Module orphaned; build config targets Windows only.",
+   "owning": [
+    256,
+    258
+   ]
+  },
+  {
+   "n": 190,
+   "title": "[PLT-06] Telemetry & product analytics: opt-in, privacy-preserving, useful (intervention analytics, failure taxonomy)",
+   "kind": "code",
+   "modules": [
+    "platform/telemetry.ts",
+    "evaluation/telemetry_analytics.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Both modules are orphaned.",
+   "owning": [
+    253
+   ]
+  },
+  {
+   "n": 191,
+   "title": "[PLT-07] Documentation & contributor experience: truthful architecture docs, ADRs, user guide, troubleshooting",
+   "kind": "doc",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "docs/developer_guide.md",
+    "docs/USER_GUIDE.md",
+    "SYSTEM_ARCHITECTURE_AND_INVENTORY.md",
+    "docs/decisions/ADR-006-legacy-triage-disposition.md"
+   ],
+   "gap": "Documents only; accuracy tracked by the docs-truth test.",
+   "owning": [
+    220
+   ]
+  },
+  {
+   "n": 192,
+   "title": "[ORP-01] Triage: audio loopback/meeting transcription, clipboard hub, mobile approvals, testing helpers - rewire, rescope or remove",
+   "kind": "code",
+   "modules": [
+    "data/clipboard_hub.ts",
+    "testing/arena_server.ts"
+   ],
+   "tests": [],
+   "files": [
+    "attic/audio_loopback.ts",
+    "attic/mobile_sync.ts"
+   ],
+   "gap": "Audio loopback and mobile sync were moved to attic/; clipboard_hub is orphaned.",
+   "owning": [
+    221
+   ]
+  },
+  {
+   "n": 193,
+   "title": "[ORP-02] Triage: enterprise (RBAC, SSO, policy distribution), accessibility audit tool, page translator, telemetry helpers",
+   "kind": "code",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "attic/rbac_policy.ts",
+    "attic/accessibility_audit.ts",
+    "attic/page_translator.ts"
+   ],
+   "gap": "Enterprise/accessibility/translator helpers were moved to attic/; not shipped.",
+   "owning": [
+    221
+   ]
+  },
+  {
+   "n": 194,
+   "title": "[QA-01] Fixture \"web arena\": deterministic local sites for every page pattern, widget, failure and attack",
+   "kind": "code",
+   "modules": [
+    "testing/arena_server.ts"
+   ],
+   "tests": [],
+   "files": [
+    "fixtures/arena_server.ts",
+    "docs/fixtures.md"
+   ],
+   "gap": "Test-only fixture server; not used by any real-app run.",
+   "owning": [
+    255
+   ]
+  },
+  {
+   "n": 195,
+   "title": "[QA-02] Real-app e2e harness: Playwright `_electron`, recorded-model mode, screenshots/video, CI on 3 OSes",
+   "kind": "code",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "tests/e2e/e2e_harness.ts"
+   ],
+   "gap": "Not a Playwright _electron harness; never launches the app.",
+   "owning": [
+    254
+   ]
+  },
+  {
+   "n": 196,
+   "title": "[QA-03] Agent evaluation harness: honest benchmarks, internal task suite, cost/latency, reproducibility",
+   "kind": "code",
+   "modules": [
+    "evaluation/agent_benchmarks.ts",
+    "evaluation/web_eval_harness.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Test-only modules; not run against a live model.",
+   "owning": [
+    257
+   ]
+  },
+  {
+   "n": 197,
+   "title": "[QA-04] Test strategy overhaul: real runner, layered tests, coverage gates, regression tests for every audited defect",
+   "kind": "process",
+   "modules": [],
+   "tests": [
+    "test_release_gate_m10.ts"
+   ],
+   "files": [
+    "tests/manifest.json",
+    "scripts/release_gate.mjs"
+   ],
+   "gap": "Legacy m10 gate test matches strings in a document; the behavioural gate is scripts/release_gate.mjs.",
+   "owning": [
+    219,
+    256
+   ]
+  },
+  {
+   "n": 198,
+   "title": "[QA-05] Performance, scale and soak testing: workers, tokens, memory, startup, huge pages",
+   "kind": "process",
+   "modules": [],
+   "tests": [
+    "perf_soak_suite.ts"
+   ],
+   "files": [
+    "docs/perf.md"
+   ],
+   "gap": "Synthetic suite; no real worker/token/memory measurements.",
+   "owning": [
+    257
+   ]
+  },
+  {
+   "n": 199,
+   "title": "[QA-06] Fault injection & chaos suite: network, providers, renderer/GPU crashes, disk, sleep/resume, clock",
+   "kind": "code",
+   "modules": [
+    "testing/fault_injector.ts"
+   ],
+   "tests": [],
+   "files": [],
+   "gap": "Test-only module; no chaos run against the app.",
+   "owning": [
+    257
+   ]
+  },
+  {
+   "n": 200,
+   "title": "[QA-07] Security testing & supply-chain hygiene: SAST, dependency policy, Electron checks, fuzzing, secrets, SBOM, licences",
+   "kind": "process",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "scripts/security_audit.mjs",
+    ".github/workflows/ci.yml"
+   ],
+   "gap": "No SBOM or dependency-audit step in CI.",
+   "owning": [
+    261
+   ]
+  },
+  {
+   "n": 201,
+   "title": "[EDG-01] Edge-case catalogue A - page structure & rendering (perception/targeting)",
+   "kind": "doc",
+   "modules": [],
+   "tests": [
+    "test_edge_cases.ts"
+   ],
+   "files": [
+    "docs/edge-cases/EDGE_CASE_CATALOGUE.md"
+   ],
+   "gap": "Catalogue; per-case behaviour not verified in the app.",
+   "owning": [
+    255
+   ]
+  },
+  {
+   "n": 202,
+   "title": "[EDG-02] Edge-case catalogue B - interaction & widgets",
+   "kind": "doc",
+   "modules": [],
+   "tests": [
+    "test_edge_cases.ts"
+   ],
+   "files": [
+    "docs/edge-cases/EDGE_CASE_CATALOGUE.md"
+   ],
+   "gap": "Catalogue; per-case behaviour not verified in the app.",
+   "owning": [
+    255
+   ]
+  },
+  {
+   "n": 203,
+   "title": "[EDG-03] Edge-case catalogue C - environment, network, system and resources",
+   "kind": "doc",
+   "modules": [],
+   "tests": [
+    "test_edge_cases.ts"
+   ],
+   "files": [
+    "docs/edge-cases/EDGE_CASE_CATALOGUE.md"
+   ],
+   "gap": "Catalogue; per-case behaviour not verified in the app.",
+   "owning": [
+    255
+   ]
+  },
+  {
+   "n": 204,
+   "title": "[EDG-04] Edge-case catalogue D - task semantics, user intent and real-world workflows",
+   "kind": "doc",
+   "modules": [],
+   "tests": [
+    "test_edge_cases.ts"
+   ],
+   "files": [
+    "docs/edge-cases/EDGE_CASE_CATALOGUE.md"
+   ],
+   "gap": "Catalogue; per-case behaviour not verified in the app.",
+   "owning": [
+    255
+   ]
+  },
+  {
+   "n": 205,
+   "title": "[EDG-05] Edge-case catalogue E - model & agent-loop failure modes",
+   "kind": "doc",
+   "modules": [],
+   "tests": [
+    "test_edge_cases.ts"
+   ],
+   "files": [
+    "docs/edge-cases/EDGE_CASE_CATALOGUE.md"
+   ],
+   "gap": "Catalogue; per-case behaviour not verified in the app.",
+   "owning": [
+    255
+   ]
+  },
+  {
+   "n": 206,
+   "title": "[WKS-01] Prompt Workspace: a dedicated, persistent surface for writing, structuring and steering missions",
+   "kind": "code",
+   "modules": [
+    "workspace/prompt_workspace.ts"
+   ],
+   "tests": [
+    "test_workspace_and_motion.ts"
+   ],
+   "files": [],
+   "gap": "Module is orphaned; no workspace UI exists.",
+   "owning": [
+    241
+   ]
+  },
+  {
+   "n": 207,
+   "title": "[WKS-02] Prompt & template library: saved prompts, variables, folders, versions, import/export, starter pack",
+   "kind": "code",
+   "modules": [
+    "workspace/template_library.ts"
+   ],
+   "tests": [
+    "test_workspace_and_motion.ts"
+   ],
+   "files": [],
+   "gap": "Module is orphaned; no library UI.",
+   "owning": [
+    242
+   ]
+  },
+  {
+   "n": 208,
+   "title": "[WKS-03] Custom instructions: layered global / profile / site / mission rules with precedence and an \"effective instructions\" inspector",
+   "kind": "code",
+   "modules": [
+    "workspace/custom_instructions.ts"
+   ],
+   "tests": [
+    "test_workspace_and_motion.ts"
+   ],
+   "files": [],
+   "gap": "Module is orphaned; seeds demo rules.",
+   "owning": [
+    243
+   ]
+  },
+  {
+   "n": 209,
+   "title": "[WKS-04] System-prompt and per-role prompt management: versioned defaults, safe overrides, A/B and eval gating",
+   "kind": "code",
+   "modules": [
+    "agent/steering_and_reversibility.ts",
+    "agent/runtime.ts"
+   ],
+   "tests": [
+    "test_steering_and_reversibility.ts"
+   ],
+   "files": [],
+   "gap": "PromptRegistry is used by runtime but has no UI, versioning store or eval gate.",
+   "owning": [
+    245
+   ]
+  },
+  {
+   "n": 210,
+   "title": "[WKS-05] Conversation threads: follow-ups, refinement, fork/branch, history, search, export",
+   "kind": "code",
+   "modules": [
+    "workspace/conversation_threads.ts"
+   ],
+   "tests": [
+    "test_workspace_and_motion.ts"
+   ],
+   "files": [],
+   "gap": "Module is orphaned; no thread UI.",
+   "owning": [
+    244
+   ]
+  },
+  {
+   "n": 211,
+   "title": "[WKS-06] Mid-run steering: messages to a running mission - queue vs interrupt, plan revision, and behaviour while paused / approving / acting",
+   "kind": "code",
+   "modules": [
+    "agent/steering_and_reversibility.ts",
+    "ipc/contract.ts"
+   ],
+   "tests": [
+    "test_steering_and_reversibility.ts"
+   ],
+   "files": [],
+   "gap": "steer channel exists; no steering UI verified.",
+   "owning": [
+    238,
+    244
+   ]
+  },
+  {
+   "n": 212,
+   "title": "[AST-01] Continuous assistant mode: standing tasks, long-horizon work, away-digest and a unified activity inbox",
+   "kind": "code",
+   "modules": [
+    "assistant/continuous_assistant.ts"
+   ],
+   "tests": [
+    "test_assistant_m9.ts"
+   ],
+   "files": [],
+   "gap": "Module is orphaned.",
+   "owning": [
+    246
+   ]
+  },
+  {
+   "n": 213,
+   "title": "[ANI-01] Motion & choreography: implement the live \"agents at work\" animation with an early prototype, truthful event-to-motion mapping and measurable performance",
+   "kind": "code",
+   "modules": [
+    "ui/motion_engine.ts",
+    "stealth/cursor_overlay.ts"
+   ],
+   "tests": [
+    "test_workspace_and_motion.ts"
+   ],
+   "files": [],
+   "gap": "motion_engine is orphaned; cursor overlay lives in chrome DOM.",
+   "owning": [
+    233,
+    234
+   ]
+  },
+  {
+   "n": 214,
+   "title": "[AGT-14] Undo, rollback and compensation for agent actions: action ledger, reversibility classes and \"undo last / undo mission\"",
+   "kind": "code",
+   "modules": [
+    "agent/steering_and_reversibility.ts",
+    "ipc/contract.ts"
+   ],
+   "tests": [
+    "test_steering_and_reversibility.ts"
+   ],
+   "files": [],
+   "gap": "undo channel exists; compensation not demonstrated.",
+   "owning": [
+    238
+   ]
+  },
+  {
+   "n": 215,
+   "title": "[REL-01] v1 release-readiness gate: measurable exit criteria, traceability matrix and an honest \"what is not done\" list",
+   "kind": "process",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "scripts/release_gate.mjs",
+    "docs/release/V1_RELEASE_GATE.md"
+   ],
+   "gap": "Gate currently reports NOT READY.",
+   "owning": [
+    219,
+    262
+   ]
+  },
+  {
+   "n": 216,
+   "title": "[REL-02] Legal, compliance and responsible-use review: ToS/robots posture, licences, consent, AI disclosure, data-protection",
+   "kind": "doc",
+   "modules": [],
+   "tests": [],
+   "files": [
+    "docs/legal/POLICIES.md",
+    "docs/legal/THIRD_PARTY_NOTICES.md"
+   ],
+   "gap": "Documents only; no LICENSE file in repo root.",
+   "owning": [
+    260,
+    262
+   ]
+  },
+  {
+   "n": 217,
+   "title": "[EDG-06] Edge-case catalogue F - prompts, threads, steering, continuous work, undo and animation",
+   "kind": "doc",
+   "modules": [],
+   "tests": [
+    "test_edge_cases.ts"
+   ],
+   "files": [
+    "docs/edge-cases/EDGE_CASE_CATALOGUE.md"
+   ],
+   "gap": "Catalogue; per-case behaviour not verified in the app.",
+   "owning": [
+    255
+   ]
+  }
+ ]
+}

@@ -1,14 +1,14 @@
-# Release Gate Status: **NOT READY (4 of 7 checks failing)**
+# Release Gate Status: **NOT READY (5 of 7 checks failing)**
 
-> Generated automatically by `scripts/release_gate.mjs` at 2026-11-19T09:21:13.851Z
-> Commit: `b1277c1` | Working tree dirty: `true`
+> Generated automatically by `scripts/release_gate.mjs` at 2026-11-19T09:41:21.873Z
+> Commit: `849f3fb` | Working tree dirty: `true`
 
 ## Gate Measurements Summary Table
 
 | Check ID | Area / Description | Verification Command | Status | Measured Evidence / Notes |
 |---|---|---|---|---|
-| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 1106ms |
-| `unit` | Unit & Integration Test Manifest | `tests/manifest.json (23 suites)` | **PASS** | 23/23 suites passed (10544ms total) |
+| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 1028ms |
+| `unit` | Unit & Integration Test Manifest | `tests/manifest.json (23 suites)` | **FAIL** | 22 suites failed: agent_runtime, anthropic_provider, governor, credentials, steering_and_reversibility, omnibar_parser, mission_control, flight_recorder, workspace_and_motion, final_batch, swarm_m3, security_m4, browser_m5, memory_data_m6, platform_m7, assistant_m9, quality_m8, perf_soak_suite, edge_cases, docs_truth, reachability_audit, issue_verification |
 | `reachability` | Reachability Policy & Orphan Allowlist | `node scripts/audit_reachability.mjs` | **FAIL** | 63 orphaned modules awaiting wiring in allowlist pending list |
 | `e2e` | Real-App Electron E2E Suite | `npm run test:e2e` | **FAIL** | no real-app e2e suite (Playwright _electron) |
 | `docs-consistency` | Documentation Truth & Status Consistency | `scripts/gen_status.mjs hash check` | **PASS** | docs/STATUS.md matches reachability audit hash c1ef7520 |
@@ -17,6 +17,7 @@
 
 ## Required Completion Items
 
+- [ ] **Unit & Integration Test Manifest** (`unit`): 22 suites failed: agent_runtime, anthropic_provider, governor, credentials, steering_and_reversibility, omnibar_parser, mission_control, flight_recorder, workspace_and_motion, final_batch, swarm_m3, security_m4, browser_m5, memory_data_m6, platform_m7, assistant_m9, quality_m8, perf_soak_suite, edge_cases, docs_truth, reachability_audit, issue_verification
 - [ ] **Reachability Policy & Orphan Allowlist** (`reachability`): 63 orphaned modules awaiting wiring in allowlist pending list
 - [ ] **Real-App Electron E2E Suite** (`e2e`): no real-app e2e suite (Playwright _electron)
 - [ ] **Zero Forbidden Fake Patterns in src/** (`no-fake-paths`): Found 11 forbidden fake pattern(s): src/models/mock_provider.ts:12 (MockModelProvider outside demo), src/models/provider_factory.ts:5 (MockModelProvider outside demo), src/models/provider_factory.ts:32 (MockModelProvider outside demo), src/models/provider_factory.ts:33 (MockModelProvider outside demo)

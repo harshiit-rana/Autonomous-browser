@@ -156,8 +156,8 @@ An exhaustive audit of all 117 closed historical issues (#101–#217) was conduc
 | Category | Count | Percentage | Definition & Verification Gate |
 |:---|:---:|:---:|:---|
 | **Fully Verified** | 0 | 0% | Requires live Playwright `_electron` E2E test (#254) or manual run log/screenshot (#223). |
-| **Partial** | 99 | 85% | Code and unit tests exist; live running-app e2e verification pending in completion program. |
-| **Not in App** | 18 | 15% | Orphaned, quarantined in `attic/`, mock-only, or pure specification/doc not in runtime. |
+| **Partial** | 70 | 60% | At least one cited module is reachable from the app (or a process deliverable exists); running-app verification pending. |
+| **Not in App** | 47 | 40% | No cited module is reachable: orphaned, test-only, moved to `attic/`, or a document-only deliverable. |
 | **Total Audited** | **117** | **100%** | All non-verified rows are mapped to active completion issues (#218–#262). |
 
 ---
