@@ -1,0 +1,759 @@
+
+[2026-11-19T14:12:43.012Z] [INFO] [main:main] Initializing Autonomous Browser... 
+[2026-11-19T14:12:43.017Z] [INFO] [main:main] App paths initialized {
+  paths: {
+    isPortable: false,
+    userData: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI',
+    sessionData: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\session',
+    diskCache: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\cache',
+    database: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\aegis.sqlite',
+    vault: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\vault.enc',
+    logs: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\logs',
+    recordings: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\recordings',
+    downloads: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\downloads'
+  }
+}
+
+DevTools listening on ws://127.0.0.1:9333/devtools/browser/e4d18039-2e1b-4f85-8d38-3ce1fbc936bf
+[2026-11-19T14:12:43.109Z] [INFO] [main:persistence] Persistence ready {
+  file: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\aegis.sqlite',
+  schemaVersion: 4,
+  interruptedMissions: 0
+}
+[2026-11-19T14:12:43.110Z] [INFO] [main:main] Electron app ready. Creating primary window... 
+[2026-11-19T14:12:43.187Z] [INFO] [main:tab-group-manager] Created tab group {
+  id: 'group_1795097563187_4810s',
+  name: 'General',
+  color: '#4A90E2',
+  ownerMissionId: undefined
+}
+[2026-11-19T14:12:43.189Z] [INFO] [main:main] Loading chrome renderer HTML { rendererHtml: 'D:\\REA\\wt-RUN-01\\dist\\renderer\\index.html' }
+[2026-11-19T14:12:43.476Z] [INFO] [main:main] Chrome renderer loaded successfully 
+[2026-11-19T14:12:43.477Z] [INFO] [main:view-manager] Creating tab {
+  id: 'tab_1795097563477_ot81e',
+  url: 'https://duckduckgo.com',
+  isBackgroundAgent: false,
+  owner: 'user'
+}
+[27896:1119/194244.403:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[27896:1119/194248.434:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-1-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)
+[27896:1119/194248.434:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-3-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)
+[27896:1119/194248.435:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-2-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)
+[2026-11-19T14:12:48.636Z] [INFO] [main:view-manager] Creating tab {
+  id: 'tab_1795097568636_54xn4',
+  url: 'https://duckduckgo.com',
+  isBackgroundAgent: false,
+  owner: 'user'
+}
+[27896:1119/194249.294:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[27896:1119/194251.370:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[27896:1119/194324.461:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[27896:1119/194324.516:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[27896:1119/194336.066:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[27896:1119/194455.821:INFO:CONSOLE(0)] "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.", source: https://www.google.com/recaptcha/enterprise/anchor?ar=1&k=6LfwuyUTAAAAAOAmoS0fdqijC2PbbdH4kjq62Y1b&co=aHR0cHM6Ly93d3cuZ29vZ2xlLmNvbTo0NDM.&hl=en&v=4i3aN5wAweL7i3ADI7BSX4B-&size=normal&s=C-i4nvlkUtQKF4dy05TUDB4lnAJQ3gfuw4oHMsixxvrewodrync8XJn6k2mq32S-dVB7j8eoU6gN0dM942Je9mr_TJ2mOHVxXSYU-hZWjWPR00PtyFdfaFzxFGAArY8iztEy1iD8ENIpMgA2PJz9_5upvNHRWSx6LJNz4o3RLE3gymMqOakQiytNotr8a8uqmTSVaQssOoWhYlX7TnaLa2JGVUFz2DzdGIGJ1_hC258ui7-ZbXailCHvyoX0LqetATa1RxoF233zi6YpVCuPqoPLRmkL1Ic&anchor-ms=20000&execute-ms=30000&ovv=CADq00gF&cb=vuitebcj1mh5 (0)
+[2026-11-19T14:14:56.016Z] [WARN] [main:main] Permission request denied { permission: 'storage-access' }
+[27896:1119/194456.035:INFO:CONSOLE(259)] "requestStorageAccess: Permission denied.", source: https://www.google.com/recaptcha/enterprise/anchor?ar=1&k=6LfwuyUTAAAAAOAmoS0fdqijC2PbbdH4kjq62Y1b&co=aHR0cHM6Ly93d3cuZ29vZ2xlLmNvbTo0NDM.&hl=en&v=4i3aN5wAweL7i3ADI7BSX4B-&size=normal&s=C-i4nvlkUtQKF4dy05TUDB4lnAJQ3gfuw4oHMsixxvrewodrync8XJn6k2mq32S-dVB7j8eoU6gN0dM942Je9mr_TJ2mOHVxXSYU-hZWjWPR00PtyFdfaFzxFGAArY8iztEy1iD8ENIpMgA2PJz9_5upvNHRWSx6LJNz4o3RLE3gymMqOakQiytNotr8a8uqmTSVaQssOoWhYlX7TnaLa2JGVUFz2DzdGIGJ1_hC258ui7-ZbXailCHvyoX0LqetATa1RxoF233zi6YpVCuPqoPLRmkL1Ic&anchor-ms=20000&execute-ms=30000&ovv=CADq00gF&cb=vuitebcj1mh5 (259)
+[27896:1119/194456.130:INFO:CONSOLE(4)] "Uncaught ReferenceError: solveSimpleChallenge is not defined", source: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dopen%2520example.com%2520and%2520tell%2520me%2520the%2520page%2520heading%26sei%3DXgT_atXzB5zyuNkP74HEmQM&q=EgRu6-pMGN6I_NcGIjCgVecnW8baBbOvB0CeZh4WvPFD5rnOU5YPPPqZkE6mflpeLpvRwYQlI_GaYvaq01IyAnJSWgFDYKXMrKmuv9PG5AE (4)
+[27896:1119/194456.134:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[2026-11-19T14:14:56.579Z] [INFO] [main:main] Mission start requested {
+  prompt: 'open example.com and tell me the page heading',
+  model: 'gemini-2.0-flash'
+}
+[2026-11-19T14:14:56.580Z] [INFO] [main:main] PowerSaveBlocker activated for background mission { blockerId: 0 }
+[27896:1119/194456.739:INFO:CONSOLE(0)] "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.", source: https://www.google.com/recaptcha/enterprise/bframe?hl=en&v=4i3aN5wAweL7i3ADI7BSX4B-&k=6LfwuyUTAAAAAOAmoS0fdqijC2PbbdH4kjq62Y1b&bft=0dAFcWeA4vZAhdoViNXcnWi7CMCCHQzH7BDIxrcbd7tX8QuenQaH4hIQhDet8DieKrzXyQNfHIP4X4ETipkFECPPLLXCqVOsk2jw (0)
+[2026-11-19T14:14:56.767Z] [WARN] [main:main] Permission request denied { permission: 'storage-access' }
+[27896:1119/194456.800:INFO:CONSOLE(0)] "requestStorageAccess: Permission denied.", source: https://www.google.com/recaptcha/enterprise/bframe?hl=en&v=4i3aN5wAweL7i3ADI7BSX4B-&k=6LfwuyUTAAAAAOAmoS0fdqijC2PbbdH4kjq62Y1b&bft=0dAFcWeA4vZAhdoViNXcnWi7CMCCHQzH7BDIxrcbd7tX8QuenQaH4hIQhDet8DieKrzXyQNfHIP4X4ETipkFECPPLLXCqVOsk2jw (0)
+[2026-11-19T14:15:03.945Z] [INFO] [main:main] Mission start requested {
+  prompt: 'open example.com and tell me the page heading',
+  model: 'gemini-2.0-flash'
+}
+[2026-11-19T14:15:03.947Z] [INFO] [main:agent-runtime] Starting mission {
+  missionId: 'm_1795097703946_7bud',
+  prompt: 'open example.com and tell me the page heading',
+  model: 'gemini-2.0-flash',
+  tabId: 'tab_1795097568636_54xn4'
+}
+[2026-11-19T14:15:03.954Z] [INFO] [main:provider-factory] Creating model provider { model: 'gemini-2.0-flash', provider: 'gemini' }
+[2026-11-19T14:15:03.955Z] [INFO] [main:provider-factory] Using MockModelProvider in demo mode 
+[2026-11-19T14:15:03.955Z] [INFO] [main:agent-runtime] Step 1 starting { missionId: 'm_1795097703946_7bud', step: 1 }
+[2026-11-19T14:15:04.374Z] [INFO] [main:tools] Executing tool { name: 'done', args: { result: 'Mock task finished' } }
+[2026-11-19T14:15:04.376Z] [INFO] [main:agent-runtime] Mission finished { state: 'completed', result: 'Mock task finished', error: undefined }
+[2026-11-19T14:15:04.401Z] [INFO] [main:agent-runtime] Deliverable report saved {
+  filePath: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\deliverables\\m_1795097703946_7bud_report.md'
+}
+[2026-11-19T14:15:39.078Z] [INFO] [main:credential-vault] Encrypted API key saved for provider 'gemini' 
+[2026-11-19T14:15:44.247Z] [INFO] [main:main] Mission start requested {
+  prompt: 'go to http://127.0.0.1:54806/ and tell me the page heading',
+  model: 'gemini-2.0-flash'
+}
+[2026-11-19T14:15:44.248Z] [INFO] [main:agent-runtime] Starting mission {
+  missionId: 'm_1795097744248_qw1o',
+  prompt: 'go to http://127.0.0.1:54806/ and tell me the page heading',
+  model: 'gemini-2.0-flash',
+  tabId: 'tab_1795097568636_54xn4'
+}
+[2026-11-19T14:15:44.249Z] [INFO] [main:provider-factory] Creating model provider { model: 'gemini-2.0-flash', provider: 'ollama' }
+[2026-11-19T14:15:44.254Z] [INFO] [main:agent-runtime] Step 1 starting { missionId: 'm_1795097744248_qw1o', step: 1 }
+[2026-11-19T14:15:44.681Z] [ERROR] [main:openai-provider] OpenAI generation error  NotFoundError: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)
+    at APIError.generate (D:\REA\wt-PST-01\node_modules\openai\core\error.js:54:20)
+    at OpenAI.makeStatusError (D:\REA\wt-PST-01\node_modules\openai\client.js:449:32)
+    at OpenAI.makeRequest (D:\REA\wt-PST-01\node_modules\openai\client.js:1017:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async OpenAIModelProvider.generate (D:\REA\wt-RUN-01\dist\models\openai_provider.js:41:30)
+    at async D:\REA\wt-RUN-01\dist\models\governor.js:176:30
+    at async ConcurrencyGovernor.executeWithRetry (D:\REA\wt-RUN-01\dist\models\governor.js:130:28)
+    at async AgentRuntime.runLoop (D:\REA\wt-RUN-01\dist\agent\runtime.js:412:28) {
+  status: 404,
+  headers: Headers {
+    'content-type': 'application/json',
+    date: 'Thu, 19 Nov 2026 14:15:44 GMT',
+    connection: 'keep-alive',
+    'keep-alive': 'timeout=5',
+    'content-length': '126'
+  },
+  requestID: null,
+  error: {
+    message: '404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)'
+  },
+  code: undefined,
+  param: undefined,
+  type: undefined
+}
+[2026-11-19T14:15:44.683Z] [ERROR] [main:model-governor] Fail-fast on model error: Model not found or unavailable  NotFoundError: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)
+    at APIError.generate (D:\REA\wt-PST-01\node_modules\openai\core\error.js:54:20)
+    at OpenAI.makeStatusError (D:\REA\wt-PST-01\node_modules\openai\client.js:449:32)
+    at OpenAI.makeRequest (D:\REA\wt-PST-01\node_modules\openai\client.js:1017:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async OpenAIModelProvider.generate (D:\REA\wt-RUN-01\dist\models\openai_provider.js:41:30)
+    at async D:\REA\wt-RUN-01\dist\models\governor.js:176:30
+    at async ConcurrencyGovernor.executeWithRetry (D:\REA\wt-RUN-01\dist\models\governor.js:130:28)
+    at async AgentRuntime.runLoop (D:\REA\wt-RUN-01\dist\agent\runtime.js:412:28) {
+  status: 404,
+  headers: Headers {
+    'content-type': 'application/json',
+    date: 'Thu, 19 Nov 2026 14:15:44 GMT',
+    connection: 'keep-alive',
+    'keep-alive': 'timeout=5',
+    'content-length': '126'
+  },
+  requestID: null,
+  error: {
+    message: '404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)'
+  },
+  code: undefined,
+  param: undefined,
+  type: undefined
+}
+[2026-11-19T14:15:44.683Z] [ERROR] [main:agent-runtime] Model call failed  NotFoundError: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)
+    at APIError.generate (D:\REA\wt-PST-01\node_modules\openai\core\error.js:54:20)
+    at OpenAI.makeStatusError (D:\REA\wt-PST-01\node_modules\openai\client.js:449:32)
+    at OpenAI.makeRequest (D:\REA\wt-PST-01\node_modules\openai\client.js:1017:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async OpenAIModelProvider.generate (D:\REA\wt-RUN-01\dist\models\openai_provider.js:41:30)
+    at async D:\REA\wt-RUN-01\dist\models\governor.js:176:30
+    at async ConcurrencyGovernor.executeWithRetry (D:\REA\wt-RUN-01\dist\models\governor.js:130:28)
+    at async AgentRuntime.runLoop (D:\REA\wt-RUN-01\dist\agent\runtime.js:412:28) {
+  status: 404,
+  headers: Headers {
+    'content-type': 'application/json',
+    date: 'Thu, 19 Nov 2026 14:15:44 GMT',
+    connection: 'keep-alive',
+    'keep-alive': 'timeout=5',
+    'content-length': '126'
+  },
+  requestID: null,
+  error: {
+    message: '404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)'
+  },
+  code: undefined,
+  param: undefined,
+  type: undefined
+}
+[2026-11-19T14:15:44.685Z] [INFO] [main:agent-runtime] Mission finished {
+  state: 'failed',
+  result: undefined,
+  error: 'Model error: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)'
+}
+[2026-11-19T14:15:53.083Z] [INFO] [main:main] Mission start requested {
+  prompt: 'NAVFIRST go to http://127.0.0.1:54806/ and tell me the page heading',
+  model: 'deepseek-r1:8b'
+}
+[2026-11-19T14:15:53.084Z] [INFO] [main:agent-runtime] Starting mission {
+  missionId: 'm_1795097753084_6rmk',
+  prompt: 'NAVFIRST go to http://127.0.0.1:54806/ and tell me the page heading',
+  model: 'deepseek-r1:8b',
+  tabId: 'tab_1795097568636_54xn4'
+}
+[2026-11-19T14:15:53.086Z] [INFO] [main:provider-factory] Creating model provider { model: 'deepseek-r1:8b', provider: 'ollama' }
+[2026-11-19T14:15:53.087Z] [INFO] [main:agent-runtime] Step 1 starting { missionId: 'm_1795097753084_6rmk', step: 1 }
+[2026-11-19T14:15:53.506Z] [INFO] [main] Security PDP requires human approval for cross-origin navigation {
+  targetUrl: 'http://127.0.0.1:54806/',
+  allowedOrigins: [
+    'https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dopen%2520example.com%2520and%2520tell%2520me%2520the%2520page%2520heading%26sei%3DXgT_atXzB5zyuNkP74HEmQM&q=EgRu6-pMGN6I_NcGIjCgVecnW8baBbOvB0CeZh4WvPFD5rnOU5YPPPqZkE6mflpeLpvRwYQlI_GaYvaq01IyAnJSWgFDYKXMrKmuv9PG5AE'
+  ]
+}
+[2026-11-19T14:15:53.509Z] [INFO] [main:agent-runtime] Mission paused { missionId: 'm_1795097753084_6rmk' }
+[2026-11-19T14:16:04.455Z] [INFO] [main:agent-runtime] Cancelling mission { missionId: 'm_1795097753084_6rmk' }
+[2026-11-19T14:16:04.457Z] [INFO] [main:agent-runtime] Mission finished {
+  state: 'cancelled',
+  result: undefined,
+  error: 'Mission cancelled by user'
+}
+[27896:1119/194606.343:INFO:CONSOLE(82)] "Uncaught TypeError: Cannot read properties of null (reading 'appendChild')", source:  (82)
+[27896:1119/194606.372:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[2026-11-19T14:16:06.541Z] [INFO] [main:main] Mission start requested {
+  prompt: 'click the button on this page and tell me its heading',
+  model: 'deepseek-r1:8b'
+}
+[2026-11-19T14:16:06.542Z] [INFO] [main:agent-runtime] Starting mission {
+  missionId: 'm_1795097766542_5rq9',
+  prompt: 'click the button on this page and tell me its heading',
+  model: 'deepseek-r1:8b',
+  tabId: 'tab_1795097568636_54xn4'
+}
+[2026-11-19T14:16:06.544Z] [INFO] [main:provider-factory] Creating model provider { model: 'deepseek-r1:8b', provider: 'ollama' }
+[2026-11-19T14:16:06.545Z] [INFO] [main:agent-runtime] Step 1 starting { missionId: 'm_1795097766542_5rq9', step: 1 }
+[2026-11-19T14:16:06.970Z] [INFO] [main:tools] Executing tool { name: 'click', args: { ref: 'e2' } }
+[2026-11-19T14:16:08.447Z] [INFO] [main:agent-runtime] Step 2 starting { missionId: 'm_1795097766542_5rq9', step: 2 }
+[2026-11-19T14:16:08.870Z] [INFO] [main:tools] Executing tool {
+  name: 'done',
+  args: {
+    result: 'Page title seen by the scripted stub: Baseline Fixture Page',
+    evidence: []
+  }
+}
+[2026-11-19T14:16:08.871Z] [INFO] [main:agent-runtime] Mission finished {
+  state: 'completed',
+  result: 'Page title seen by the scripted stub: Baseline Fixture Page',
+  error: undefined
+}
+[2026-11-19T14:16:08.880Z] [INFO] [main:agent-runtime] Deliverable report saved {
+  filePath: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\deliverables\\m_1795097766542_5rq9_report.md'
+}
+[2026-11-19T14:16:12.693Z] [INFO] [main:view-manager] Setting layout mode { mode: 'stage' }
+[27896:1119/194613.530:INFO:CONSOLE(82)] "Uncaught TypeError: Cannot read properties of null (reading 'appendChild')", source:  (82)
+[27896:1119/194613.554:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[2026-11-19T14:16:14.743Z] [INFO] [main:view-manager] Setting layout mode { mode: 'stage' }
+[2026-11-19T14:16:27.451Z] [INFO] [main:view-manager] Setting layout mode { mode: 'grid' }
+[2026-11-19T14:16:41.290Z] [INFO] [main:view-manager] Setting layout mode { mode: 'stage' }
+[2026-11-19T14:16:44.160Z] [INFO] [main:main] Mission start requested {
+  prompt: 'compare prices of laptops across stores',
+  model: 'deepseek-r1:8b'
+}
+[2026-11-19T14:16:44.162Z] [INFO] [main:agent-runtime] Starting mission {
+  missionId: 'm_1795097804161_4l0y',
+  prompt: 'compare prices of laptops across stores',
+  model: 'deepseek-r1:8b',
+  tabId: 'tab_1795097568636_54xn4'
+}
+[2026-11-19T14:16:44.165Z] [INFO] [main] Starting swarm mission execution {
+  missionId: 'm_1795097804161_4l0y',
+  stages: 3,
+  justification: 'Parallel multi-origin search and extraction justified to compare sources simultaneously without serial latency.'
+}
+[2026-11-19T14:16:44.165Z] [INFO] [main] Starting swarm stage { stageName: 'Discovery & Extraction', taskCount: 3 }
+[2026-11-19T14:16:44.172Z] [INFO] [main] WorkerHost initialized {
+  workerId: 'swarm_worker_1',
+  mission: 'm_1795097804161_4l0y',
+  isolation: 'ephemeral',
+  partition: 'agent-m_1795097804161_4l0y-swarm_worker_1'
+}
+[2026-11-19T14:16:44.173Z] [INFO] [main] Spawned active swarm worker { workerId: 'swarm_worker_1', role: 'swarm_worker', activeCount: 1 }
+[2026-11-19T14:16:44.177Z] [INFO] [main] WorkerHost initialized {
+  workerId: 'swarm_worker_2',
+  mission: 'm_1795097804161_4l0y',
+  isolation: 'ephemeral',
+  partition: 'agent-m_1795097804161_4l0y-swarm_worker_2'
+}
+[2026-11-19T14:16:44.178Z] [INFO] [main] Spawned active swarm worker { workerId: 'swarm_worker_2', role: 'swarm_worker', activeCount: 2 }
+[2026-11-19T14:16:44.183Z] [INFO] [main] WorkerHost initialized {
+  workerId: 'swarm_worker_3',
+  mission: 'm_1795097804161_4l0y',
+  isolation: 'ephemeral',
+  partition: 'agent-m_1795097804161_4l0y-swarm_worker_3'
+}
+[2026-11-19T14:16:44.184Z] [INFO] [main] Spawned active swarm worker { workerId: 'swarm_worker_3', role: 'swarm_worker', activeCount: 3 }
+[2026-11-19T14:16:44.186Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097804161_4l0y_t1',
+  workerId: 'swarm_worker_1',
+  role: 'researcher'
+}
+[2026-11-19T14:16:44.190Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097804161_4l0y_t2',
+  workerId: 'swarm_worker_2',
+  role: 'researcher'
+}
+[2026-11-19T14:16:44.193Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097804161_4l0y_t3',
+  workerId: 'swarm_worker_3',
+  role: 'researcher'
+}
+[2026-11-19T14:16:55.160Z] [WARN] [main] Worker page did not settle before the deadline { workerId: 'swarm_worker_3', waitedMs: 10001, inFlight: 0 }
+[2026-11-19T14:16:55.196Z] [INFO] [main] Task completed { taskId: 'm_1795097804161_4l0y_t3' }
+[2026-11-19T14:16:55.197Z] [INFO] [main] Worker arrived at stage barrier {
+  workerId: 'swarm_worker_3',
+  stage: 'Discovery & Extraction',
+  arrived: 1,
+  quorum: 3,
+  total: 3
+}
+[2026-11-19T14:16:55.208Z] [WARN] [main] Worker page did not settle before the deadline { workerId: 'swarm_worker_2', waitedMs: 10023, inFlight: 0 }
+[2026-11-19T14:16:55.287Z] [INFO] [main] Task completed { taskId: 'm_1795097804161_4l0y_t2' }
+[2026-11-19T14:16:55.288Z] [INFO] [main] Worker arrived at stage barrier {
+  workerId: 'swarm_worker_2',
+  stage: 'Discovery & Extraction',
+  arrived: 2,
+  quorum: 3,
+  total: 3
+}
+[2026-11-19T14:16:55.768Z] [WARN] [main] Worker page did not settle before the deadline { workerId: 'swarm_worker_1', waitedMs: 10025, inFlight: 0 }
+[2026-11-19T14:16:55.805Z] [INFO] [main] Task completed { taskId: 'm_1795097804161_4l0y_t1' }
+[2026-11-19T14:16:55.806Z] [INFO] [main] Worker arrived at stage barrier {
+  workerId: 'swarm_worker_1',
+  stage: 'Discovery & Extraction',
+  arrived: 3,
+  quorum: 3,
+  total: 3
+}
+[2026-11-19T14:16:55.807Z] [INFO] [main] Stage barrier released {
+  stage: 'Discovery & Extraction',
+  reason: 'quorum_reached',
+  arrived: 3,
+  quorum: 3
+}
+[2026-11-19T14:16:55.811Z] [INFO] [main] Worker storage cleared for recycling { workerId: 'swarm_worker_1' }
+[2026-11-19T14:16:55.811Z] [INFO] [main] Worker recycled into idle pool { workerId: 'swarm_worker_1' }
+[2026-11-19T14:16:55.814Z] [INFO] [main] Worker storage cleared for recycling { workerId: 'swarm_worker_2' }
+[2026-11-19T14:16:55.815Z] [INFO] [main] Worker recycled into idle pool { workerId: 'swarm_worker_2' }
+[2026-11-19T14:16:55.818Z] [INFO] [main] Worker storage cleared for recycling { workerId: 'swarm_worker_3' }
+[2026-11-19T14:16:55.819Z] [INFO] [main] Worker recycled into idle pool { workerId: 'swarm_worker_3' }
+[2026-11-19T14:16:55.820Z] [INFO] [main] Starting swarm stage { stageName: 'Verification & Adjudication', taskCount: 1 }
+[2026-11-19T14:16:55.823Z] [INFO] [main] Worker storage cleared for recycling { workerId: 'swarm_worker_3' }
+[2026-11-19T14:16:55.824Z] [INFO] [main] Recycled pooled worker { workerId: 'swarm_worker_3', role: 'swarm_worker' }
+[2026-11-19T14:16:55.825Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097804161_4l0y_t_verify',
+  workerId: 'swarm_worker_3',
+  role: 'verifier'
+}
+[2026-11-19T14:16:55.827Z] [INFO] [main] Task completed { taskId: 'm_1795097804161_4l0y_t_verify' }
+[2026-11-19T14:16:55.827Z] [INFO] [main] Worker arrived at stage barrier {
+  workerId: 'swarm_worker_3',
+  stage: 'Verification & Adjudication',
+  arrived: 1,
+  quorum: 1,
+  total: 1
+}
+[2026-11-19T14:16:55.828Z] [INFO] [main] Stage barrier released {
+  stage: 'Verification & Adjudication',
+  reason: 'quorum_reached',
+  arrived: 1,
+  quorum: 1
+}
+[2026-11-19T14:16:55.830Z] [INFO] [main] Worker storage cleared for recycling { workerId: 'swarm_worker_3' }
+[2026-11-19T14:16:55.831Z] [INFO] [main] Worker recycled into idle pool { workerId: 'swarm_worker_3' }
+[2026-11-19T14:16:55.832Z] [INFO] [main] Starting swarm stage { stageName: 'Synthesis & Reporting', taskCount: 1 }
+[2026-11-19T14:16:55.834Z] [INFO] [main] Worker storage cleared for recycling { workerId: 'swarm_worker_3' }
+[2026-11-19T14:16:55.835Z] [INFO] [main] Recycled pooled worker { workerId: 'swarm_worker_3', role: 'swarm_worker' }
+[2026-11-19T14:16:55.835Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097804161_4l0y_t_summary',
+  workerId: 'swarm_worker_3',
+  role: 'summariser'
+}
+[2026-11-19T14:16:55.836Z] [INFO] [main] Task completed { taskId: 'm_1795097804161_4l0y_t_summary' }
+[2026-11-19T14:16:55.837Z] [INFO] [main] Worker arrived at stage barrier {
+  workerId: 'swarm_worker_3',
+  stage: 'Synthesis & Reporting',
+  arrived: 1,
+  quorum: 1,
+  total: 1
+}
+[2026-11-19T14:16:55.837Z] [INFO] [main] Stage barrier released {
+  stage: 'Synthesis & Reporting',
+  reason: 'quorum_reached',
+  arrived: 1,
+  quorum: 1
+}
+[2026-11-19T14:16:55.839Z] [INFO] [main] Worker storage cleared for recycling { workerId: 'swarm_worker_3' }
+[2026-11-19T14:16:55.840Z] [INFO] [main] Worker recycled into idle pool { workerId: 'swarm_worker_3' }
+[2026-11-19T14:16:55.841Z] [INFO] [main] Swarm mission finished { missionId: 'm_1795097804161_4l0y', success: true, evidenceCount: 1 }
+[2026-11-19T14:16:55.927Z] [INFO] [main] WorkerHost torn down { workerId: 'swarm_worker_1', destroyed: true }
+[2026-11-19T14:16:55.998Z] [INFO] [main] WorkerHost torn down { workerId: 'swarm_worker_2', destroyed: true }
+[2026-11-19T14:16:56.071Z] [INFO] [main] WorkerHost torn down { workerId: 'swarm_worker_3', destroyed: true }
+[2026-11-19T14:16:56.072Z] [INFO] [main] SwarmManager completely shut down { missionId: 'm_1795097804161_4l0y', workers: 3 }
+[2026-11-19T14:16:56.073Z] [INFO] [main:agent-runtime] Mission finished {
+  state: 'completed',
+  result: '# Swarm Mission Report: compare prices of laptops across stores\n' +
+    '\n' +
+    '**Status:** Verified Complete\n' +
+    '**Evidence Items Gathered:** 1\n' +
+    '**Timestamp:** 2026-11-19T14:16:55.841Z\n' +
+    '\n' +
+    '## Verified Findings & Evidence Table\n' +
+    '| Entity | Attribute | Value | Source URL | Confidence |\n' +
+    '|---|---|---|---|---|\n' +
+    '| DuckDuckGo - Protection. Privacy. Peace of mind. | url | https://duckduckgo.com/ | [duckduckgo.com](https://duckduckgo.com/) | 95% |',
+  error: undefined
+}
+[2026-11-19T14:16:56.082Z] [INFO] [main:agent-runtime] Deliverable report saved {
+  filePath: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\deliverables\\m_1795097804161_4l0y_report.md'
+}
+[2026-11-19T14:17:02.549Z] [INFO] [main:view-manager] Setting layout mode { mode: 'stage' }
+[2026-11-19T14:17:03.223Z] [INFO] [main:main] Mission start requested {
+  prompt: 'SLOWMODE keep waiting on http://127.0.0.1:54806/',
+  model: 'deepseek-r1:8b'
+}
+[2026-11-19T14:17:03.225Z] [INFO] [main:agent-runtime] Starting mission {
+  missionId: 'm_1795097823224_tmfw',
+  prompt: 'SLOWMODE keep waiting on http://127.0.0.1:54806/',
+  model: 'deepseek-r1:8b',
+  tabId: 'tab_1795097568636_54xn4'
+}
+[2026-11-19T14:17:03.226Z] [INFO] [main:provider-factory] Creating model provider { model: 'deepseek-r1:8b', provider: 'ollama' }
+[2026-11-19T14:17:03.228Z] [INFO] [main:agent-runtime] Step 1 starting { missionId: 'm_1795097823224_tmfw', step: 1 }
+[2026-11-19T14:17:23.428Z] [INFO] [main:agent-runtime] Mission paused { missionId: 'm_1795097823224_tmfw' }
+[2026-11-19T14:17:35.349Z] [INFO] [main:agent-runtime] Mission resumed { missionId: 'm_1795097823224_tmfw' }
+[2026-11-19T14:17:42.887Z] [INFO] [main:agent-runtime] Mission paused { missionId: 'm_1795097823224_tmfw' }
+[2026-11-19T14:17:44.877Z] [INFO] [main:agent-runtime] Mission resumed { missionId: 'm_1795097823224_tmfw' }
+[2026-11-19T14:17:54.060Z] [INFO] [main:steering-reversibility] Steering message queued { type: 'steering', text: 'prioritise the second page' }
+[2026-11-19T14:18:03.628Z] [INFO] [main:agent-runtime] Cancelling mission { missionId: 'm_1795097823224_tmfw' }
+[2026-11-19T14:18:03.630Z] [INFO] [main:agent-runtime] Mission finished {
+  state: 'cancelled',
+  result: undefined,
+  error: 'Mission cancelled by user'
+}
+[2026-11-19T14:18:03.632Z] [ERROR] [main:openai-provider] OpenAI generation error  APIUserAbortError: Request was aborted.
+    at OpenAI._makeUserAbortError (D:\REA\wt-PST-01\node_modules\openai\client.js:1436:23)
+    at OpenAI.makeRequest (D:\REA\wt-PST-01\node_modules\openai\client.js:882:28)
+    at s.send (node:electron/js2c/browser_init:2:92689)
+    ... 6 lines matching cause stack trace ...
+    at WebContents.<anonymous> (node:electron/js2c/browser_init:2:87039) {
+  status: undefined,
+  headers: undefined,
+  requestID: undefined,
+  error: undefined,
+  code: undefined,
+  param: undefined,
+  type: undefined,
+  [cause]: DOMException [AbortError]: This operation was aborted
+      at node:internal/deps/undici/undici:13502:13
+      at s.send (node:electron/js2c/browser_init:2:92689)
+      at _.send (node:electron/js2c/browser_init:2:76113)
+      at AgentRuntime.emitMissionStatus (D:\REA\wt-RUN-01\dist\agent\runtime.js:706:41)
+      at AgentRuntime.finishMission (D:\REA\wt-RUN-01\dist\agent\runtime.js:669:14)
+      at AgentRuntime.cancel (D:\REA\wt-RUN-01\dist\agent\runtime.js:224:18)
+      at D:\REA\wt-RUN-01\dist\main\index.js:398:53
+      at D:\REA\wt-RUN-01\dist\ipc\main_handler.js:15:32
+      at WebContents.<anonymous> (node:electron/js2c/browser_init:2:87039)
+      at WebContents.emit (node:events:518:28)
+}
+[2026-11-19T14:18:03.633Z] [WARN] [main:model-governor] Model request failed (request was aborted.), retrying in 1411ms (attempt 1/3) 
+[2026-11-19T14:18:05.048Z] [ERROR] [main:openai-provider] OpenAI generation error  APIUserAbortError: Request was aborted.
+    at OpenAI._makeUserAbortError (D:\REA\wt-PST-01\node_modules\openai\client.js:1436:23)
+    at OpenAI.makeRequest (D:\REA\wt-PST-01\node_modules\openai\client.js:862:24)
+    at async OpenAIModelProvider.generate (D:\REA\wt-RUN-01\dist\models\openai_provider.js:41:30)
+    at async D:\REA\wt-RUN-01\dist\models\governor.js:176:30
+    at async ConcurrencyGovernor.executeWithRetry (D:\REA\wt-RUN-01\dist\models\governor.js:130:28)
+    at async AgentRuntime.runLoop (D:\REA\wt-RUN-01\dist\agent\runtime.js:412:28) {
+  status: undefined,
+  headers: undefined,
+  requestID: undefined,
+  error: undefined,
+  code: undefined,
+  param: undefined,
+  type: undefined,
+  [cause]: DOMException [AbortError]: This operation was aborted
+      at node:internal/deps/undici/undici:13502:13
+      at s.send (node:electron/js2c/browser_init:2:92689)
+      at _.send (node:electron/js2c/browser_init:2:76113)
+      at AgentRuntime.emitMissionStatus (D:\REA\wt-RUN-01\dist\agent\runtime.js:706:41)
+      at AgentRuntime.finishMission (D:\REA\wt-RUN-01\dist\agent\runtime.js:669:14)
+      at AgentRuntime.cancel (D:\REA\wt-RUN-01\dist\agent\runtime.js:224:18)
+      at D:\REA\wt-RUN-01\dist\main\index.js:398:53
+      at D:\REA\wt-RUN-01\dist\ipc\main_handler.js:15:32
+      at WebContents.<anonymous> (node:electron/js2c/browser_init:2:87039)
+      at WebContents.emit (node:events:518:28)
+}
+[2026-11-19T14:18:05.049Z] [WARN] [main:model-governor] Model request failed (request was aborted.), retrying in 1157ms (attempt 2/3) 
+[2026-11-19T14:18:06.213Z] [ERROR] [main:openai-provider] OpenAI generation error  APIUserAbortError: Request was aborted.
+    at OpenAI._makeUserAbortError (D:\REA\wt-PST-01\node_modules\openai\client.js:1436:23)
+    at OpenAI.makeRequest (D:\REA\wt-PST-01\node_modules\openai\client.js:862:24)
+    at async OpenAIModelProvider.generate (D:\REA\wt-RUN-01\dist\models\openai_provider.js:41:30)
+    at async D:\REA\wt-RUN-01\dist\models\governor.js:176:30
+    at async ConcurrencyGovernor.executeWithRetry (D:\REA\wt-RUN-01\dist\models\governor.js:130:28)
+    at async AgentRuntime.runLoop (D:\REA\wt-RUN-01\dist\agent\runtime.js:412:28) {
+  status: undefined,
+  headers: undefined,
+  requestID: undefined,
+  error: undefined,
+  code: undefined,
+  param: undefined,
+  type: undefined,
+  [cause]: DOMException [AbortError]: This operation was aborted
+      at node:internal/deps/undici/undici:13502:13
+      at s.send (node:electron/js2c/browser_init:2:92689)
+      at _.send (node:electron/js2c/browser_init:2:76113)
+      at AgentRuntime.emitMissionStatus (D:\REA\wt-RUN-01\dist\agent\runtime.js:706:41)
+      at AgentRuntime.finishMission (D:\REA\wt-RUN-01\dist\agent\runtime.js:669:14)
+      at AgentRuntime.cancel (D:\REA\wt-RUN-01\dist\agent\runtime.js:224:18)
+      at D:\REA\wt-RUN-01\dist\main\index.js:398:53
+      at D:\REA\wt-RUN-01\dist\ipc\main_handler.js:15:32
+      at WebContents.<anonymous> (node:electron/js2c/browser_init:2:87039)
+      at WebContents.emit (node:events:518:28)
+}
+[2026-11-19T14:18:06.214Z] [WARN] [main:model-governor] Model request failed (request was aborted.), retrying in 1330ms (attempt 3/3) 
+[2026-11-19T14:18:07.548Z] [ERROR] [main:openai-provider] OpenAI generation error  APIUserAbortError: Request was aborted.
+    at OpenAI._makeUserAbortError (D:\REA\wt-PST-01\node_modules\openai\client.js:1436:23)
+    at OpenAI.makeRequest (D:\REA\wt-PST-01\node_modules\openai\client.js:862:24)
+    at async OpenAIModelProvider.generate (D:\REA\wt-RUN-01\dist\models\openai_provider.js:41:30)
+    at async D:\REA\wt-RUN-01\dist\models\governor.js:176:30
+    at async ConcurrencyGovernor.executeWithRetry (D:\REA\wt-RUN-01\dist\models\governor.js:130:28)
+    at async AgentRuntime.runLoop (D:\REA\wt-RUN-01\dist\agent\runtime.js:412:28) {
+  status: undefined,
+  headers: undefined,
+  requestID: undefined,
+  error: undefined,
+  code: undefined,
+  param: undefined,
+  type: undefined,
+  [cause]: DOMException [AbortError]: This operation was aborted
+      at node:internal/deps/undici/undici:13502:13
+      at s.send (node:electron/js2c/browser_init:2:92689)
+      at _.send (node:electron/js2c/browser_init:2:76113)
+      at AgentRuntime.emitMissionStatus (D:\REA\wt-RUN-01\dist\agent\runtime.js:706:41)
+      at AgentRuntime.finishMission (D:\REA\wt-RUN-01\dist\agent\runtime.js:669:14)
+      at AgentRuntime.cancel (D:\REA\wt-RUN-01\dist\agent\runtime.js:224:18)
+      at D:\REA\wt-RUN-01\dist\main\index.js:398:53
+      at D:\REA\wt-RUN-01\dist\ipc\main_handler.js:15:32
+      at WebContents.<anonymous> (node:electron/js2c/browser_init:2:87039)
+      at WebContents.emit (node:events:518:28)
+}
+[2026-11-19T14:18:07.549Z] [WARN] [main:model-governor] Circuit breaker tripped to OPEN { failures: 4 }
+[2026-11-19T14:18:13.587Z] [INFO] [main:main] Mission start requested {
+  prompt: 'compare prices of laptops across stores',
+  model: 'deepseek-r1:8b'
+}
+[2026-11-19T14:18:13.588Z] [INFO] [main:agent-runtime] Starting mission {
+  missionId: 'm_1795097893588_qhib',
+  prompt: 'compare prices of laptops across stores',
+  model: 'deepseek-r1:8b',
+  tabId: 'tab_1795097568636_54xn4'
+}
+[2026-11-19T14:18:13.590Z] [INFO] [main] Starting swarm mission execution {
+  missionId: 'm_1795097893588_qhib',
+  stages: 3,
+  justification: 'Parallel multi-origin search and extraction justified to compare sources simultaneously without serial latency.'
+}
+[2026-11-19T14:18:13.591Z] [INFO] [main] Starting swarm stage { stageName: 'Discovery & Extraction', taskCount: 3 }
+[2026-11-19T14:18:13.595Z] [INFO] [main] WorkerHost initialized {
+  workerId: 'swarm_worker_1',
+  mission: 'm_1795097893588_qhib',
+  isolation: 'ephemeral',
+  partition: 'agent-m_1795097893588_qhib-swarm_worker_1'
+}
+[2026-11-19T14:18:13.596Z] [INFO] [main] Spawned active swarm worker { workerId: 'swarm_worker_1', role: 'swarm_worker', activeCount: 1 }
+[2026-11-19T14:18:13.601Z] [INFO] [main] WorkerHost initialized {
+  workerId: 'swarm_worker_2',
+  mission: 'm_1795097893588_qhib',
+  isolation: 'ephemeral',
+  partition: 'agent-m_1795097893588_qhib-swarm_worker_2'
+}
+[2026-11-19T14:18:13.602Z] [INFO] [main] Spawned active swarm worker { workerId: 'swarm_worker_2', role: 'swarm_worker', activeCount: 2 }
+[2026-11-19T14:18:13.607Z] [INFO] [main] WorkerHost initialized {
+  workerId: 'swarm_worker_3',
+  mission: 'm_1795097893588_qhib',
+  isolation: 'ephemeral',
+  partition: 'agent-m_1795097893588_qhib-swarm_worker_3'
+}
+[2026-11-19T14:18:13.608Z] [INFO] [main] Spawned active swarm worker { workerId: 'swarm_worker_3', role: 'swarm_worker', activeCount: 3 }
+[2026-11-19T14:18:13.608Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097893588_qhib_t1',
+  workerId: 'swarm_worker_1',
+  role: 'researcher'
+}
+[2026-11-19T14:18:13.611Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097893588_qhib_t2',
+  workerId: 'swarm_worker_2',
+  role: 'researcher'
+}
+[2026-11-19T14:18:13.614Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097893588_qhib_t3',
+  workerId: 'swarm_worker_3',
+  role: 'researcher'
+}
+[2026-11-19T14:18:13.817Z] [INFO] [main:agent-runtime] Cancelling mission { missionId: 'm_1795097893588_qhib' }
+[2026-11-19T14:18:13.817Z] [INFO] [main:agent-runtime] Mission finished {
+  state: 'cancelled',
+  result: undefined,
+  error: 'Mission cancelled by user'
+}
+[2026-11-19T14:18:13.822Z] [INFO] [main] Task scheduled for retry { taskId: 'm_1795097893588_qhib_t1', attempt: 1, max: 1 }
+[2026-11-19T14:18:13.823Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097893588_qhib_t1',
+  workerId: 'swarm_worker_1',
+  role: 'researcher'
+}
+[2026-11-19T14:18:13.824Z] [INFO] [main] Task scheduled for retry { taskId: 'm_1795097893588_qhib_t2', attempt: 1, max: 1 }
+[2026-11-19T14:18:13.825Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097893588_qhib_t2',
+  workerId: 'swarm_worker_2',
+  role: 'researcher'
+}
+[2026-11-19T14:18:13.826Z] [INFO] [main] Task scheduled for retry { taskId: 'm_1795097893588_qhib_t3', attempt: 1, max: 1 }
+[2026-11-19T14:18:13.827Z] [INFO] [main] Dispatched task to worker {
+  taskId: 'm_1795097893588_qhib_t3',
+  workerId: 'swarm_worker_3',
+  role: 'researcher'
+}
+[2026-11-19T14:18:13.828Z] [WARN] [main] Task failed permanently {
+  taskId: 'm_1795097893588_qhib_t1',
+  error: 'Worker swarm_worker_1 is torn down'
+}
+[2026-11-19T14:18:13.830Z] [WARN] [main] Task failed permanently {
+  taskId: 'm_1795097893588_qhib_t2',
+  error: 'Worker swarm_worker_2 is torn down'
+}
+[2026-11-19T14:18:13.831Z] [WARN] [main] Task failed permanently {
+  taskId: 'm_1795097893588_qhib_t3',
+  error: 'Worker swarm_worker_3 is torn down'
+}
+[2026-11-19T14:18:13.898Z] [INFO] [main] WorkerHost torn down { workerId: 'swarm_worker_1', destroyed: true }
+[2026-11-19T14:18:13.978Z] [INFO] [main] WorkerHost torn down { workerId: 'swarm_worker_2', destroyed: true }
+[2026-11-19T14:18:14.051Z] [INFO] [main] WorkerHost torn down { workerId: 'swarm_worker_3', destroyed: true }
+[2026-11-19T14:18:14.052Z] [INFO] [main] SwarmManager completely shut down { missionId: 'm_1795097893588_qhib', workers: 3 }
+[2026-11-19T14:18:32.177Z] [INFO] [main:view-manager] Setting layout mode { mode: 'stage' }
+[2026-11-19T14:18:32.188Z] [INFO] [main:view-manager] Creating tab {
+  id: 'tab_1795097912188_l1b6a',
+  url: 'http://127.0.0.1:54806/ticker',
+  isBackgroundAgent: false,
+  owner: 'user'
+}
+[2026-11-19T14:18:32.219Z] [WARN] [main:view-manager] Failed to load initial tab URL {
+  id: 'tab_1795097912188_l1b6a',
+  url: 'http://127.0.0.1:54806/ticker',
+  error: "ERR_ABORTED (-3) loading 'http://127.0.0.1:54806/ticker'"
+}
+[27896:1119/194832.607:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[2026-11-19T14:18:43.833Z] [INFO] [main] Stage barrier released {
+  stage: 'Discovery & Extraction',
+  reason: 'timeout',
+  arrived: 0,
+  quorum: 3
+}
+[2026-11-19T14:18:43.834Z] [INFO] [main] Starting swarm stage { stageName: 'Verification & Adjudication', taskCount: 1 }
+[2026-11-19T14:18:43.835Z] [INFO] [main] Task cancelled due to dependency failure { taskId: 'm_1795097893588_qhib_t_verify' }
+[2026-11-19T14:18:43.835Z] [INFO] [main] SwarmManager completely shut down { missionId: 'm_1795097893588_qhib', workers: 0 }
+[2026-11-19T14:18:43.836Z] [ERROR] [main:agent-runtime] Unhandled error in agent execution loop  Error: Swarm is shut down
+    at SwarmManager.spawnWorker (D:\REA\wt-RUN-01\dist\swarm\swarm_manager.js:107:19)
+    at SwarmManager.spawnSwarm (D:\REA\wt-RUN-01\dist\swarm\swarm_manager.js:131:34)
+    at SwarmCoordinator.executeMission (D:\REA\wt-RUN-01\dist\swarm\coordinator.js:178:52)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async AgentRuntime.runSwarmLoop (D:\REA\wt-RUN-01\dist\agent\runtime.js:296:22)
+    at async AgentRuntime.runLoop (D:\REA\wt-RUN-01\dist\agent\runtime.js:315:13)
+[2026-11-19T14:18:43.836Z] [INFO] [main:agent-runtime] Mission finished { state: 'failed', result: undefined, error: 'Swarm is shut down' }
+[2026-11-19T14:18:48.034Z] [INFO] [main:view-manager] Setting layout mode { mode: 'grid' }
+[2026-11-19T14:19:11.779Z] [INFO] [main:view-manager] Setting layout mode { mode: 'stage' }
+[2026-11-19T14:19:12.308Z] [INFO] [main:view-manager] Closing tab { id: 'tab_1795097563477_ot81e' }
+[2026-11-19T14:19:12.316Z] [INFO] [main:view-manager] Closing tab { id: 'tab_1795097568636_54xn4' }
+[2026-11-19T14:19:13.172Z] [INFO] [main:view-manager] Creating tab {
+  id: 'tab_1795097953172_6sqgc',
+  url: 'http://127.0.0.1:54806/ticker',
+  isBackgroundAgent: false,
+  owner: 'user'
+}
+[2026-11-19T14:19:13.188Z] [INFO] [main:view-manager] Creating tab {
+  id: 'tab_1795097953188_i36th',
+  url: 'https://example.com',
+  isBackgroundAgent: false,
+  owner: 'user'
+}
+[27896:1119/194913.562:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[27896:1119/194913.601:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[2026-11-19T14:19:14.748Z] [INFO] [main:view-manager] Setting layout mode { mode: 'stage' }
+[2026-11-19T14:19:18.649Z] [INFO] [main:view-manager] Setting layout mode { mode: 'theatre' }
+[2026-11-19T14:19:22.684Z] [INFO] [main:view-manager] Setting layout mode { mode: 'grid' }
+[2026-11-19T14:19:27.272Z] [INFO] [main:view-manager] Setting layout mode { mode: 'stage' }
+[27896:1119/194958.043:WARNING:process_singleton_win.cc(158)] Invalid format for start command, we need a string in 6 parts separated by NULLs

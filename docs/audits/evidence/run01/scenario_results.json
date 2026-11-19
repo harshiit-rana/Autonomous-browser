@@ -1,0 +1,1250 @@
+{
+  "generatedAt": "2026-11-19T14:20:43.915Z",
+  "environment": {
+    "os": "Microsoft Windows 11 Home Single Language 10.0.26300",
+    "cpu": "AMD Ryzen 7 7735HS with Radeon Graphics         x16",
+    "ramGB": 15,
+    "gpu": "AMD Radeon(TM) Graphics driver 32.0.11038.3; NVIDIA GeForce RTX 4050 Laptop GPU driver 32.0.16.1656",
+    "node": "v22.19.0",
+    "electron": "33.4.11",
+    "commit": "7d723c15f62f17d7dc3844f126207b94b66bb455",
+    "stubPort": 54806,
+    "cdpPort": 9333,
+    "portNotes": []
+  },
+  "summary": [
+    {
+      "id": 1,
+      "title": "App opens; custom titlebar renders; no console errors",
+      "status": "PASS",
+      "passed": 7,
+      "total": 7
+    },
+    {
+      "id": 2,
+      "title": "Open a new tab; navigate to https://example.com; back/forward/reload; tab strip title updates",
+      "status": "PARTIAL",
+      "passed": 5,
+      "total": 6
+    },
+    {
+      "id": 3,
+      "title": "Settings modal opens visibly (vs native page view) and the credentials test button reports an invalid key",
+      "status": "PASS",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "id": 4,
+      "title": "No API key and demoMode=false: starting a mission gives a clear \"configure a model\" error, not a crash",
+      "status": "PARTIAL",
+      "passed": 7,
+      "total": 8
+    },
+    {
+      "id": "3b",
+      "title": "Saved API key: how is it stored and what leaves the main process?",
+      "status": "PARTIAL",
+      "passed": 5,
+      "total": 6
+    },
+    {
+      "id": 5,
+      "title": "Run a mission \"open <page> and tell me the heading\"; observe step feed, cost counters, tab behaviour, result",
+      "status": "PARTIAL",
+      "passed": 6,
+      "total": 9
+    },
+    {
+      "id": 9,
+      "title": "Agent cursor: is it visible over the page content?",
+      "status": "PARTIAL",
+      "passed": 2,
+      "total": 5
+    },
+    {
+      "id": 6,
+      "title": "\"/swarm compare prices of laptops across stores\": what do the workers actually do?",
+      "status": "PARTIAL",
+      "passed": 2,
+      "total": 4
+    },
+    {
+      "id": 7,
+      "title": "Pause, Takeover, Hand-back, Cancel, Undo, Steer: visible vs actual effect",
+      "status": "PARTIAL",
+      "passed": 6,
+      "total": 12
+    },
+    {
+      "id": 8,
+      "title": "Swarm Grid: are tiles live or static? frame rate? CPU with 3 tabs open",
+      "status": "PARTIAL",
+      "passed": 2,
+      "total": 5
+    },
+    {
+      "id": 10,
+      "title": "Layout buttons Stage/Grid/Theatre; window resize; minimum size; 125%/150% scaling",
+      "status": "PARTIAL",
+      "passed": 3,
+      "total": 6
+    },
+    {
+      "id": "E",
+      "title": "Edge cases: two instances, where user data really goes, CDP port in use",
+      "status": "PASS",
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "id": "10b",
+      "title": "Scaling 150% (Chromium --force-device-scale-factor=1.5; not the Windows display setting)",
+      "status": "PASS",
+      "passed": 2,
+      "total": 2
+    },
+    {
+      "id": "E2",
+      "title": "Edge case: launch with --disable-gpu",
+      "status": "PASS",
+      "passed": 2,
+      "total": 2
+    }
+  ],
+  "scenarios": [
+    {
+      "id": 1,
+      "title": "App opens; custom titlebar renders; no console errors",
+      "expectation": "Window opens, titlebar/tab strip/window controls render, window.aegis exists, chrome-renderer console has no errors.",
+      "status": "PASS",
+      "checks": [
+        {
+          "name": "titlebar visible",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "tab strip visible",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "window controls rendered",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "preload bridge window.aegis defined",
+          "ok": true,
+          "detail": "40 members"
+        },
+        {
+          "name": "startup tab present",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no chrome renderer console errors (listener attached after load)",
+          "ok": true,
+          "detail": "[]"
+        },
+        {
+          "name": "no ERROR lines in electron.log at startup",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "observations": [
+        "DOM: {\"titlebar\":true,\"logo\":\"Aegis\",\"tabStrip\":true,\"controls\":true,\"bridge\":\"object\",\"bridgeKeys\":40,\"dpr\":1.25,\"inner\":[1400,816],\"title\":\"Project Aegis - Autonomous AI Browser\"}",
+        "tab strip: [{\"active\":true,\"title\":\"DuckDuckGo - Protection. Privacy. Peace of mind.\",\"badge\":\"Work\"}]",
+        "startup log mentions loading https://duckduckgo.com as the first tab (network request on every launch)",
+        "os_01 shows the real window; cdp_01 is the chrome renderer alone: the native page view is absent from CDP shots."
+      ],
+      "screenshots": [
+        "os_01_app_open.png",
+        "cdp_01_chrome_renderer_only.png"
+      ],
+      "durationMs": 5014
+    },
+    {
+      "id": 2,
+      "title": "Open a new tab; navigate to https://example.com; back/forward/reload; tab strip title updates",
+      "expectation": "A new tab opens, the omnibar navigates it to example.com, tab title becomes \"Example Domain\", back/forward/reload act on the page.",
+      "status": "PARTIAL",
+      "checks": [
+        {
+          "name": "new tab appears in strip",
+          "ok": true,
+          "detail": "tabs before=1"
+        },
+        {
+          "name": "native page navigated to example.com",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "active tab title updated to \"Example Domain\"",
+          "ok": true,
+          "detail": "[{\"active\":false,\"title\":\"DuckDuckGo - Protection. Privacy. Peace of mind.\",\"badge\":\"Work\"},{\"active\":true,\"title\":\"Example Domain\",\"badge\":\"Work\"}]"
+        },
+        {
+          "name": "back returns to previous page and omnibar follows",
+          "ok": true,
+          "detail": "https://duckduckgo.com/"
+        },
+        {
+          "name": "forward returns to example.com",
+          "ok": false,
+          "detail": ""
+        },
+        {
+          "name": "reload really reloads the page (new document timeOrigin)",
+          "ok": true,
+          "detail": "1795097571205.1 -> 1795097616016.8"
+        }
+      ],
+      "observations": [
+        "h1 of the real page: null",
+        "final tab strip: [{\"active\":false,\"title\":\"DuckDuckGo - Protection. Privacy. Peace of mind.\",\"badge\":\"Work\"},{\"active\":true,\"title\":\"Example Domain\",\"badge\":\"Work\"}]"
+      ],
+      "screenshots": [
+        "os_02a_example_com.png",
+        "os_02b_after_back_forward_reload.png"
+      ],
+      "durationMs": 52255
+    },
+    {
+      "id": 3,
+      "title": "Settings modal opens visibly (vs native page view) and the credentials test button reports an invalid key",
+      "expectation": "DOM modal is actually visible in the real window; \"Test Key\" with an invalid key shows an error and does not crash.",
+      "status": "PASS",
+      "checks": [
+        {
+          "name": "modal is visible in the DOM",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modal card is painted unobstructed in the real window (pixels match the chrome renderer)",
+          "ok": true,
+          "detail": "{\"changed\":0,\"total\":320400}"
+        },
+        {
+          "name": "while the modal is open the native page view is hidden (page area equals the chrome-only frame)",
+          "ok": true,
+          "detail": "{\"changed\":2259,\"total\":1223040}"
+        },
+        {
+          "name": "invalid key produces a visible error message",
+          "ok": true,
+          "detail": "✗ Authentication check failed: {\"error\":{\"code\":400,\"message\":\"API key not valid. Please pass a valid API key.\",\"status\":\"INVALID_ARGUMENT\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.ErrorInfo\",\"reason\":\"API_KEY_INVALID\",\"domain\":\"googleapis.com\",\"metadata\":{\"service\":\"generativelanguage.googleapis.com\"}},{\"@type\":\"type.googleapis.com/google.rpc.LocalizedMessage\",\"locale\":\"en-US\",\"message\":\"API key not valid. Please pass a valid API key.\"}]}}"
+        },
+        {
+          "name": "Escape closes the modal and the page view comes back",
+          "ok": true,
+          "detail": "{\"changed\":1222901,\"total\":1223040}"
+        }
+      ],
+      "observations": [
+        "Win32 render-widget child windows (x,y,w,h in DIP) before opening: [{\"visible\":true,\"x\":0,\"y\":88,\"w\":1080,\"h\":728},{\"visible\":true,\"x\":0,\"y\":0,\"w\":1400,\"h\":816}]; while the modal is open: [{\"visible\":true,\"x\":0,\"y\":88,\"w\":1080,\"h\":728},{\"visible\":true,\"x\":0,\"y\":0,\"w\":1400,\"h\":816}] (the HWND keeps its size even when the app hides the view with setBounds 0x0, so pixels decide below)",
+        "pixels of the modal card region that differ between the real window (os_03a) and the chrome renderer's own frame (cdp_03a): {\"changed\":0,\"total\":320400}",
+        "page area (webview viewport) pixels that differ between the real window and the chrome-only frame while the modal is open: {\"changed\":2259,\"total\":1223040}. Near 0 means the native page view is not painted there: the app hides it (shrinks it to 0x0, #138), so the page behind the modal is blank rather than dimmed.",
+        "\"Test Key\" result after 404 ms: \"✗ Authentication check failed: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"API key not valid. Please pass a valid API key.\\\",\\\"status\\\":\\\"INVALID_ARGUMENT\\\",\\\"details\\\":[{\\\"@type\\\":\\\"type.googleapis.com/google.rpc.ErrorInfo\\\",\\\"reason\\\":\\\"API_KEY_INVALID\\\",\\\"domain\\\":\\\"googleapis.com\\\",\\\"metadata\\\":{\\\"service\\\":\\\"generativelanguage.googleapis.com\\\"}},{\\\"@type\\\":\\\"type.googleapis.com/google.rpc.LocalizedMessage\\\",\\\"locale\\\":\\\"en-US\\\",\\\"message\\\":\\\"API key not valid. Please pass a valid API key.\\\"}]}}\"",
+        "after Escape: page area differs from the chrome-only frame by {\"changed\":1222901,\"total\":1223040} (large = the page view is back)"
+      ],
+      "screenshots": [
+        "os_03a_settings_modal_open.png",
+        "cdp_03a_settings_modal_open.png",
+        "os_03b_invalid_key_error.png",
+        "os_03c_after_close.png"
+      ],
+      "durationMs": 73063
+    },
+    {
+      "id": 4,
+      "title": "No API key and demoMode=false: starting a mission gives a clear \"configure a model\" error, not a crash",
+      "expectation": "The mission is refused with a readable message (and Settings opens); main process stays alive and responsive.",
+      "status": "PARTIAL",
+      "checks": [
+        {
+          "name": "first-run settings have demoMode=false and no key",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no model API key present in the environment",
+          "ok": true,
+          "detail": "none set"
+        },
+        {
+          "name": "plain-language sentence from the issue is routed as a mission",
+          "ok": false,
+          "detail": "it was treated as a web search and navigated the page"
+        },
+        {
+          "name": "plan preview modal appears for /do",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "timeline shows a clear key-not-configured notice",
+          "ok": true,
+          "detail": "[Notice] Google Gemini API key is not configured. Please open Settings (gear icon) to configure your API key."
+        },
+        {
+          "name": "Settings dialog opened to let the user fix it",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "main process still alive and answering IPC",
+          "ok": true,
+          "detail": "{\"ok\":true,\"data\":[]}"
+        },
+        {
+          "name": "no mission row created for the refused start",
+          "ok": true,
+          "detail": "missions=0"
+        }
+      ],
+      "observations": [
+        "settings at first run: provider=gemini model=gemini-2.0-flash demoMode=false keys=[]",
+        "Plain sentence \"open example.com and tell me the page heading\": plan preview shown=false; page urls after: [\"https://duckduckgo.com/\",\"https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3D\"]",
+        "plan preview: {\"goal\":\"open example.com and tell me the page heading\",\"steps\":[\"1Target Navigation & Domain DiscoveryInspect active tab or navigate to primary domain for: \\\"open example.com and tell me the page heading\\\"\",\"2Perception & Action DispatchExtract interactive element refs ([e1], [e2]), compute center quad targets, and execute CDP actions\",\"3Evidence Extraction & VerificationValidate extracted facts against goal criteria and generate structured markdown deliverable\"],\"duration\":\"~12s\",\"cost\":\"~$0.0035\"}",
+        "timeline after Execute: [\"[Notice] Google Gemini API key is not configured. Please open Settings (gear icon) to configure your API key.\",\"[Mission Plan Confirmed] \\\"open example.com and tell me the page heading\\\"\"]",
+        "electron.log: app-level crash/unhandled markers=0; \"Uncaught\" console errors raised by web pages (e.g. Google's own captcha page) = 1",
+        "demoMode=true, still no key: mission state=completed; result/feed: [\"[Mission Finished] Mission succeeded: Mock task finished\",\"[Action] done({\\\"result\\\":\\\"Mock task finished\\\"})\",\"[Agent Thought] Task complete\",\"[Step 1] Observing: \\\"https://www.google.com/search?q=open%20example.com%20and%20tell%20me%20the%20page%20heading&sei=XgT_atXzB5zyuNkP74HEmQM\\\" (1 elements)\",\"[Mission m_1795097703946_7bud] Initialized with goal: \\\"open example.com and tell me the page heading\\\"\",\"[Mission Plan Confirmed] \\\"open example.com and tell me the page heading\\\"\"]"
+      ],
+      "screenshots": [
+        "os_04a_plan_preview.png",
+        "os_04b_no_key_error.png"
+      ],
+      "durationMs": 45077
+    },
+    {
+      "id": "3b",
+      "title": "Saved API key: how is it stored and what leaves the main process?",
+      "expectation": "Key is encrypted at rest (vault.enc), not in the database, logs or readable files; not echoed back to the renderer in clear text.",
+      "status": "PARTIAL",
+      "checks": [
+        {
+          "name": "vault.enc written",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "plaintext key NOT in vault.enc",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "plaintext key not found in any profile file (db, wal, logs, vault)",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "plaintext key not in electron.log",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "decrypted key is NOT returned to the renderer by getSettings",
+          "ok": false,
+          "detail": "renderer (and any code injected there) can read the key"
+        },
+        {
+          "name": "clearing the key removes it from the vault",
+          "ok": true,
+          "detail": "{}"
+        }
+      ],
+      "observations": [
+        "vault.enc: { \"gemini\": \"djEwAUjKkAS2…\" }",
+        "vault log line: ",
+        "window.aegis.getSettings() returns the decrypted key to the renderer: true",
+        "reopened Settings pre-fills the key input with the real key (type=password): true",
+        ".aegis-user-data or other writes inside the repo during the run are checked at the end (see repoWrites in report)."
+      ],
+      "screenshots": [],
+      "durationMs": 3788
+    },
+    {
+      "id": 5,
+      "title": "Run a mission \"open <page> and tell me the heading\"; observe step feed, cost counters, tab behaviour, result",
+      "expectation": "With a REAL model this needs a key (none available). Here: Ollama provider pointed at a scripted local stub; checks the loop wiring only.",
+      "status": "PARTIAL",
+      "checks": [
+        {
+          "name": "Test Connection works against /api/tags",
+          "ok": true,
+          "detail": "✓ Connected to local Ollama (1 models found)"
+        },
+        {
+          "name": "default Ollama URL (no /v1) + default model dropdown can run a mission against an Ollama-shaped server",
+          "ok": false,
+          "detail": "state=failed; Model error: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)"
+        },
+        {
+          "name": "agent can navigate to a new site as its first step without a dead-end",
+          "ok": false,
+          "detail": "state=paused; pauses awaiting an approval that has no UI"
+        },
+        {
+          "name": "mission reaches a terminal state",
+          "ok": true,
+          "detail": "completed"
+        },
+        {
+          "name": "mission completed",
+          "ok": true,
+          "detail": "completed "
+        },
+        {
+          "name": "agent click really reached the page",
+          "ok": true,
+          "detail": "clicked 1795097767845"
+        },
+        {
+          "name": "step feed shows the actions taken",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "token counter moved (stub-supplied usage)",
+          "ok": true,
+          "detail": "561"
+        },
+        {
+          "name": "cost counter moved",
+          "ok": false,
+          "detail": "$0.0000 (no price table entry for local models)"
+        }
+      ],
+      "observations": [
+        "MODEL IS A SCRIPTED LOCAL STUB, NOT A REAL MODEL. No API key and no Ollama install exist in this environment.",
+        "Ollama URL pre-filled by the form: http://localhost:11434",
+        "attempt 1 (dropdown=gemini-2.0-flash, URL without /v1): mission state=failed; error=\"Model error: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)\"; stub saw: [{\"path\":\"/chat/completions\",\"model\":\"gemini-2.0-flash\",\"wrongPath\":true}]",
+        "attempt 2 (agent navigates to a different origin than the current page): mission state=paused; newest feed items: [\"[Mission Plan Confirmed] \\\"NAVFIRST go to http://127.0.0.1:54806/ and tell me the page heading\\\"\",\"[Mission m_1795097753084_6rmk] Initialized with goal: \\\"NAVFIRST go to http://127.0.0.1:54806/ and tell me the page heading\\\"\",\"[Step 1] Observing: \\\"https://www.google.com/search?q=open%20example.com%20and%20tell%20me%20the%20page%20heading&sei=XgT_atXzB5zyuNkP74HEmQM\\\" (1 elements)\",\"[Agent Thought] [stub] step 1\",\"[Human Approval Required: navigate-out-of-scope] Action targets external origin '0.1' outside approved mission scope (https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dopen%2520example.com%2520and%2520tell%2520me%2520the%2520page%2520heading%26sei%3DXgT_atXzB5zyuNkP74HEmQM&q=EgRu6-pMGN6I_NcGIjCgVecnW8baBbOvB0CeZh4WvPFD5rnOU5YPPPqZkE6mflpeLpvRwYQlI_GaYvaq01IyAnJSWgFDYKXMrKmuv9PG5AE).\",\"[Agent] Execution paused\"]",
+        "buttons in the UI that could answer an approval request: []",
+        "after pressing Cancel on the stuck mission: state=cancelled",
+        "attempt 3 (page pre-opened, model clicks then finishes): mission state=completed; steps=2; error=undefined; result=\"Page title seen by the scripted stub: Baseline Fixture Page\"",
+        "step feed, newest 14 of 30: [\"[Agent Thought] [stub] step 1\",\"[Human Approval Required: navigate-out-of-scope] Action targets external origin '0.1' outside approved mission scope (https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dopen%2520example.com%2520and%2520tell%2520me%2520the%2520page%2520heading%26sei%3DXgT_atXzB5zyuNkP74HEmQM&q=EgRu6-pMGN6I_NcGIjCgVecnW8baBbOvB0CeZh4WvPFD5rnOU5YPPPqZkE6mflpeLpvRwYQlI_GaYvaq01IyAnJSWgFDYKXMrKmuv9PG5AE).\",\"[Agent] Execution paused\",\"[Mission] Cancelled by user\",\"[Mission Finished] Mission cancelled: Mission cancelled by user\",\"[Mission Plan Confirmed] \\\"click the button on this page and tell me its heading\\\"\",\"[Mission m_1795097766542_5rq9] Initialized with goal: \\\"click the button on this page and tell me its heading\\\"\",\"[Step 1] Observing: \\\"Baseline Fixture Page\\\" (2 elements)\",\"[Agent Thought] [stub] step 1\",\"[Action] click({\\\"ref\\\":\\\"e2\\\"})\",\"[Step 2] Observing: \\\"Baseline Fixture Page\\\" (2 elements)\",\"[Agent Thought] [stub] step 2\",\"[Action] done({\\\"result\\\":\\\"Page title seen by the scripted stub: Baseline Fixture Page\\\",\\\"evidenc)\",\"[Mission Finished] Mission succeeded: Page title seen by the scripted stub: Baseline Fixture Page\"]",
+        "counters at end: {\"tokens\":\"561\",\"cost\":\"$0.0000\",\"workers\":\"1\"} (token counts are the stub's fabricated usage figures; cost is $0 because the Ollama/deepseek model has no price entry)",
+        "tab behaviour: tab strip=[{\"active\":false,\"title\":\"DuckDuckGo - Protection. Privacy. Peace of mind.\",\"badge\":\"Work\"},{\"active\":true,\"title\":\"Baseline Fixture Page\",\"badge\":\"Work\"}]; native pages=[\"https://duckduckgo.com/\",\"http://127.0.0.1:54806/\"]",
+        "stub requests: [{\"path\":\"/v1/chat/completions\",\"model\":\"deepseek-r1:8b\",\"msgs\":3,\"tools\":9},{\"path\":\"/v1/chat/completions\",\"model\":\"deepseek-r1:8b\",\"msgs\":6,\"tools\":9}]",
+        "fixture page #o text after the agent's click (proves a real click reached the page): \"clicked 1795097767845\""
+      ],
+      "screenshots": [
+        "os_05a_navigate_needs_approval.png",
+        "os_05b_mission_finished.png"
+      ],
+      "durationMs": 29837
+    },
+    {
+      "id": 9,
+      "title": "Agent cursor: is it visible over the page content?",
+      "expectation": "A cursor/ripple for agent actions is visible above the page in the real window.",
+      "status": "PARTIAL",
+      "checks": [
+        {
+          "name": "a running agent produces a cursor element at all",
+          "ok": false,
+          "detail": ""
+        },
+        {
+          "name": "control: the pixel diff detects a chrome-DOM element where no native view covers it (red div in the titlebar)",
+          "ok": true,
+          "detail": "{\"red\":{\"changed\":2250,\"total\":2250},\"noise\":{\"changed\":0,\"total\":17600}}"
+        },
+        {
+          "name": "agent cursor markup in #presence-overlay is visible over the page in Stage layout",
+          "ok": false,
+          "detail": "{\"changed\":0,\"total\":9328}"
+        },
+        {
+          "name": "any chrome-DOM element (red div, z-index max) is visible over the page in Stage layout",
+          "ok": false,
+          "detail": "{\"changed\":0,\"total\":2850}"
+        },
+        {
+          "name": "agent cursor markup is visible over the page in Grid layout",
+          "ok": true,
+          "detail": "{\"changed\":1505,\"total\":9328}"
+        }
+      ],
+      "observations": [
+        "during the stub-driven mission (scenario 5) a .__presence_cursor__ element appeared in the chrome DOM: false",
+        "git grep broadcastPresence src: src/main/view_manager.ts:399:  public broadcastPresence(payload: PresenceEventPayload): void { (definition only, no caller)",
+        "[stage] probe region (css px x,y,w,h)=[240,258,160,70]; Win32 child sizes (stale in Grid)=[[1060,728]]; pixels changed between two identical captures (noise)={\"changed\":0,\"total\":17600}; cursor-markup region diff={\"changed\":0,\"total\":9328}; 60x30 red chrome-DOM div over the page area diff={\"changed\":0,\"total\":2850}; the same kind of red div in the titlebar, where no native view exists (control) diff={\"changed\":2250,\"total\":2250}",
+        "[grid] probe region (css px x,y,w,h)=[240,258,160,70]; Win32 child sizes (stale in Grid)=[[1060,728]]; pixels changed between two identical captures (noise)={\"changed\":0,\"total\":17600}; cursor-markup region diff={\"changed\":1505,\"total\":9328}; 60x30 red chrome-DOM div over the page area diff={\"changed\":2775,\"total\":2850}; the same kind of red div in the titlebar, where no native view exists (control) diff={\"changed\":2250,\"total\":2250}"
+      ],
+      "screenshots": [
+        "cdp_09_stage_probe_in_chrome_dom.png",
+        "os_09_stage_probe.png",
+        "cdp_09_grid_probe_in_chrome_dom.png",
+        "os_09_grid_probe.png"
+      ],
+      "durationMs": 29192
+    },
+    {
+      "id": 6,
+      "title": "\"/swarm compare prices of laptops across stores\": what do the workers actually do?",
+      "expectation": "Workers research several stores in parallel and report cited facts. (Provider is the local stub; the swarm path makes no model call at all.)",
+      "status": "PARTIAL",
+      "checks": [
+        {
+          "name": "swarm mission reached a terminal state",
+          "ok": true,
+          "detail": "completed"
+        },
+        {
+          "name": "worker views are torn down when the mission ends",
+          "ok": true,
+          "detail": "2 page targets before the mission, 2 three seconds after it finished; tab strip shows 2"
+        },
+        {
+          "name": "workers made at least one model call (model-driven work)",
+          "ok": false,
+          "detail": "0 model requests"
+        },
+        {
+          "name": "workers visited more than one distinct site",
+          "ok": false,
+          "detail": "[\"https://duckduckgo.com\",\"data:text/html,<body style=\\\"background:%\"]"
+        }
+      ],
+      "observations": [
+        "plan preview (static template?): {\"goal\":\"compare prices of laptops across stores\",\"steps\":[\"1[Discovery & Extraction] Query Primary Source ASearch and extract details, specs, and price for: \\\"compare prices of laptops across stores\\\" from primary vendor\",\"2[Discovery & Extraction] Query Alternative Source BSearch and extract details, specs, and price for: \\\"compare prices of laptops across stores\\\" from second vendor\",\"3[Discovery & Extraction] Query Benchmark Source CSearch and extract details, specs, and price for: \\\"compare prices of laptops across stores\\\" from third vendor\",\"11[Verification & Adjudication] Cross-Check Conflicts & Validate ClaimsInspect evidence blackboard, resolve conflicting claims or price mismatches\",\"21[Synthesis & Reporting] Synthesize Verified Deliverable TableCompile structured markdown comparison table with citations\"],\"duration\":\"~25s\",\"cost\":\"~$0.0075\"}",
+        "swarm mission state=completed after 13.0s; error=undefined",
+        "evidence feed (37): [\"[Mission Plan Confirmed] \\\"open example.com and tell me the page heading\\\"\",\"[Notice] Google Gemini API key is not configured. Please open Settings (gear icon) to configure your API key.\",\"[Mission Plan Confirmed] \\\"open example.com and tell me the page heading\\\"\",\"[Mission m_1795097703946_7bud] Initialized with goal: \\\"open example.com and tell me the page heading\\\"\",\"[Step 1] Observing: \\\"https://www.google.com/search?q=open%20example.com%20and%20tell%20me%20the%20page%20heading&sei=XgT_atXzB5zyuNkP74HEmQM\\\" (1 elements)\",\"[Agent Thought] Task complete\",\"[Action] done({\\\"result\\\":\\\"Mock task finished\\\"})\",\"[Mission Finished] Mission succeeded: Mock task finished\",\"[Mission Plan Confirmed] \\\"go to http://127.0.0.1:54806/ and tell me the page heading\\\"\",\"[Mission m_1795097744248_qw1o] Initialized with goal: \\\"go to http://127.0.0.1:54806/ and tell me the page heading\\\"\",\"[Step 1] Observing: \\\"https://www.google.com/search?q=open%20example.com%20and%20tell%20me%20the%20page%20heading&sei=XgT_atXzB5zyuNkP74HEmQM\\\" (1 elements)\",\"[Error] Model invocation failed: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)\",\"[Mission Finished] Mission failed: Model error: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)\",\"[Mission Plan Confirmed] \\\"NAVFIRST go to http://127.0.0.1:54806/ and tell me the page heading\\\"\",\"[Mission m_1795097753084_6rmk] Initialized with goal: \\\"NAVFIRST go to http://127.0.0.1:54806/ and tell me the page heading\\\"\",\"[Step 1] Observing: \\\"https://www.google.com/search?q=open%20example.com%20and%20tell%20me%20the%20page%20heading&sei=XgT_atXzB5zyuNkP74HEmQM\\\" (1 elements)\",\"[Agent Thought] [stub] step 1\",\"[Human Approval Required: navigate-out-of-scope] Action targets external origin '0.1' outside approved mission scope (https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dopen%2520example.com%2520and%2520tell%2520me%2520the%2520page%2520heading%26sei%3DXgT_atXzB5zyuNkP74HEmQM&q=EgRu6-pMGN6I_NcGIjCgVecnW8baBbOvB0CeZh4WvPFD5rnOU5YPPPqZkE6mflpeLpvRwYQlI_GaYvaq01IyAnJSWgFDYKXMrKmuv9PG5AE).\",\"[Agent] Execution paused\",\"[Mission] Cancelled by user\",\"[Mission Finished] Mission cancelled: Mission cancelled by user\",\"[Mission Plan Confirmed] \\\"click the button on this page and tell me its heading\\\"\",\"[Mission m_1795097766542_5rq9] Initialized with goal: \\\"click the button on this page and tell me its heading\\\"\",\"[Step 1] Observing: \\\"Baseline Fixture Page\\\" (2 elements)\",\"[Agent Thought] [stub] step 1\",\"[Action] click({\\\"ref\\\":\\\"e2\\\"})\",\"[Step 2] Observing: \\\"Baseline Fixture Page\\\" (2 elements)\",\"[Agent Thought] [stub] step 2\",\"[Action] done({\\\"result\\\":\\\"Page title seen by the scripted stub: Baseline Fixture Page\\\",\\\"evidenc)\",\"[Mission Finished] Mission succeeded: Page title seen by the scripted stub: Baseline Fixture Page\",\"[Mission Plan Confirmed] \\\"compare prices of laptops across stores\\\"\",\"[Mission m_1795097804161_4l0y] Initialized with goal: \\\"compare prices of laptops across stores\\\"\",\"[Swarm Stage Started] Discovery & Extraction (3 tasks)\",\"[Blackboard Evidence] [DuckDuckGo - Protection. Privacy. Peace of mind. - url: https://duckduckgo.com/] from https://duckduckgo.com/\",\"[Swarm Stage Started] Verification & Adjudication (1 tasks)\",\"[Swarm Stage Started] Synthesis & Reporting (1 tasks)\",\"[Mission Finished] Mission succeeded: # Swarm Mission Report: compare prices of laptops across stores**Status:** Verified Complete**Evi\"]",
+        "peak concurrent native tabs: 5 (before: 2); sample: [{\"t\":12,\"state\":\"running\",\"tabs\":[\"Work:DuckDuckGo - Protection. Privacy. Peace of mind.\",\"Work:data:text/html,<body style=\\\"background:%23ffffff\\\"><h1>static probe page</h1></body>\"],\"nativeUrls\":[\"https://duckduckgo.com/\",\"data:text/html,<body style=\\\"background:%\"],\"workers\":[\"Agent [Planner]Analyzing goal: \\\"compare prices of laptops across stores\\\"\",\"Ada [researcher]Executing task m_1795097804161_4l0y_t1\",\"Bram [researcher]Executing task m_1795097804161_4l0y_t2\",\"Cleo [researcher]Executing task m_1795097804161_4l0y_t3\"]},{\"t\":3541,\"state\":\"running\",\"tabs\":[\"Work:DuckDuckGo - Protection. Privacy. Peace of mind.\",\"Work:data:text/html,<body style=\\\"background:%23ffffff\\\"><h1>static probe page</h1></body>\"],\"nativeUrls\":[\"https://duckduckgo.com/\",\"data:text/html,<body style=\\\"background:%\",\"https://duckduckgo.com/\",\"https://duckduckgo.com/\",\"https://duckduckgo.com/\"],\"workers\":[\"Agent [Planner]Analyzing goal: \\\"compare prices of laptops across stores\\\"\",\"Ada [researcher]Executing task m_1795097804161_4l0y_t1\",\"Bram [researcher]Executing task m_1795097804161_4l0y_t2\",\"Cleo [researcher]Executing task m_1795097804161_4l0y_t3\"]},{\"t\":4554,\"state\":\"running\",\"tabs\":[\"Work:DuckDuckGo - Protection. Privacy. Peace of mind.\",\"Work:data:text/html,<body style=\\\"background:%23ffffff\\\"><h1>static probe page</h1></body>\"],\"nativeUrls\":[\"https://duckduckgo.com/\",\"data:text/html,<body style=\\\"background:%\",\"https://duckduckgo.com/\",\"https://duckduckgo.com/\",\"https://duckduckgo.com/\"],\"workers\":[\"Agent [Planner]Analyzing goal: \\\"compare prices of laptops across stores\\\"\",\"Ada [researcher]Executing task m_1795097804161_4l0y_t1\",\"Bram [researcher]Executing task m_1795097804161_4l0y_t2\",\"Cleo [researcher]Executing task m_1795097804161_4l0y_t3\"]},{\"t\":5566,\"state\":\"running\",\"tabs\":[\"Work:DuckDuckGo - Protection. Privacy. Peace of mind.\",\"Work:data:text/html,<body style=\\\"background:%23ffffff\\\"><h1>static probe page</h1></body>\"],\"nativeUrls\":[\"https://duckduckgo.com/\",\"data:text/html,<body style=\\\"background:%\",\"https://duckduckgo.com/\",\"https://duckduckgo.com/\",\"https://duckduckgo.com/\"],\"workers\":[\"Agent [Planner]Analyzing goal: \\\"compare prices of laptops across stores\\\"\",\"Ada [researcher]Executing task m_1795097804161_4l0y_t1\",\"Bram [researcher]Executing task m_1795097804161_4l0y_t2\",\"Cleo [researcher]Executing task m_1795097804161_4l0y_t3\"]},{\"t\":6597,\"state\":\"running\",\"tabs\":[\"Work:DuckDuckGo - Protection. Privacy. Peace of mind.\",\"Work:data:text/html,<body style=\\\"background:%23ffffff\\\"><h1>static probe page</h1></body>\"],\"nativeUrls\":[\"https://duckduckgo.com/\",\"data:text/html,<body style=\\\"background:%\",\"https://duckduckgo.com/\",\"https://duckduckgo.com/\",\"https://duckduckgo.com/\"],\"workers\":[\"Agent [Planner]Analyzing goal: \\\"compare prices of laptops across stores\\\"\",\"Ada [researcher]Executing task m_1795097804161_4l0y_t1\",\"Bram [researcher]Executing task m_1795097804161_4l0y_t2\",\"Cleo [researcher]Executing task m_1795097804161_4l0y_t3\"]},{\"t\":7612,\"state\":\"running\",\"tabs\":[\"Work:DuckDuckGo - Protection. Privacy. Peace of mind.\",\"Work:data:text/html,<body style=\\\"background:%23ffffff\\\"><h1>static probe page</h1></body>\"],\"nativeUrls\":[\"https://duckduckgo.com/\",\"data:text/html,<body style=\\\"background:%\",\"https://duckduckgo.com/\",\"https://duckduckgo.com/\",\"https://duckduckgo.com/\"],\"workers\":[\"Agent [Planner]Analyzing goal: \\\"compare prices of laptops across stores\\\"\",\"Ada [researcher]Executing task m_1795097804161_4l0y_t1\",\"Bram [researcher]Executing task m_1795097804161_4l0y_t2\",\"Cleo [researcher]Executing task m_1795097804161_4l0y_t3\"]}]",
+        "model-stub requests made by the swarm: 0",
+        "deliverable report on disk: \"# Mission Report: compare prices of laptops across stores\\n\\n**Status:** completed\\n**Model:** deepseek-r1:8b\\n**Steps Executed:** 0\\n**Date:** 2026-11-19T14:16:56.081Z\\n\\n## Deliverable Findings\\n# Swarm Mission Report: compare prices of laptops across stores\\n\\n**Status:** Verified Complete\\n**Evidence Items Gathered:** 1\\n**Timestamp:** 2026-11-19T14:16:55.841Z\\n\\n## Verified Findings & Evidence Table\\n| Entity | Attribute | Value | Source URL | Confidence |\\n|---|---|---|---|---|\\n| DuckDuckGo - Protection. Privacy. Peace of mind. | url | https://duckduckgo.com/ | [duckduckgo.com](https://duckduckgo.com/) | 95% |\\n\\n## Verified Evidence (1)\\n1. [DuckDuckGo - Protection. Privacy. Peace of mind. - url: https://duckduckgo.com/] from https://duckduckgo.com/\\n\""
+      ],
+      "screenshots": [
+        "os_06a_swarm_plan_preview.png",
+        "os_06b_swarm_running.png",
+        "os_06c_swarm_finished.png"
+      ],
+      "durationMs": 20725
+    },
+    {
+      "id": 7,
+      "title": "Pause, Takeover, Hand-back, Cancel, Undo, Steer: visible vs actual effect",
+      "expectation": "Each button changes the real mission state and the agent loop stops/continues accordingly; the UI label matches reality.",
+      "status": "PARTIAL",
+      "checks": [
+        {
+          "name": "Pause with no mission leaves the UI honest (label stays \"Pause\")",
+          "ok": false,
+          "detail": "Resume"
+        },
+        {
+          "name": "slow mission is running (>=2 model calls)",
+          "ok": false,
+          "detail": "1 calls"
+        },
+        {
+          "name": "Pause: mission state becomes paused",
+          "ok": true,
+          "detail": "paused"
+        },
+        {
+          "name": "Pause: agent stops calling the model",
+          "ok": true,
+          "detail": "0 calls while paused"
+        },
+        {
+          "name": "Resume: mission running again and calling the model",
+          "ok": false,
+          "detail": "running, 0 calls"
+        },
+        {
+          "name": "Takeover: mission state becomes paused",
+          "ok": true,
+          "detail": "paused"
+        },
+        {
+          "name": "Takeover: Pause button label reflects paused state (\"Resume\")",
+          "ok": false,
+          "detail": "Pause"
+        },
+        {
+          "name": "Hand back: mission running again",
+          "ok": false,
+          "detail": "running, 0 calls"
+        },
+        {
+          "name": "Steer: instruction appears in a later model request",
+          "ok": false,
+          "detail": ""
+        },
+        {
+          "name": "Cancel: mission state becomes cancelled",
+          "ok": true,
+          "detail": "cancelled"
+        },
+        {
+          "name": "Cancel: agent really stops (no further model calls)",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "Cancel on a swarm stops swarm activity (no new feed items afterwards)",
+          "ok": true,
+          "detail": "0 new items after cancel"
+        }
+      ],
+      "observations": [
+        "Mission under test is driven by the scripted local stub (3 s per call, answers \"wait\" forever).",
+        "Pause clicked with NO mission running: button label becomes \"Resume\"",
+        "mission id=m_1795097823224_tmfw state=planning",
+        "after Pause: label=Resume, mission state=paused, model calls during 8 s pause window: 0",
+        "after Resume: label=Pause, state=running, model calls in 7 s: 0",
+        "after Takeover: takeover label=Hand Back, pause label=Pause, state=paused; newest feed items: [\"[Manual Takeover] Human operator took manual control of the browser.\",\"[Agent] Execution paused\",\"[Agent] Execution resumed\",\"[Agent] Execution paused\"]",
+        "after Hand Back: label=Takeover, state=running, model calls in 7 s: 0",
+        "steering message reached the model request: false",
+        "Undo feed message: \"[Undo] No reversible local actions found in the ledger\"",
+        "after Cancel: state=cancelled; model calls in the 7 s after cancel: 0; in-flight HTTP requests aborted by the app: 1",
+        "swarm cancel: state right after=cancelled; feed items at cancel=56, 15 s later=56; native tabs at cancel=2, later=2; final persisted state=cancelled"
+      ],
+      "screenshots": [
+        "os_07a_paused.png",
+        "os_07b_cancelled.png",
+        "os_07c_swarm_cancel_after.png"
+      ],
+      "durationMs": 89614
+    },
+    {
+      "id": 8,
+      "title": "Swarm Grid: are tiles live or static? frame rate? CPU with 3 tabs open",
+      "expectation": "Tiles update continuously (a live stream), cheaply.",
+      "status": "PARTIAL",
+      "checks": [
+        {
+          "name": "getSwarmPreviews() returns (does not hang) with several tabs open",
+          "ok": false,
+          "detail": "{\"timedOut\":true,\"ms\":8000}"
+        },
+        {
+          "name": "control: with a single active tab getSwarmPreviews() returns a thumbnail",
+          "ok": true,
+          "detail": "{\"ms\":32,\"items\":[{\"title\":\"Baseline Fixture Page\",\"hasThumb\":true,\"len\":10554,\"active\":true}]}"
+        },
+        {
+          "name": "every tile shows a thumbnail image",
+          "ok": false,
+          "detail": "0/0"
+        },
+        {
+          "name": "tile of the animated page changes over 10 s (live)",
+          "ok": false,
+          "detail": "[]"
+        },
+        {
+          "name": "Grid costs no more CPU than Stage",
+          "ok": true,
+          "detail": "2.6% vs 26.3%"
+        }
+      ],
+      "observations": [
+        "tabs at start of scenario: [{\"active\":false,\"title\":\"DuckDuckGo - Protection. Privacy. Peace of mind.\",\"badge\":\"Work\"},{\"active\":true,\"title\":\"data:text/html,<body style=\\\"background:%23ffffff\\\"><h1>static probe page</h1></body>\",\"badge\":\"Work\"}]",
+        "CPU (all Electron processes), Stage layout, 3 tabs, animated fixture visible, 10 s: {\"percentOfOneCore\":26.3,\"processes\":7,\"seconds\":11}",
+        "grid cards: []",
+        "10 s of 1 Hz DOM samples of tile images: distinct images per tile = []; tiles with an image=0/0",
+        "CPU in Grid layout, 10 s: {\"percentOfOneCore\":2.6,\"processes\":7,\"seconds\":11}",
+        "Grid container text: \"Grid\"",
+        "direct getSwarmPreviews() with 3 tabs open: {\"timedOut\":true,\"ms\":8000}",
+        "control: getSwarmPreviews() with exactly one (active) tab: {\"ms\":32,\"items\":[{\"title\":\"Baseline Fixture Page\",\"hasThumb\":true,\"len\":10554,\"active\":true}]}"
+      ],
+      "screenshots": [
+        "os_08a_grid.png"
+      ],
+      "durationMs": 42570
+    },
+    {
+      "id": 10,
+      "title": "Layout buttons Stage/Grid/Theatre; window resize; minimum size; 125%/150% scaling",
+      "expectation": "Native page view and chrome stay aligned in every layout/size; no clipped controls; scaling works.",
+      "status": "PARTIAL",
+      "checks": [
+        {
+          "name": "Stage: native view fills the DOM viewport area",
+          "ok": false,
+          "detail": "native=[[1060,728]] dom=[0,88,1075,728]"
+        },
+        {
+          "name": "Theatre: layout differs from Stage and stays inside the viewport",
+          "ok": true,
+          "detail": "[[1012,704]]"
+        },
+        {
+          "name": "window cannot be resized below the declared minimum 800x600 (chrome width >= 800)",
+          "ok": true,
+          "detail": "[800,600]"
+        },
+        {
+          "name": "no horizontal scroll / clipped chrome at resize 1000x700",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no horizontal scroll / clipped chrome at resize 800x600 (declared minimum)",
+          "ok": false,
+          "detail": ""
+        },
+        {
+          "name": "no horizontal scroll / clipped chrome at resize 600x400 (below minimum)",
+          "ok": false,
+          "detail": ""
+        }
+      ],
+      "observations": [
+        "{\"label\":\"stage\",\"chrome\":[1400,816],\"dpr\":1.25,\"horizontalScroll\":false,\"drawer\":320,\"domViewport\":[0,88,1075,728],\"nativeViews\":[[1060,728]]}",
+        "{\"label\":\"theatre\",\"chrome\":[1400,816],\"dpr\":1.25,\"horizontalScroll\":false,\"drawer\":320,\"domViewport\":[0,88,1075,728],\"nativeViews\":[[1012,704]]}",
+        "{\"label\":\"grid\",\"chrome\":[1400,816],\"dpr\":1.25,\"horizontalScroll\":false,\"drawer\":320,\"domViewport\":[0,88,1075,728],\"nativeViews\":[[1012,704]]}",
+        "{\"label\":\"resize 1000x700 -> rect=85,0,1250,875 dpi=120 iconic=False foreground=True\",\"chrome\":[1000,700],\"dpr\":1.25,\"horizontalScroll\":false,\"drawer\":320,\"domViewport\":[0,88,675,612],\"nativeViews\":[[660,612]]}",
+        "{\"label\":\"resize 800x600 (declared minimum) -> rect=85,0,1000,750 dpi=120 iconic=False foreground=True\",\"chrome\":[800,600],\"dpr\":1.25,\"horizontalScroll\":true,\"drawer\":320,\"domViewport\":[0,88,475,512],\"nativeViews\":[[460,512]]}",
+        "{\"label\":\"resize 600x400 (below minimum) -> rect=85,0,1000,750 dpi=120 iconic=False foreground=True\",\"chrome\":[800,600],\"dpr\":1.25,\"horizontalScroll\":true,\"drawer\":320,\"domViewport\":[0,88,475,512],\"nativeViews\":[[460,512]]}",
+        "{\"label\":\"after #max-btn\",\"chrome\":[1536,816],\"dpr\":1.25,\"horizontalScroll\":false,\"drawer\":320,\"domViewport\":[0,88,1211,728],\"nativeViews\":[[460,512]]}"
+      ],
+      "screenshots": [
+        "os_10a_stage.png",
+        "os_10b_theatre.png",
+        "os_10c_grid.png",
+        "os_10d_1000x700.png",
+        "os_10d_800x600.png",
+        "os_10d_600x400.png",
+        "os_10e_maximised.png"
+      ],
+      "durationMs": 41983
+    },
+    {
+      "id": "E",
+      "title": "Edge cases: two instances, where user data really goes, CDP port in use",
+      "expectation": "Second instance exits via the single-instance lock; AEGIS_USER_DATA keeps all data out of the default location; a busy CDP port is detected.",
+      "status": "PASS",
+      "checks": [
+        {
+          "name": "second instance on the same profile exits (single-instance lock)",
+          "ok": true,
+          "detail": "exited:0"
+        },
+        {
+          "name": "first instance still answers IPC after the second launches",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "AEGIS_USER_DATA keeps every byte out of the default %APPDATA% location",
+          "ok": true,
+          "detail": "0 entries written to %USERPROFILE%\\AppData\\Roaming\\autonomous-browser"
+        }
+      ],
+      "observations": [
+        "second instance, same Chromium profile dir: exited:0",
+        "second instance with a different AEGIS_USER_DATA and a different --user-data-dir: still-running-after-12000ms",
+        "CDP port notes from this run: []",
+        "listener on 9222 at run time: none",
+        "launched with AEGIS_USER_DATA=<tmp> but WITHOUT --user-data-dir: entries under %USERPROFILE%\\AppData\\Roaming\\autonomous-browser modified during that launch: []"
+      ],
+      "screenshots": [],
+      "durationMs": 23449
+    },
+    {
+      "id": "10b",
+      "title": "Scaling 150% (Chromium --force-device-scale-factor=1.5; not the Windows display setting)",
+      "expectation": "App launches and renders correctly with this flag.",
+      "status": "PASS",
+      "checks": [
+        {
+          "name": "app launched and chrome rendered",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no horizontal overflow; Run and Settings buttons inside the window",
+          "ok": true,
+          "detail": "{\"dpr\":1.5,\"inner\":[1280,680],\"scrollX\":false,\"titlebarH\":40,\"omniH\":48,\"drawerW\":320,\"runBtnVisible\":true,\"settingsVisible\":true}"
+        }
+      ],
+      "observations": [
+        "scale150: {\"dpr\":1.5,\"inner\":[1280,680],\"scrollX\":false,\"titlebarH\":40,\"omniH\":48,\"drawerW\":320,\"runBtnVisible\":true,\"settingsVisible\":true}; native views: [[1152,710]]",
+        "GPU-related error lines in log: 0"
+      ],
+      "screenshots": [
+        "os_10b_scale150.png"
+      ],
+      "durationMs": 10590
+    },
+    {
+      "id": "E2",
+      "title": "Edge case: launch with --disable-gpu",
+      "expectation": "App launches and renders correctly with this flag.",
+      "status": "PASS",
+      "checks": [
+        {
+          "name": "app launched and chrome rendered",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no horizontal overflow; Run and Settings buttons inside the window",
+          "ok": true,
+          "detail": "{\"dpr\":1.25,\"inner\":[1400,816],\"scrollX\":false,\"titlebarH\":40,\"omniH\":48,\"drawerW\":320,\"runBtnVisible\":true,\"settingsVisible\":true}"
+        }
+      ],
+      "observations": [
+        "disablegpu: {\"dpr\":1.25,\"inner\":[1400,816],\"scrollX\":false,\"titlebarH\":40,\"omniH\":48,\"drawerW\":320,\"runBtnVisible\":true,\"settingsVisible\":true}; native views: [[1080,728]]",
+        "GPU-related error lines in log: 0"
+      ],
+      "screenshots": [
+        "os_E2_disablegpu.png"
+      ],
+      "durationMs": 11336
+    }
+  ],
+  "extra": {
+    "environment": {
+      "os": "Microsoft Windows 11 Home Single Language 10.0.26300",
+      "cpu": "AMD Ryzen 7 7735HS with Radeon Graphics         x16",
+      "ramGB": 15,
+      "gpu": "AMD Radeon(TM) Graphics driver 32.0.11038.3; NVIDIA GeForce RTX 4050 Laptop GPU driver 32.0.16.1656",
+      "node": "v22.19.0",
+      "electron": "33.4.11",
+      "commit": "7d723c15f62f17d7dc3844f126207b94b66bb455",
+      "stubPort": 54806,
+      "cdpPort": 9333,
+      "portNotes": []
+    },
+    "profile": "%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI",
+    "launchArgs": [
+      "--remote-debugging-port=9333",
+      "--user-data-dir=%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-q7w0CI\\chromium",
+      "--disable-features=CalculateNativeWinOcclusion",
+      "<repo>\\dist\\main\\index.js"
+    ],
+    "demoModeObservation": {
+      "state": "completed",
+      "feed": [
+        "[Mission Finished] Mission succeeded: Mock task finished",
+        "[Action] done({\"result\":\"Mock task finished\"})",
+        "[Agent Thought] Task complete",
+        "[Step 1] Observing: \"https://www.google.com/search?q=open%20example.com%20and%20tell%20me%20the%20page%20heading&sei=XgT_atXzB5zyuNkP74HEmQM\" (1 elements)",
+        "[Mission m_1795097703946_7bud] Initialized with goal: \"open example.com and tell me the page heading\"",
+        "[Mission Plan Confirmed] \"open example.com and tell me the page heading\"",
+        "[Notice] Google Gemini API key is not configured. Please open Settings (gear icon) to configure your API key.",
+        "[Mission Plan Confirmed] \"open example.com and tell me the page heading\""
+      ]
+    },
+    "attempt1": {
+      "state": "failed",
+      "error": "Model error: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)",
+      "stub": [
+        {
+          "path": "/chat/completions",
+          "model": "gemini-2.0-flash"
+        }
+      ]
+    },
+    "attempt2": {
+      "state": "paused",
+      "feed": [
+        "[Mission Plan Confirmed] \"NAVFIRST go to http://127.0.0.1:54806/ and tell me the page heading\"",
+        "[Mission m_1795097753084_6rmk] Initialized with goal: \"NAVFIRST go to http://127.0.0.1:54806/ and tell me the page heading\"",
+        "[Step 1] Observing: \"https://www.google.com/search?q=open%20example.com%20and%20tell%20me%20the%20page%20heading&sei=XgT_atXzB5zyuNkP74HEmQM\" (1 elements)",
+        "[Agent Thought] [stub] step 1",
+        "[Human Approval Required: navigate-out-of-scope] Action targets external origin '0.1' outside approved mission scope (https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dopen%2520example.com%2520and%2520tell%2520me%2520the%2520page%2520heading%26sei%3DXgT_atXzB5zyuNkP74HEmQM&q=EgRu6-pMGN6I_NcGIjCgVecnW8baBbOvB0CeZh4WvPFD5rnOU5YPPPqZkE6mflpeLpvRwYQlI_GaYvaq01IyAnJSWgFDYKXMrKmuv9PG5AE).",
+        "[Agent] Execution paused"
+      ],
+      "approvalButtons": []
+    },
+    "feedSamples": [
+      {
+        "t": 737,
+        "tokens": "225",
+        "cost": "$0.0000",
+        "workers": "1"
+      },
+      {
+        "t": 1457,
+        "tokens": "225",
+        "cost": "$0.0000",
+        "workers": "1"
+      },
+      {
+        "t": 2179,
+        "tokens": "225",
+        "cost": "$0.0000",
+        "workers": "1"
+      },
+      {
+        "t": 2897,
+        "tokens": "561",
+        "cost": "$0.0000",
+        "workers": "1"
+      }
+    ],
+    "attempt3": {
+      "state": "completed",
+      "result": "Page title seen by the scripted stub: Baseline Fixture Page",
+      "steps": 2,
+      "counters": {
+        "tokens": "561",
+        "cost": "$0.0000",
+        "workers": "1"
+      }
+    },
+    "sawCursorDuringMission": false,
+    "presenceProbe": {
+      "stage": {
+        "noise": {
+          "changed": 0,
+          "total": 17600
+        },
+        "curDiff": {
+          "changed": 0,
+          "total": 9328
+        },
+        "redDiff": {
+          "changed": 0,
+          "total": 2850
+        },
+        "topDiff": {
+          "changed": 2250,
+          "total": 2250
+        },
+        "nat": [
+          [
+            1060,
+            728
+          ]
+        ]
+      },
+      "grid": {
+        "noise": {
+          "changed": 0,
+          "total": 17600
+        },
+        "curDiff": {
+          "changed": 1505,
+          "total": 9328
+        },
+        "redDiff": {
+          "changed": 2775,
+          "total": 2850
+        },
+        "topDiff": {
+          "changed": 2250,
+          "total": 2250
+        },
+        "nat": [
+          [
+            1060,
+            728
+          ]
+        ]
+      }
+    },
+    "swarm": {
+      "state": "completed",
+      "evidenceItems": 37,
+      "stubRequests": 0,
+      "report": "# Mission Report: compare prices of laptops across stores\n\n**Status:** completed\n**Model:** deepseek-r1:8b\n**Steps Executed:** 0\n**Date:** 2026-11-19T14:16:56.081Z\n\n## Deliverable Findings\n# Swarm Mission Report: compare prices of laptops across stores\n\n**Status:** Verified Complete\n**Evidence Items Gathered:** 1\n**Timestamp:** 2026-11-19T14:16:55.841Z\n\n## Verified Findings & Evidence Table\n| Entity | Attribute | Value | Source URL | Confidence |\n|---|---|---|---|---|\n| DuckDuckGo - Protection. Privacy. Peace of mind. | url | https://duckduckgo.com/ | [duckduckgo.com](https://duckduckgo.com/) | 95% |\n\n## Verified Evidence (1)\n1. [DuckDuckGo - Protection. Privacy. Peace of mind. - url: https://duckduckgo.com/] from https://duckduckgo.com/\n"
+    },
+    "undoMessage": "[Undo] No reversible local actions found in the ledger",
+    "swarmCancel": {
+      "evAtCancel": 56,
+      "evLater": 56,
+      "tabsAtCancel": 2,
+      "tabsLater": 2,
+      "finalState": "cancelled"
+    },
+    "grid": {
+      "stageCpu": {
+        "percentOfOneCore": 26.3,
+        "processes": 7,
+        "seconds": 11
+      },
+      "gridCpu": {
+        "percentOfOneCore": 2.6,
+        "processes": 7,
+        "seconds": 11
+      },
+      "distinctPerCard": [],
+      "cards": 0,
+      "direct": {
+        "timedOut": true,
+        "ms": 8000
+      },
+      "singleTab": {
+        "ms": 32,
+        "items": [
+          {
+            "title": "Baseline Fixture Page",
+            "hasThumb": true,
+            "len": 10554,
+            "active": true
+          }
+        ]
+      }
+    },
+    "layoutMeasures": [
+      {
+        "label": "stage",
+        "chrome": [
+          1400,
+          816
+        ],
+        "dpr": 1.25,
+        "horizontalScroll": false,
+        "drawer": 320,
+        "domViewport": [
+          0,
+          88,
+          1075,
+          728
+        ],
+        "nativeViews": [
+          [
+            1060,
+            728
+          ]
+        ]
+      },
+      {
+        "label": "theatre",
+        "chrome": [
+          1400,
+          816
+        ],
+        "dpr": 1.25,
+        "horizontalScroll": false,
+        "drawer": 320,
+        "domViewport": [
+          0,
+          88,
+          1075,
+          728
+        ],
+        "nativeViews": [
+          [
+            1012,
+            704
+          ]
+        ]
+      },
+      {
+        "label": "grid",
+        "chrome": [
+          1400,
+          816
+        ],
+        "dpr": 1.25,
+        "horizontalScroll": false,
+        "drawer": 320,
+        "domViewport": [
+          0,
+          88,
+          1075,
+          728
+        ],
+        "nativeViews": [
+          [
+            1012,
+            704
+          ]
+        ]
+      },
+      {
+        "label": "resize 1000x700 -> rect=85,0,1250,875 dpi=120 iconic=False foreground=True",
+        "chrome": [
+          1000,
+          700
+        ],
+        "dpr": 1.25,
+        "horizontalScroll": false,
+        "drawer": 320,
+        "domViewport": [
+          0,
+          88,
+          675,
+          612
+        ],
+        "nativeViews": [
+          [
+            660,
+            612
+          ]
+        ]
+      },
+      {
+        "label": "resize 800x600 (declared minimum) -> rect=85,0,1000,750 dpi=120 iconic=False foreground=True",
+        "chrome": [
+          800,
+          600
+        ],
+        "dpr": 1.25,
+        "horizontalScroll": true,
+        "drawer": 320,
+        "domViewport": [
+          0,
+          88,
+          475,
+          512
+        ],
+        "nativeViews": [
+          [
+            460,
+            512
+          ]
+        ]
+      },
+      {
+        "label": "resize 600x400 (below minimum) -> rect=85,0,1000,750 dpi=120 iconic=False foreground=True",
+        "chrome": [
+          800,
+          600
+        ],
+        "dpr": 1.25,
+        "horizontalScroll": true,
+        "drawer": 320,
+        "domViewport": [
+          0,
+          88,
+          475,
+          512
+        ],
+        "nativeViews": [
+          [
+            460,
+            512
+          ]
+        ]
+      },
+      {
+        "label": "after #max-btn",
+        "chrome": [
+          1536,
+          816
+        ],
+        "dpr": 1.25,
+        "horizontalScroll": false,
+        "drawer": 320,
+        "domViewport": [
+          0,
+          88,
+          1211,
+          728
+        ],
+        "nativeViews": [
+          [
+            460,
+            512
+          ]
+        ]
+      }
+    ],
+    "secondInstanceDifferentProfile": "still-running-after-12000ms",
+    "port9222Listener": "",
+    "appDataTouchedDespiteAegisUserData": [],
+    "mainAppConsoleMsgs": [],
+    "modelStubPathsSeen": [
+      "GET /api/tags",
+      "POST /chat/completions",
+      "POST /v1/chat/completions",
+      "GET /",
+      "GET /ticker"
+    ],
+    "profileTree": [
+      "aegis.sqlite",
+      "aegis.sqlite-shm",
+      "aegis.sqlite-wal",
+      "audit_log.json",
+      "cache/",
+      "chromium/",
+      "chromium\\blob_storage/ (chromium cache)",
+      "chromium\\Cache/ (chromium cache)",
+      "chromium\\Code Cache/ (chromium cache)",
+      "chromium\\DawnGraphiteCache/ (chromium cache)",
+      "chromium\\DawnWebGPUCache/ (chromium cache)",
+      "chromium\\DevToolsActivePort",
+      "chromium\\GPUCache/ (chromium cache)",
+      "chromium\\Local State",
+      "chromium\\Local Storage/ (chromium cache)",
+      "chromium\\lockfile",
+      "chromium\\Network/ (chromium cache)",
+      "chromium\\Preferences",
+      "chromium\\Session Storage/ (chromium cache)",
+      "chromium\\Shared Dictionary/ (chromium cache)",
+      "chromium\\SharedStorage",
+      "chromium\\SharedStorage-wal",
+      "chromium\\WebStorage/",
+      "chromium\\WebStorage\\QuotaManager",
+      "chromium\\WebStorage\\QuotaManager-journal",
+      "deliverables/",
+      "deliverables\\m_1795097703946_7bud_report.md",
+      "deliverables\\m_1795097766542_5rq9_report.md",
+      "deliverables\\m_1795097804161_4l0y_report.md",
+      "downloads/",
+      "logs/",
+      "logs\\app.log",
+      "recordings/",
+      "session/",
+      "vault.enc"
+    ],
+    "errorLinesInLog": [
+      "[2026-11-19T14:14:56.016Z] [WARN] [main:main] Permission request denied { permission: 'storage-access' }",
+      "[2026-11-19T14:14:56.767Z] [WARN] [main:main] Permission request denied { permission: 'storage-access' }",
+      "[2026-11-19T14:15:44.681Z] [ERROR] [main:openai-provider] OpenAI generation error  NotFoundError: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)",
+      "[2026-11-19T14:15:44.683Z] [ERROR] [main:model-governor] Fail-fast on model error: Model not found or unavailable  NotFoundError: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)",
+      "[2026-11-19T14:15:44.683Z] [ERROR] [main:agent-runtime] Model call failed  NotFoundError: 404 404 page not found (stub mimics Ollama, which only serves /v1/chat/completions; got /chat/completions)",
+      "[2026-11-19T14:16:55.160Z] [WARN] [main] Worker page did not settle before the deadline { workerId: 'swarm_worker_3', waitedMs: 10001, inFlight: 0 }",
+      "[2026-11-19T14:16:55.208Z] [WARN] [main] Worker page did not settle before the deadline { workerId: 'swarm_worker_2', waitedMs: 10023, inFlight: 0 }",
+      "[2026-11-19T14:16:55.768Z] [WARN] [main] Worker page did not settle before the deadline { workerId: 'swarm_worker_1', waitedMs: 10025, inFlight: 0 }",
+      "[2026-11-19T14:18:03.632Z] [ERROR] [main:openai-provider] OpenAI generation error  APIUserAbortError: Request was aborted.",
+      "[2026-11-19T14:18:03.633Z] [WARN] [main:model-governor] Model request failed (request was aborted.), retrying in 1411ms (attempt 1/3) ",
+      "[2026-11-19T14:18:05.048Z] [ERROR] [main:openai-provider] OpenAI generation error  APIUserAbortError: Request was aborted.",
+      "[2026-11-19T14:18:05.049Z] [WARN] [main:model-governor] Model request failed (request was aborted.), retrying in 1157ms (attempt 2/3) ",
+      "[2026-11-19T14:18:06.213Z] [ERROR] [main:openai-provider] OpenAI generation error  APIUserAbortError: Request was aborted.",
+      "[2026-11-19T14:18:06.214Z] [WARN] [main:model-governor] Model request failed (request was aborted.), retrying in 1330ms (attempt 3/3) ",
+      "[2026-11-19T14:18:07.548Z] [ERROR] [main:openai-provider] OpenAI generation error  APIUserAbortError: Request was aborted.",
+      "[2026-11-19T14:18:07.549Z] [WARN] [main:model-governor] Circuit breaker tripped to OPEN { failures: 4 }",
+      "[2026-11-19T14:18:13.828Z] [WARN] [main] Task failed permanently {",
+      "[2026-11-19T14:18:13.830Z] [WARN] [main] Task failed permanently {",
+      "[2026-11-19T14:18:13.831Z] [WARN] [main] Task failed permanently {",
+      "[2026-11-19T14:18:32.219Z] [WARN] [main:view-manager] Failed to load initial tab URL {",
+      "[2026-11-19T14:18:43.836Z] [ERROR] [main:agent-runtime] Unhandled error in agent execution loop  Error: Swarm is shut down"
+    ],
+    "consoleLinesInLog": [
+      "[27896:1119/194244.403:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194248.434:INFO:CONSOLE(0)] \"The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-1-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.\", source: https://duckduckgo.com/ (0)\r",
+      "[27896:1119/194248.434:INFO:CONSOLE(0)] \"The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-3-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.\", source: https://duckduckgo.com/ (0)\r",
+      "[27896:1119/194248.435:INFO:CONSOLE(0)] \"The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-2-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.\", source: https://duckduckgo.com/ (0)\r",
+      "[27896:1119/194249.294:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194251.370:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194324.461:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194324.516:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194336.066:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194455.821:INFO:CONSOLE(0)] \"An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.\", source: https://www.google.com/recaptcha/enterprise/anchor?ar=1&k=6LfwuyUTAAAAAOAmoS0fdqijC2PbbdH4kjq62Y1b&co=aHR0cHM6Ly93d3cuZ29vZ2xlLmNvbTo0NDM.&hl=en&v=4i3aN5wAweL7i3ADI7BSX4B-&size=normal&s=C-i4nvlkUtQKF4dy05TUDB4lnAJQ3gfuw4oHMsixxvrewodrync8XJn6k2mq32S-dVB7j8eoU6gN0dM942Je9mr_TJ2mOHVxXSYU-hZWjWPR00PtyFdfaFzxFGAArY8iztEy1iD8ENIpMgA2PJz9_5upvNHRWSx6LJNz4o3RLE3gymMqOakQiytNotr8a8uqmTSVaQssOoWhYlX7TnaLa2JGVUFz2DzdGIGJ1_hC258ui7-ZbXailCHvyoX0LqetATa1RxoF233zi6YpVCuPqoPLRmkL1Ic&anchor-ms=20000&execute-ms=30000&ovv=CADq00gF&cb=vuitebcj1mh5 (0)\r",
+      "[27896:1119/194456.035:INFO:CONSOLE(259)] \"requestStorageAccess: Permission denied.\", source: https://www.google.com/recaptcha/enterprise/anchor?ar=1&k=6LfwuyUTAAAAAOAmoS0fdqijC2PbbdH4kjq62Y1b&co=aHR0cHM6Ly93d3cuZ29vZ2xlLmNvbTo0NDM.&hl=en&v=4i3aN5wAweL7i3ADI7BSX4B-&size=normal&s=C-i4nvlkUtQKF4dy05TUDB4lnAJQ3gfuw4oHMsixxvrewodrync8XJn6k2mq32S-dVB7j8eoU6gN0dM942Je9mr_TJ2mOHVxXSYU-hZWjWPR00PtyFdfaFzxFGAArY8iztEy1iD8ENIpMgA2PJz9_5upvNHRWSx6LJNz4o3RLE3gymMqOakQiytNotr8a8uqmTSVaQssOoWhYlX7TnaLa2JGVUFz2DzdGIGJ1_hC258ui7-ZbXailCHvyoX0LqetATa1RxoF233zi6YpVCuPqoPLRmkL1Ic&anchor-ms=20000&execute-ms=30000&ovv=CADq00gF&cb=vuitebcj1mh5 (259)\r",
+      "[27896:1119/194456.130:INFO:CONSOLE(4)] \"Uncaught ReferenceError: solveSimpleChallenge is not defined\", source: https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dopen%2520example.com%2520and%2520tell%2520me%2520the%2520page%2520heading%26sei%3DXgT_atXzB5zyuNkP74HEmQM&q=EgRu6-pMGN6I_NcGIjCgVecnW8baBbOvB0CeZh4WvPFD5rnOU5YPPPqZkE6mflpeLpvRwYQlI_GaYvaq01IyAnJSWgFDYKXMrKmuv9PG5AE (4)\r",
+      "[27896:1119/194456.134:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194456.739:INFO:CONSOLE(0)] \"An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.\", source: https://www.google.com/recaptcha/enterprise/bframe?hl=en&v=4i3aN5wAweL7i3ADI7BSX4B-&k=6LfwuyUTAAAAAOAmoS0fdqijC2PbbdH4kjq62Y1b&bft=0dAFcWeA4vZAhdoViNXcnWi7CMCCHQzH7BDIxrcbd7tX8QuenQaH4hIQhDet8DieKrzXyQNfHIP4X4ETipkFECPPLLXCqVOsk2jw (0)\r",
+      "[27896:1119/194456.800:INFO:CONSOLE(0)] \"requestStorageAccess: Permission denied.\", source: https://www.google.com/recaptcha/enterprise/bframe?hl=en&v=4i3aN5wAweL7i3ADI7BSX4B-&k=6LfwuyUTAAAAAOAmoS0fdqijC2PbbdH4kjq62Y1b&bft=0dAFcWeA4vZAhdoViNXcnWi7CMCCHQzH7BDIxrcbd7tX8QuenQaH4hIQhDet8DieKrzXyQNfHIP4X4ETipkFECPPLLXCqVOsk2jw (0)\r",
+      "[27896:1119/194606.343:INFO:CONSOLE(82)] \"Uncaught TypeError: Cannot read properties of null (reading 'appendChild')\", source:  (82)\r",
+      "[27896:1119/194606.372:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194613.530:INFO:CONSOLE(82)] \"Uncaught TypeError: Cannot read properties of null (reading 'appendChild')\", source:  (82)\r",
+      "[27896:1119/194613.554:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194832.607:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194913.562:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[27896:1119/194913.601:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r"
+    ],
+    "mainExit": {
+      "code": 1,
+      "sig": null
+    },
+    "repoWrites": []
+  }
+}

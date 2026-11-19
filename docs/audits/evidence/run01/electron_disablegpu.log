@@ -1,0 +1,48 @@
+
+[2026-11-19T14:20:33.964Z] [INFO] [main:main] Initializing Autonomous Browser... 
+[2026-11-19T14:20:33.974Z] [INFO] [main:main] App paths initialized {
+  paths: {
+    isPortable: false,
+    userData: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-disablegpu-1WahGr',
+    sessionData: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-disablegpu-1WahGr\\session',
+    diskCache: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-disablegpu-1WahGr\\cache',
+    database: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-disablegpu-1WahGr\\aegis.sqlite',
+    vault: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-disablegpu-1WahGr\\vault.enc',
+    logs: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-disablegpu-1WahGr\\logs',
+    recordings: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-disablegpu-1WahGr\\recordings',
+    downloads: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-disablegpu-1WahGr\\downloads'
+  }
+}
+
+DevTools listening on ws://127.0.0.1:9333/devtools/browser/0a4f4a43-4883-4cf9-af22-ce6ef4bc9d47
+[2026-11-19T14:20:34.073Z] [INFO] [main:persistence] Persistence ready {
+  file: '%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-disablegpu-1WahGr\\aegis.sqlite',
+  schemaVersion: 4,
+  interruptedMissions: 0
+}
+[2026-11-19T14:20:34.074Z] [INFO] [main:main] Electron app ready. Creating primary window... 
+[2026-11-19T14:20:34.136Z] [INFO] [main:tab-group-manager] Created tab group {
+  id: 'group_1795098034136_g9sx9',
+  name: 'General',
+  color: '#4A90E2',
+  ownerMissionId: undefined
+}
+[2026-11-19T14:20:34.138Z] [INFO] [main:main] Loading chrome renderer HTML { rendererHtml: 'D:\\REA\\wt-RUN-01\\dist\\renderer\\index.html' }
+[2026-11-19T14:20:34.556Z] [INFO] [main:main] Chrome renderer loaded successfully 
+[2026-11-19T14:20:34.558Z] [INFO] [main:view-manager] Creating tab {
+  id: 'tab_1795098034558_iksh4',
+  url: 'https://duckduckgo.com',
+  isBackgroundAgent: false,
+  owner: 'user'
+}
+[30484:1119/195037.775:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[30484:1119/195041.848:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-1-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)
+[30484:1119/195041.848:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-3-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)
+[30484:1119/195041.848:INFO:CONSOLE(0)] "The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-2-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://duckduckgo.com/ (0)

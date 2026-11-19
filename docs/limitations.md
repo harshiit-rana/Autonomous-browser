@@ -52,3 +52,17 @@ This file records what the product does not do (yet) and why. Entries are added 
 | Windows | `dist:win` was run here but the installer was not tested on a clean Windows VM. | #261 tracks clean-machine installs; this PR installs per-user into a temp directory on the build machine and launches the installed app. |
 | Native modules | `asarUnpack` only globs `**/*.node`. | There are no native modules until #239 picks a database; that issue must extend the config and re-run `npm run smoke:packaged`. |
 | Auto-updater | Not wired into releases. | #259. |
+
+## Running-app baseline (#223 RUN-01)
+
+Measured in the real app on Windows 11 / Electron 33.4.11; details and evidence in `docs/audits/RUNNING_APP_BASELINE.md`.
+
+| Area | Limitation | Owner |
+|---|---|---|
+| Model | No real-key mission has been run in the real app; the single-agent loop was exercised only against a scripted stub. | #225, #254 |
+| Swarm Grid | `getSwarmPreviews()` never returns with more than one tab open, so the Grid shows nothing. | #232 |
+| Overlays | Chrome-DOM overlays (agent cursor, approvals) are invisible over the page in Stage layout; modals work only because the page view is hidden. Nothing emits presence events. | #233, #237 |
+| Swarm | Workers make no model calls; evidence is the page title of a search engine. | #227, #230 |
+| Approvals | A navigation to a new origin pauses the mission with no UI to approve it. | #238 |
+| Credentials | The vault is encrypted at rest, but `getSettings()` returns the decrypted key to the renderer. | #248 |
+| Window | At the declared minimum size 800x600 the chrome overflows horizontally and the Theatre button is clipped. | #237 |
