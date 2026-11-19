@@ -20,7 +20,6 @@ This file records what the product does not do (yet) and why. Entries are added 
 | Memory store | `MemoryStore` runs on the new layer but is still not reachable from the product (`memory/memory_store.ts` is allowlisted for #240). | |
 | Platforms | Verified on Windows x64 (Node 22 tests and Electron 33.4.11 ABI 130 in the running app). macOS, Linux and the packaged installer were not run. | #256, #258, #261. |
 
-<<<<<<< HEAD
 ## Swarm worker isolation (Issue #229, SWX-03)
 
 | Area | Status | Reason / next step |
@@ -37,7 +36,7 @@ This file records what the product does not do (yet) and why. Entries are added 
 | Cancel | `AgentRuntime.cancel()` shuts the swarm down, so in-flight worker calls fail; the coordinator is not told to stop scheduling. | #226, #227. |
 | Platforms | The run was on Windows x64 only. | #256. |
 
-=======
+
 ## Packaging and release (#258 PKG-01)
 
 | Area | Limitation | Reason / follow-up |
@@ -53,4 +52,3 @@ This file records what the product does not do (yet) and why. Entries are added 
 | Windows | `dist:win` was run here but the installer was not tested on a clean Windows VM. | #261 tracks clean-machine installs; this PR installs per-user into a temp directory on the build machine and launches the installed app. |
 | Native modules | `asarUnpack` only globs `**/*.node`. | There are no native modules until #239 picks a database; that issue must extend the config and re-run `npm run smoke:packaged`. |
 | Auto-updater | Not wired into releases. | #259. |
->>>>>>> 12fc1e6 (feat(packaging): working installer, afterPack fuses, sandbox-safe preload, icons, packaged smoke test [PKG-01] (#258))
