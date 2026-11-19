@@ -5,7 +5,12 @@
  * - Issue #79: DATA-03 Structured JSON Schema Extraction Engine via LLM Guardrails
  */
 
-import { ModelHub, ChatMessage } from '../core/model_hub.js';
+import { IModelProvider } from '../models/types.js';
+
+export interface ExtractionMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
 
 export interface ExtractionSchemaProperty {
   type: 'string' | 'number' | 'boolean' | 'array';
@@ -20,16 +25,16 @@ export interface ExtractionSchema {
 }
 
 export class StructuredSchemaExtractor {
-  private modelHub: ModelHub;
+  private modelProvider?: IModelProvider;
 
-  constructor(modelHub: ModelHub) {
-    this.modelHub = modelHub;
+  constructor(modelProvider?: IModelProvider) {
+    this.modelProvider = modelProvider;
   }
 
   /**
    * Generates a strict schema extraction prompt.
    */
-  public static buildExtractionPrompt(schema: ExtractionSchema, rawText: string): ChatMessage[] {
+  public static buildExtractionPrompt(schema: ExtractionSchema, rawText: string): ExtractionMessage[] {
     const propertiesSpec = Object.entries(schema.properties)
       .map(([k, v]) => `  "${k}": (${v.type}${v.required ? ', required' : ''}) - ${v.description || ''}`)
       .join('\n');

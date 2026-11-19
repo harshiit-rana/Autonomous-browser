@@ -198,3 +198,7 @@ export class WorkerSupervisor extends EventEmitter {
     this.poisonTasks.clear();
   }
 }
+
+// Backward compatibility aliases
+export { WorkerSupervisor as SwarmHealthDaemon };
+export type { WorkerHeartbeatMetrics as WorkerTelemetry };

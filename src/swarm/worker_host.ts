@@ -279,3 +279,6 @@ export class WorkerHost {
     return new Promise(resolve => setTimeout(resolve, timeoutMs));
   }
 }
+
+// Backward compatibility alias
+export { WorkerHost as SwarmWorker };

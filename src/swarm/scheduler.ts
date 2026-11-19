@@ -305,3 +305,7 @@ export class SwarmScheduler {
     this.frontier.reset();
   }
 }
+
+// Backward compatibility aliases
+export { SwarmScheduler as WorkStealingQueue };
+export type { ScheduledTask as SwarmTask };

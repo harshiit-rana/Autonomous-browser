@@ -1,7 +1,7 @@
 import { SharedBlackboard } from '../src/swarm/blackboard.js';
-import { WorkStealingQueue, SwarmTask } from '../src/swarm/work_stealing_queue.js';
+import { WorkStealingQueue, SwarmTask } from '../src/swarm/scheduler.js';
 import { CountDownLatch, SwarmBarrier } from '../src/swarm/barrier.js';
-import { SwarmHealthDaemon } from '../src/swarm/health_daemon.js';
+import { WorkerSupervisor as SwarmHealthDaemon } from '../src/swarm/supervisor.js';
 import * as assert from 'node:assert';
 
 async function testBlackboard() {
