@@ -25,5 +25,6 @@
   { "id": "issue_verification", "cmd": "tsx tests/test_issue_verification.ts", "area": "audit" },
   { "id": "db", "cmd": "tsx tests/test_db.ts", "area": "persistence" },
   { "id": "persistence", "cmd": "tsx tests/test_persistence.ts", "area": "persistence" },
-  { "id": "worker_isolation", "cmd": "tsx tests/test_worker_isolation.ts", "area": "swarm" }
+  { "id": "worker_isolation", "cmd": "tsx tests/test_worker_isolation.ts", "area": "swarm" },
+  { "id": "packaging", "cmd": "tsx tests/test_packaging.ts", "area": "packaging" }
 ]

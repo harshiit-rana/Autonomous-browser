@@ -1543,11 +1543,15 @@
           "reachable": true
         },
         {
-          "path": "scripts/build-fuses.mjs",
+          "path": "scripts/after-pack.mjs",
+          "type": "file"
+        },
+        {
+          "path": "scripts/fuses.mjs",
           "type": "file"
         }
       ],
-      "gap": "electron_hardening is orphaned; fuse script is not run by the build.",
+      "gap": "electron_hardening is orphaned; fuses are now flipped by the afterPack hook and read back after packaging (#258), but the runtime hardening checklist is not wired.",
       "owningIssues": [
         247,
         259

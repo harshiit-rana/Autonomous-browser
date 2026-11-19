@@ -1,17 +1,46 @@
 name: Release Desktop Packager
 
+# Tag pushes build installers on all three OSes and attach them to a DRAFT release.
+# Nothing here ever publishes: electron-builder runs with --publish never and the GitHub release is created with --draft.
+# Pull requests that touch the packaging inputs run the same build + fuse read-back + packaged-app smoke test (no release).
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'build/**'
+      - 'scripts/bundle_preload.mjs'
+      - 'scripts/copy_assets.mjs'
+      - 'scripts/after-pack.mjs'
+      - 'scripts/fuses.mjs'
+      - 'scripts/packaging.mjs'
+      - 'scripts/assert_prepack.mjs'
+      - 'scripts/verify_fuses.mjs'
+      - 'scripts/smoke_packaged.mjs'
+      - '.github/workflows/release.yml'
+
+permissions:
+  contents: read
 
 jobs:
-  release:
-    name: Package Desktop Application (${{ matrix.os }})
+  package:
+    name: Package (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            dist: --win
+          - os: macos-latest
+            dist: --mac
+          - os: ubuntu-latest
+            dist: --linux
 
     steps:
       - name: Checkout repository
@@ -26,16 +55,91 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Compile TypeScript
-        run: npm run build:ts
+      - name: Tag must match package.json version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          pkg_version="$(node -p "require('./package.json').version")"
+          if [ "v${pkg_version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match package.json version v${pkg_version}"
+            exit 1
+          fi
 
-      - name: Apply Electron Hardening Fuses
-        run: npm run build:fuses
+      # Runs BEFORE the build: the gate's own `tsc -b` re-emits dist/main/preload.js and would undo the preload bundle.
+      # Blocks tag releases when the gate is red; on PRs / dry runs it is reported but does not stop the packaging checks.
+      - name: Release gate
+        run: npm run gate
+        continue-on-error: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Build (tsc + assets + preload bundle + renderer bundle)
+        run: npm run build
 
       - name: Supply-chain gate (licences, SBOM, notices)
-        run: node scripts/supply_chain.mjs
+        run: npm run licences
 
-      - name: Package Desktop Artifacts
-        run: npx electron-builder --publish always
+      - name: Assert packaging inputs exist
+        run: npm run prepack:check
+
+      - name: Package (fuses flipped and read back by the afterPack hook)
+        run: npx electron-builder ${{ matrix.dist }} --publish never
+
+      - name: Fuse read-back on the packaged binary (fails if RunAsNode is enabled)
+        run: npm run verify:fuses
+
+      - name: Install xvfb (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      - name: Packaged-app smoke test (Linux, under xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:packaged -- --screenshot release/smoke-screenshot.png
+
+      - name: Packaged-app smoke test
+        if: runner.os != 'Linux'
+        run: npm run smoke:packaged -- --screenshot release/smoke-screenshot.png
+
+      - name: Upload smoke screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshot-${{ matrix.os }}
+          path: release/smoke-screenshot.png
+          if-no-files-found: ignore
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.deb
+
+  draft-release:
+    name: Create draft GitHub release
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download installers
+        uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Create draft release (never published automatically)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ls -la release-artifacts
+          gh release create "${GITHUB_REF_NAME}" release-artifacts/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --draft \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "Draft release built from ${GITHUB_SHA}. Installers are unsigned (see docs/limitations.md). Review, install on a clean machine, then publish manually."

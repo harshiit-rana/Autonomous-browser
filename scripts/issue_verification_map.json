@@ -1014,9 +1014,10 @@
    ],
    "tests": [],
    "files": [
-    "scripts/build-fuses.mjs"
+    "scripts/after-pack.mjs",
+    "scripts/fuses.mjs"
    ],
-   "gap": "electron_hardening is orphaned; fuse script is not run by the build.",
+   "gap": "electron_hardening is orphaned; fuses are now flipped by the afterPack hook and read back after packaging (#258), but the runtime hardening checklist is not wired.",
    "owning": [
     247,
     259
