@@ -137,6 +137,10 @@ export class UsageLedger {
     };
   }
 
+  public getTotalCost(): number {
+    return this.costTotal;
+  }
+
   public reset(): void {
     this.promptTokensTotal = 0;
     this.completionTokensTotal = 0;
