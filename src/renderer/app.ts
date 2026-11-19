@@ -4,6 +4,7 @@
  */
 
 import { OmnibarParser } from '../ui/omnibar_parser.js';
+import { HistoryPanel } from './history_panel.js';
 import {
   TabState,
   TabsSnapshot,
@@ -167,6 +168,7 @@ export class BrowserApp {
     this.bindLayoutEvents();
     this.bindControls();
     this.bindSettingsEvents();
+    new HistoryPanel();
     this.registerBridgeListeners();
 
     // Initial snapshot request

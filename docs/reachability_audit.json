@@ -172,11 +172,63 @@
     "isReachable": true
   },
   {
+    "path": "infrastructure/data_transfer.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/db.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/legacy_import.ts",
+    "isReachable": true
+  },
+  {
     "path": "infrastructure/logger.ts",
     "isReachable": true
   },
   {
+    "path": "infrastructure/mission_recorder.ts",
+    "isReachable": true
+  },
+  {
     "path": "infrastructure/paths.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/repos/assistant_repo.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/repos/evidence_repo.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/repos/index.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/repos/missions_repo.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/repos/pages_repo.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/repos/prompts_repo.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/repos/safety_repo.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/repos/settings_repo.ts",
+    "isReachable": true
+  },
+  {
+    "path": "infrastructure/repos/threads_repo.ts",
     "isReachable": true
   },
   {
@@ -193,6 +245,10 @@
   },
   {
     "path": "main/index.ts",
+    "isReachable": true
+  },
+  {
+    "path": "main/persistence.ts",
     "isReachable": true
   },
   {
@@ -317,6 +373,10 @@
   },
   {
     "path": "renderer/app.ts",
+    "isReachable": true
+  },
+  {
+    "path": "renderer/history_panel.ts",
     "isReachable": true
   },
   {

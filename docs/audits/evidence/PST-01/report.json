@@ -1,0 +1,24 @@
+{
+  "run1": {
+    "missionId": "m_1795082807020_3w52",
+    "state": "failed",
+    "error": "Model error: Connection error.",
+    "events": 9
+  },
+  "run2": {
+    "eventsInUi": 9,
+    "identical": true,
+    "secondInstance": "exited:0",
+    "export": {
+      "entries": [
+        "aegis.sqlite",
+        "manifest.json"
+      ],
+      "secretsFound": false
+    }
+  },
+  "run3": {
+    "importedEvents": 9,
+    "identical": true
+  }
+}

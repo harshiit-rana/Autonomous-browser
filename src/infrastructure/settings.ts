@@ -1,7 +1,6 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { getAppPaths } from './paths.js';
 import { rootLogger } from './logger.js';
+import { credentialVault } from './credentials.js';
+import type { SettingsRepo } from './repos/settings_repo.js';
 
 export interface AppSettings {
   version: number;
@@ -35,20 +34,19 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 const logger = rootLogger.child('settings');
 
+const API_KEY_PROVIDERS = ['gemini', 'anthropic', 'openai'] as const;
+
+/**
+ * Settings live in the SQLite `settings` table (one row per field). API keys are never written to the database:
+ * they are stored through the OS-backed credential vault (Electron safeStorage). Until `attachRepo` is called
+ * (tests, early startup) settings are in-memory defaults.
+ */
 export class SettingsManager {
   private static instance: SettingsManager | null = null;
-  private currentSettings: AppSettings = { ...DEFAULT_SETTINGS };
-  private settingsFilePath: string | null = null;
+  private currentSettings: AppSettings = { ...DEFAULT_SETTINGS, apiKeys: {} };
+  private repo: SettingsRepo | null = null;
 
-  private constructor() {
-    try {
-      const paths = getAppPaths();
-      this.settingsFilePath = path.join(paths.userData, 'settings.json');
-      this.load();
-    } catch (err: any) {
-      logger.warn('Paths not yet initialized, running with in-memory defaults', { error: err.message });
-    }
-  }
+  private constructor() {}
 
   public static getInstance(): SettingsManager {
     if (!SettingsManager.instance) {
@@ -57,80 +55,86 @@ export class SettingsManager {
     return SettingsManager.instance;
   }
 
+  /** Binds the manager to the database and loads persisted settings. */
+  public attachRepo(repo: SettingsRepo): AppSettings {
+    this.repo = repo;
+    return this.load();
+  }
+
+  public detachRepo(): void {
+    this.repo = null;
+  }
+
   public load(): AppSettings {
-    if (!this.settingsFilePath) {
-      return this.currentSettings;
-    }
-
-    try {
-      if (fs.existsSync(this.settingsFilePath)) {
-        const raw = fs.readFileSync(this.settingsFilePath, 'utf-8');
-        const parsed = JSON.parse(raw);
-        this.currentSettings = this.migrate({ ...DEFAULT_SETTINGS, ...parsed });
-      } else {
-        this.currentSettings = { ...DEFAULT_SETTINGS };
-        this.save();
+    const merged: AppSettings = { ...DEFAULT_SETTINGS, apiKeys: {} };
+    if (this.repo) {
+      try {
+        const stored = this.repo.all();
+        for (const [k, v] of Object.entries(stored)) {
+          if (k === 'apiKeys') continue;
+          (merged as any)[k] = v;
+        }
+        if (!stored.version || (stored.version as number) < CURRENT_SETTINGS_VERSION) {
+          merged.version = CURRENT_SETTINGS_VERSION;
+        }
+      } catch (err: any) {
+        logger.error('Failed to read settings from database, using defaults', err);
       }
-    } catch (err: any) {
-      logger.error('Failed to parse settings.json, falling back to defaults', err);
-      this.currentSettings = { ...DEFAULT_SETTINGS };
     }
-
+    merged.apiKeys = this.readApiKeys();
+    this.currentSettings = merged;
     return this.currentSettings;
   }
 
-  private migrate(loaded: AppSettings): AppSettings {
-    if (!loaded.version || loaded.version < CURRENT_SETTINGS_VERSION) {
-      logger.info('Migrating settings schema', { from: loaded.version, to: CURRENT_SETTINGS_VERSION });
-      loaded.version = CURRENT_SETTINGS_VERSION;
-      this.saveSettingsToFile(loaded);
+  private readApiKeys(): AppSettings['apiKeys'] {
+    const keys: AppSettings['apiKeys'] = {};
+    for (const p of API_KEY_PROVIDERS) {
+      try {
+        const k = credentialVault.getKeySync(p);
+        if (k) keys[p] = k;
+      } catch {
+        // vault unavailable (e.g. before app ready); keys resolve lazily on next load()
+      }
     }
-    return loaded;
+    return keys;
   }
 
   public getSettings(): AppSettings {
-    return { ...this.currentSettings };
+    return { ...this.currentSettings, apiKeys: { ...this.currentSettings.apiKeys } };
   }
 
   public updateSettings(patch: Partial<AppSettings>): AppSettings {
+    const { apiKeys, ...rest } = patch;
     this.currentSettings = {
       ...this.currentSettings,
-      ...patch,
-      apiKeys: {
-        ...this.currentSettings.apiKeys,
-        ...(patch.apiKeys || {})
-      }
+      ...rest,
+      apiKeys: { ...this.currentSettings.apiKeys, ...(apiKeys || {}) }
     };
-    this.save();
-    return this.currentSettings;
+    this.persist(rest, apiKeys);
+    return this.getSettings();
   }
 
   public resetSettings(): AppSettings {
-    this.currentSettings = { ...DEFAULT_SETTINGS };
-    this.save();
-    return this.currentSettings;
+    for (const p of API_KEY_PROVIDERS) {
+      void credentialVault.deleteKey(p);
+    }
+    this.currentSettings = { ...DEFAULT_SETTINGS, apiKeys: {} };
+    this.persist({ ...DEFAULT_SETTINGS } as Partial<AppSettings>, undefined);
+    return this.getSettings();
   }
 
-  private save(): void {
-    if (!this.settingsFilePath) return;
-    this.saveSettingsToFile(this.currentSettings);
-  }
-
-  private saveSettingsToFile(settings: AppSettings): void {
-    if (!this.settingsFilePath) return;
-    try {
-      const dir = path.dirname(this.settingsFilePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+  private persist(fields: Partial<AppSettings>, apiKeys: AppSettings['apiKeys'] | undefined): void {
+    if (apiKeys) {
+      for (const [provider, key] of Object.entries(apiKeys)) {
+        void credentialVault.setKey(provider, key || '');
       }
-
-      // Atomic file write using temp file + rename
-      const tempPath = `${this.settingsFilePath}.tmp.${Date.now()}`;
-      fs.writeFileSync(tempPath, JSON.stringify(settings, null, 2), 'utf-8');
-      fs.renameSync(tempPath, this.settingsFilePath);
-      logger.info('Settings saved successfully');
+    }
+    if (!this.repo) return;
+    try {
+      const { apiKeys: _ignored, ...plain } = fields as any;
+      this.repo.setMany({ ...plain, version: CURRENT_SETTINGS_VERSION });
     } catch (err: any) {
-      logger.error('Failed to write settings to disk', err);
+      logger.error('Failed to write settings to database', err);
     }
   }
 }

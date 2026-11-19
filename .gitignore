@@ -12,3 +12,4 @@ temp_*.enc
 !docs/release/
 .aegis-user-data/
 tests/output/
+.native/
