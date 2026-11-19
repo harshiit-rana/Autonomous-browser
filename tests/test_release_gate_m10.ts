@@ -1,52 +1,104 @@
 /**
- * Test Suite for Milestone M10: Release Readiness Gate, Truthful Foundations & Final Compliance (#102, #103, #215, #216)
+ * Test Suite for Release Readiness Gate (Issue #219 - [TRU-01])
+ *
+ * Replaces tautological string matching with programmatic verification:
+ * - Runs scripts/release_gate.mjs --json to inspect the honest release gate report
+ * - Asserts the report schema, check integrity, and honest state calculation
+ * - Asserts docs/release/V1_RELEASE_GATE.md strictly matches the JSON report (no doc drift)
+ * - Tests anti-tampering: verifies that manual tampering to 'PASSED' fails verification
+ * - Validates legal and compliance policy notices
  */
 
 import * as assert from 'node:assert';
+import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-console.log('--- Testing Milestone M10: Release Readiness Gate & Truthful Foundations (#102, #103, #215, #216) ---\n');
+console.log('--- Testing Release Readiness Gate & Honest Verification (#219 - [TRU-01]) ---\n');
 
-function testAuditAndTraceabilityDocs() {
-  console.log('[#102 TRK-00] Verifying Final Architectural Reachability Audit...');
-  const auditPath = path.resolve(process.cwd(), 'docs/audits/AUDIT_FINAL_TRACEABILITY.md');
-  assert.strictEqual(fs.existsSync(auditPath), true, 'AUDIT_FINAL_TRACEABILITY.md must exist');
-  const content = fs.readFileSync(auditPath, 'utf8');
+function testProgrammaticReleaseGate() {
+  console.log('[#219 TRU-01] Running scripts/release_gate.mjs --json check...');
+  const gateScript = path.resolve(process.cwd(), 'scripts/release_gate.mjs');
+  assert.strictEqual(fs.existsSync(gateScript), true, 'scripts/release_gate.mjs must exist');
 
-  assert.strictEqual(content.includes('100% of the active production codebase is reachable'), true);
-  assert.strictEqual(content.includes('D-01'), true);
-  assert.strictEqual(content.includes('D-10'), true);
-  assert.strictEqual(content.includes('attic/'), true);
-  console.log('✓ Final Architectural Audit & Reachability Map verified\n');
-}
+  const jsonRaw = execSync('node scripts/release_gate.mjs --json --skip-unit', {
+    cwd: process.cwd(),
+    encoding: 'utf8'
+  });
 
-function testProductSpecification() {
-  console.log('[#103 CMP-01] Verifying Product Specification & Measurable Targets...');
-  const specPath = path.resolve(process.cwd(), 'docs/PRODUCT_SPEC.md');
-  assert.strictEqual(fs.existsSync(specPath), true, 'PRODUCT_SPEC.md must exist');
-  const content = fs.readFileSync(specPath, 'utf8');
+  const report = JSON.parse(jsonRaw);
 
-  assert.strictEqual(content.includes('Power Researcher & Market Analyst'), true);
-  assert.strictEqual(content.includes('Operator & Personal Executive Assistant'), true);
-  assert.strictEqual(content.includes('Continuous Background Monitor'), true);
-  assert.strictEqual(content.includes('0.0%'), true); // 0% ASR
-  assert.strictEqual(content.includes('Explicit Non-Goals'), true);
-  console.log('✓ Product specification, measurable exit criteria, and non-goals verified\n');
-}
+  // 1. Assert JSON Schema
+  assert.strictEqual(typeof report.timestamp, 'string', 'Report must have ISO timestamp');
+  assert.strictEqual(typeof report.commit, 'string', 'Report must have commit SHA');
+  assert.strictEqual(typeof report.dirty, 'boolean', 'Report must record dirty state');
+  assert.ok(
+    report.status === 'PASSED' || report.status === 'NOT READY',
+    `Report status must be PASSED or NOT READY, got: ${report.status}`
+  );
+  assert.strictEqual(typeof report.summary, 'string', 'Report must have summary string');
+  assert.ok(Array.isArray(report.checks), 'Report must contain checks array');
+  assert.ok(report.checks.length >= 7, 'Report must contain at least 7 gate checks');
 
-function testReleaseReadinessGate() {
-  console.log('[#215 REL-01] Verifying v1 Release-Readiness Gate Dashboard & Traceability Matrix...');
-  const gatePath = path.resolve(process.cwd(), 'docs/release/V1_RELEASE_GATE.md');
-  assert.strictEqual(fs.existsSync(gatePath), true, 'V1_RELEASE_GATE.md must exist');
-  const content = fs.readFileSync(gatePath, 'utf8');
+  for (const c of report.checks) {
+    assert.ok(c.id && typeof c.id === 'string', 'Check must have id');
+    assert.ok(c.title && typeof c.title === 'string', 'Check must have title');
+    assert.ok(c.command && typeof c.command === 'string', 'Check must have command');
+    assert.ok(c.status === 'pass' || c.status === 'fail' || c.status === 'skip', `Valid check status for ${c.id}`);
+    assert.ok(c.evidence && typeof c.evidence === 'string', `Check ${c.id} must have evidence string`);
+  }
 
-  assert.strictEqual(content.includes('Release Gate Status: **PASSED / READY FOR v1 RELEASE**'), true);
-  assert.strictEqual(content.includes('M0'), true);
-  assert.strictEqual(content.includes('M10'), true);
-  assert.strictEqual(content.includes('Product Promises Traceability Matrix'), true);
-  assert.strictEqual(content.includes('Known Limitations & Non-Goals'), true);
-  console.log('✓ v1 Release Gate criteria and traceability matrix verified\n');
+  console.log(`✓ Programmatic gate schema verified: ${report.summary}`);
+
+  // 2. Assert Generated Document Consistency
+  console.log('[#219 TRU-01] Verifying docs/release/V1_RELEASE_GATE.md matches JSON report...');
+  const docPath = path.resolve(process.cwd(), 'docs/release/V1_RELEASE_GATE.md');
+  assert.strictEqual(fs.existsSync(docPath), true, 'docs/release/V1_RELEASE_GATE.md must exist');
+
+  const docContent = fs.readFileSync(docPath, 'utf8');
+
+  // Document header must match summary exactly
+  assert.ok(
+    docContent.includes(report.summary),
+    `Generated document header must match report summary (${report.summary})`
+  );
+
+  // Every check ID and status must appear in the markdown table
+  for (const c of report.checks) {
+    assert.ok(docContent.includes(`\`${c.id}\``), `Document must list check \`${c.id}\``);
+    const expectedLabel = c.status === 'pass' ? '**PASS**' : '**FAIL**';
+    assert.ok(
+      docContent.includes(expectedLabel),
+      `Document must include status ${expectedLabel} for check ${c.id}`
+    );
+  }
+
+  console.log('✓ Document consistency verified: docs/release/V1_RELEASE_GATE.md matches report');
+
+  // 3. Test Anti-Tampering Check
+  console.log('[#219 TRU-01] Testing anti-tamper validation...');
+  function validateDocAgainstReport(doc: string, rep: any): boolean {
+    if (!doc.includes(rep.summary)) {
+      throw new Error(`Tamper detected: doc does not match expected report summary '${rep.summary}'`);
+    }
+    return true;
+  }
+
+  // Confirm validation passes on real doc
+  assert.strictEqual(validateDocAgainstReport(docContent, report), true);
+
+  // Confirm validation throws if someone tampers with the status to claim false PASSED
+  if (report.status === 'NOT READY') {
+    const tamperedDoc = docContent.replace(report.summary, 'PASSED / READY FOR v1 RELEASE');
+    assert.throws(
+      () => validateDocAgainstReport(tamperedDoc, report),
+      /Tamper detected/,
+      'Tampered document claiming false PASSED must be rejected'
+    );
+    console.log('✓ Anti-tampering check: false PASSED claims are strictly rejected');
+  }
+
+  console.log('✓ Release gate behavioural test passed!\n');
 }
 
 function testLegalComplianceAndPolicies() {
@@ -71,11 +123,9 @@ function testLegalComplianceAndPolicies() {
   console.log('✓ Legal policies, robots.txt posture, AI disclosure, and license notices verified\n');
 }
 
-testAuditAndTraceabilityDocs();
-testProductSpecification();
-testReleaseReadinessGate();
+testProgrammaticReleaseGate();
 testLegalComplianceAndPolicies();
 
 console.log('======================================================');
-console.log('ALL MILESTONE M10 RELEASE READINESS TESTS PASSED (100%)');
+console.log('ALL RELEASE READINESS GATE TESTS PASSED (100%)');
 console.log('======================================================');

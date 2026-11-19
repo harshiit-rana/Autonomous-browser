@@ -20,7 +20,15 @@
     "isReachable": true
   },
   {
+    "path": "assistant/continuous_assistant.ts",
+    "isReachable": false
+  },
+  {
     "path": "automation/alert_bridge.ts",
+    "isReachable": false
+  },
+  {
+    "path": "automation/autonomous_forms.ts",
     "isReachable": false
   },
   {
@@ -40,8 +48,68 @@
     "isReachable": false
   },
   {
+    "path": "automation/scheduler_and_triggers.ts",
+    "isReachable": false
+  },
+  {
     "path": "automation/task_scheduler.ts",
     "isReachable": false
+  },
+  {
+    "path": "browser/browser_ux.ts",
+    "isReachable": true
+  },
+  {
+    "path": "browser/content_blocker.ts",
+    "isReachable": true
+  },
+  {
+    "path": "browser/dialog_permission_manager.ts",
+    "isReachable": false
+  },
+  {
+    "path": "browser/download_manager.ts",
+    "isReachable": false
+  },
+  {
+    "path": "browser/error_pages.ts",
+    "isReachable": true
+  },
+  {
+    "path": "browser/extension_compatibility.ts",
+    "isReachable": false
+  },
+  {
+    "path": "browser/file_transfer.ts",
+    "isReachable": false
+  },
+  {
+    "path": "browser/hard_surfaces.ts",
+    "isReachable": false
+  },
+  {
+    "path": "browser/international_input.ts",
+    "isReachable": false
+  },
+  {
+    "path": "browser/multi_window_manager.ts",
+    "isReachable": false
+  },
+  {
+    "path": "browser/popup_manager.ts",
+    "isReachable": true
+  },
+  {
+    "path": "browser/profile_manager.ts",
+    "isReachable": false
+  },
+  {
+    "path": "browser/tab_group_manager.ts",
+    "isReachable": true
+  },
+  {
+    "path": "browser/url_classifier.ts",
+    "isReachable": true
   },
   {
     "path": "core/action_executor.ts",
@@ -57,6 +125,10 @@
   },
   {
     "path": "core/model_hub.ts",
+    "isReachable": false
+  },
+  {
+    "path": "data/advanced_extraction.ts",
     "isReachable": false
   },
   {
@@ -88,15 +160,11 @@
     "isReachable": false
   },
   {
-    "path": "enterprise/accessibility_audit.ts",
+    "path": "data/verified_report.ts",
     "isReachable": false
   },
   {
-    "path": "enterprise/page_translator.ts",
-    "isReachable": false
-  },
-  {
-    "path": "enterprise/rbac_policy.ts",
+    "path": "evaluation/agent_benchmarks.ts",
     "isReachable": false
   },
   {
@@ -148,7 +216,19 @@
     "isReachable": false
   },
   {
+    "path": "memory/history_recall.ts",
+    "isReachable": false
+  },
+  {
     "path": "memory/memory_store.ts",
+    "isReachable": false
+  },
+  {
+    "path": "memory/semantic_memory.ts",
+    "isReachable": false
+  },
+  {
+    "path": "memory/task_memory.ts",
     "isReachable": false
   },
   {
@@ -188,10 +268,6 @@
     "isReachable": true
   },
   {
-    "path": "native/audio_loopback.ts",
-    "isReachable": false
-  },
-  {
     "path": "native/extension_runtime.ts",
     "isReachable": false
   },
@@ -224,8 +300,56 @@
     "isReachable": false
   },
   {
+    "path": "platform/auto_updater.ts",
+    "isReachable": false
+  },
+  {
+    "path": "platform/cli_runner.ts",
+    "isReachable": false
+  },
+  {
+    "path": "platform/companion_pill.ts",
+    "isReachable": false
+  },
+  {
+    "path": "platform/mcp_server.ts",
+    "isReachable": false
+  },
+  {
+    "path": "platform/platform_parity.ts",
+    "isReachable": false
+  },
+  {
+    "path": "platform/telemetry.ts",
+    "isReachable": false
+  },
+  {
+    "path": "platform/workflow_recorder.ts",
+    "isReachable": false
+  },
+  {
     "path": "renderer/app.ts",
     "isReachable": true
+  },
+  {
+    "path": "security/action_policy.ts",
+    "isReachable": true
+  },
+  {
+    "path": "security/audit_log.ts",
+    "isReachable": true
+  },
+  {
+    "path": "security/auth_manager.ts",
+    "isReachable": false
+  },
+  {
+    "path": "security/bot_detection.ts",
+    "isReachable": true
+  },
+  {
+    "path": "security/electron_hardening.ts",
+    "isReachable": false
   },
   {
     "path": "security/intent_guard.ts",
@@ -236,8 +360,28 @@
     "isReachable": false
   },
   {
+    "path": "security/payment_guard.ts",
+    "isReachable": false
+  },
+  {
+    "path": "security/privacy_governor.ts",
+    "isReachable": true
+  },
+  {
+    "path": "security/prompt_isolation.ts",
+    "isReachable": true
+  },
+  {
+    "path": "security/red_team_harness.ts",
+    "isReachable": false
+  },
+  {
     "path": "security/red_team_suite.ts",
     "isReachable": false
+  },
+  {
+    "path": "security/secret_vault.ts",
+    "isReachable": true
   },
   {
     "path": "security/security_shield.ts",
@@ -281,42 +425,70 @@
   },
   {
     "path": "swarm/barrier.ts",
-    "isReachable": false
+    "isReachable": true
   },
   {
     "path": "swarm/blackboard.ts",
-    "isReachable": false
+    "isReachable": true
   },
   {
     "path": "swarm/coordinator.ts",
-    "isReachable": false
+    "isReachable": true
+  },
+  {
+    "path": "swarm/hazards_and_locks.ts",
+    "isReachable": true
   },
   {
     "path": "swarm/health_daemon.ts",
     "isReachable": false
   },
   {
+    "path": "swarm/resource_governor.ts",
+    "isReachable": true
+  },
+  {
     "path": "swarm/resource_throttler.ts",
     "isReachable": false
   },
   {
-    "path": "swarm/swarm_manager.ts",
+    "path": "swarm/scheduler.ts",
+    "isReachable": true
+  },
+  {
+    "path": "swarm/speculative_branching.ts",
     "isReachable": false
+  },
+  {
+    "path": "swarm/supervisor.ts",
+    "isReachable": true
+  },
+  {
+    "path": "swarm/swarm_manager.ts",
+    "isReachable": true
   },
   {
     "path": "swarm/swarm_worker.ts",
     "isReachable": false
   },
   {
+    "path": "swarm/url_frontier.ts",
+    "isReachable": true
+  },
+  {
+    "path": "swarm/worker_host.ts",
+    "isReachable": true
+  },
+  {
     "path": "swarm/work_stealing_queue.ts",
     "isReachable": false
   },
   {
-    "path": "sync/mobile_sync.ts",
+    "path": "testing/arena_server.ts",
     "isReachable": false
   },
   {
-    "path": "testing/synchronized_tester.ts",
+    "path": "testing/fault_injector.ts",
     "isReachable": false
   },
   {

@@ -60,3 +60,31 @@ jobs:
 
       - name: Run UI Omnibar Tests
         run: npx tsx tests/test_ui.ts
+
+  gate:
+    name: Release Gate Audit
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ github.ref != 'refs/heads/release' && !startsWith(github.ref, 'refs/heads/release/') }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Programmatic Release Gate
+        run: npm run gate
+
+      - name: Upload Gate Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v1-release-gate-report
+          path: docs/release/V1_RELEASE_GATE.md
+

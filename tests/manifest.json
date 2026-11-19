@@ -1,0 +1,22 @@
+[
+  { "id": "agent_runtime", "cmd": "tsx tests/test_agent_runtime.ts", "area": "agent" },
+  { "id": "anthropic_provider", "cmd": "tsx tests/test_anthropic_provider.ts", "area": "models" },
+  { "id": "governor", "cmd": "tsx tests/test_governor.ts", "area": "governor" },
+  { "id": "credentials", "cmd": "tsx tests/test_credentials.ts", "area": "security" },
+  { "id": "steering_and_reversibility", "cmd": "tsx tests/test_steering_and_reversibility.ts", "area": "steering" },
+  { "id": "omnibar_parser", "cmd": "tsx tests/test_omnibar_parser.ts", "area": "ui" },
+  { "id": "mission_control", "cmd": "tsx tests/test_mission_control.ts", "area": "mission-control" },
+  { "id": "flight_recorder", "cmd": "tsx tests/test_flight_recorder.ts", "area": "automation" },
+  { "id": "workspace_and_motion", "cmd": "tsx tests/test_workspace_and_motion.ts", "area": "workspace" },
+  { "id": "final_batch", "cmd": "tsx tests/test_final_batch.ts", "area": "batch" },
+  { "id": "swarm_m3", "cmd": "tsx tests/test_swarm_m3.ts", "area": "swarm" },
+  { "id": "security_m4", "cmd": "tsx tests/test_security_m4.ts", "area": "security" },
+  { "id": "browser_m5", "cmd": "tsx tests/test_browser_m5.ts", "area": "browser" },
+  { "id": "memory_data_m6", "cmd": "tsx tests/test_memory_data_m6.ts", "area": "memory" },
+  { "id": "platform_m7", "cmd": "tsx tests/test_platform_m7.ts", "area": "platform" },
+  { "id": "assistant_m9", "cmd": "tsx tests/test_assistant_m9.ts", "area": "assistant" },
+  { "id": "quality_m8", "cmd": "tsx tests/test_quality_m8.ts", "area": "quality" },
+  { "id": "perf_soak_suite", "cmd": "tsx tests/perf_soak_suite.ts", "area": "performance" },
+  { "id": "edge_cases", "cmd": "tsx tests/test_edge_cases.ts", "area": "edge_cases" },
+  { "id": "security_audit", "cmd": "node scripts/security_audit.mjs", "area": "security" }
+]
