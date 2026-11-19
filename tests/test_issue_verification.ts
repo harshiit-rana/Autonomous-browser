@@ -15,9 +15,7 @@ import * as path from 'node:path';
 import { computeLedger } from '../scripts/build_issue_verification.mjs';
 
 const root = process.cwd();
-const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8').replace(/
-/g, '
-'); // checkouts may use CRLF
+const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8').replace(/\r\n/g, '\n'); // checkouts may use CRLF
 console.log('--- Issue verification ledger (#222 TRU-04) ---');
 
 const { json, md } = computeLedger() as { json: any; md: string };
