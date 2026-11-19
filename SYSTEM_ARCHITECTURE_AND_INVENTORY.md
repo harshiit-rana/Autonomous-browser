@@ -13,11 +13,11 @@
 **Project Aegis** (`Autonomous Browser`) is a client-side autonomous multi-agent AI browser engineered from the ground up to solve the fundamental failure modes of traditional web automation (Selenium, Puppeteer, Playwright) and naive single-prompt LLM wrappers.
 
 Originating from an extensive reverse-engineering audit of **Strawberry Browser**, Aegis adopts Strawberry's physical pointer kinematics and dual-layer architecture while surpassing it with:
-1. **Elastic Multi-Agent Swarms:** Spawns parallel background browser workers that collaborate over a shared blackboard without screen hijacking or tab flickering.
-2. **Test-Time MCTS Lookahead Search:** Evaluates hypothetical action paths (clicks, form submits, modal navigations) using Monte Carlo Tree Search with Upper Confidence Bounds (`UCT`) before committing irreversible browser actions.
-3. **Indirect Prompt Injection Immunity:** Protects against malicious zero-click adversarial prompt injection embedded in untrusted web pages using a token-level Clean-Room Sanitizer and Intent Guard.
-4. **Zero-Cloud Local Memory & Encrypted Vault:** Operates a native SQLite FTS5 BM25 hybrid vector store and AES-256-GCM encrypted credential vault entirely on the user's machine.
-5. **Human-Kinematic Anti-Bot Stealth:** Employs cubic Bézier trajectory mathematics, sub-pixel micro-tremors, variable typing cadence, and canvas/WebGL fingerprint shielding to defeat Cloudflare and DataDome bot detection.
+1. **Multi-Agent Swarm Workers:** Spawns parallel background browser workers that collaborate over a shared blackboard (planned under #227-#231).
+2. **Speculative Search & Verification:** Evaluates hypothetical action paths before committing irreversible browser actions (deprecated classic MCTS per ADR-004, implemented via SpeculativeBranchingEngine under #228).
+3. **Indirect Prompt Injection Mitigations:** Protects against adversarial prompt injection embedded in untrusted web pages using token-level clean-room sanitization and intent policy enforcement (measured attack-success-rate evaluated in #249).
+4. **Local Memory & Encrypted Vault:** Operates native local storage and AES-256-GCM encrypted credential vault entirely on the user's machine (persistent database integration in #239, learned embeddings in #240).
+5. **Human-Kinematic Pointer & Input Cadence:** Employs cubic Bézier trajectory mathematics, micro-tremors, and variable typing cadence to avoid automation tells without claiming complete bot evasion (see #250).
 
 ---
 
@@ -147,7 +147,7 @@ Orchestrates parallel multi-agent workflows across background tabs:
 
 ---
 
-### Subsystem 5: Indirect Prompt Injection Immunity & Clean-Room Defense (`src/security/`)
+### Subsystem 5: Indirect Prompt Injection Defense & Clean-Room Mitigations (`src/security/`)
 Hardens the agent against adversarial web attacks:
 * **Clean-Room Sanitizer (`clean_room.ts`):** Tokenizes and strips adversarial injection vectors before page content reaches the LLM context:
   - Invisible font tags (`font-size: 0px`, `display: none`, `opacity: 0`).
@@ -157,7 +157,7 @@ Hardens the agent against adversarial web attacks:
 * **Intent Guard (`intent_guard.ts`):** A semantic firewall that intercepts irreversible or high-risk actions (wire transfers, account deletions, password updates, file system access).
 * **Payment Gate (`payment_gate.ts`):** A strict UI barrier that pauses execution and requires human confirmation before submitting credit card information or completing checkout flows.
 * **Origin Guard (`origin_guard.ts`):** Enforces private partition boundaries, preventing credentials or cookies from banking/authenticated tabs from leaking to scraping tabs.
-* **Red-Team Suite (`red_team_suite.ts`):** A verification harness testing the browser against 5 real-world injection vectors (100% neutralized).
+* **Red-Team Suite (`red_team_suite.ts`):** A verification harness testing the browser against injection vectors (live loop ASR evaluation tracked in #249).
 
 ---
 

@@ -1,25 +1,24 @@
-# Release Gate Status: **NOT READY (5 of 7 checks failing)**
+# Release Gate Status: **NOT READY (4 of 7 checks failing)**
 
-> Generated automatically by `scripts/release_gate.mjs` at 2026-11-19T08:42:41.350Z
-> Commit: `1843923` | Working tree dirty: `true`
+> Generated automatically by `scripts/release_gate.mjs` at 2026-11-19T08:54:13.990Z
+> Commit: `07f2b4f` | Working tree dirty: `true`
 
 ## Gate Measurements Summary Table
 
 | Check ID | Area / Description | Verification Command | Status | Measured Evidence / Notes |
 |---|---|---|---|---|
-| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 1138ms |
+| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 5140ms |
 | `unit` | Unit & Integration Test Manifest | `tests/manifest.json` | **PASS** | Pre-verified unit manifest (passed via caller verification) |
-| `reachability` | Reachability Policy & Orphan Allowlist | `node scripts/audit_reachability.mjs` | **FAIL** | 77 non-allowlisted orphaned modules (e.g. assistant/continuous_assistant.ts, automation/alert_bridge.ts, automation/autonomous_forms.ts) |
+| `reachability` | Reachability Policy & Orphan Allowlist | `node scripts/audit_reachability.mjs` | **FAIL** | 71 orphaned modules awaiting wiring in allowlist pending list |
 | `e2e` | Real-App Electron E2E Suite | `npm run test:e2e` | **FAIL** | no real-app e2e suite (Playwright _electron) |
-| `docs-consistency` | Documentation Truth & Status Consistency | `scripts/gen_status.mjs hash check` | **FAIL** | docs/STATUS.md out of sync with audit hash (expected 33412ada) |
+| `docs-consistency` | Documentation Truth & Status Consistency | `scripts/gen_status.mjs hash check` | **PASS** | docs/STATUS.md matches reachability audit hash 33412ada |
 | `no-fake-paths` | Zero Forbidden Fake Patterns in src/ | `scripts/release_gate.mjs scan src/` | **FAIL** | Found 11 forbidden fake pattern(s): src/models/mock_provider.ts:12 (MockModelProvider outside demo), src/models/provider_factory.ts:5 (MockModelProvider outside demo), src/models/provider_factory.ts:32 (MockModelProvider outside demo), src/models/provider_factory.ts:33 (MockModelProvider outside demo) |
 | `security-attack-suite` | Live Red-Team Security Attack Suite | `npm run test:security:live` | **FAIL** | live red-team harness not yet wired to real agent loop (ASR unmeasured) |
 
 ## Required Completion Items
 
-- [ ] **Reachability Policy & Orphan Allowlist** (`reachability`): 77 non-allowlisted orphaned modules (e.g. assistant/continuous_assistant.ts, automation/alert_bridge.ts, automation/autonomous_forms.ts)
+- [ ] **Reachability Policy & Orphan Allowlist** (`reachability`): 71 orphaned modules awaiting wiring in allowlist pending list
 - [ ] **Real-App Electron E2E Suite** (`e2e`): no real-app e2e suite (Playwright _electron)
-- [ ] **Documentation Truth & Status Consistency** (`docs-consistency`): docs/STATUS.md out of sync with audit hash (expected 33412ada)
 - [ ] **Zero Forbidden Fake Patterns in src/** (`no-fake-paths`): Found 11 forbidden fake pattern(s): src/models/mock_provider.ts:12 (MockModelProvider outside demo), src/models/provider_factory.ts:5 (MockModelProvider outside demo), src/models/provider_factory.ts:32 (MockModelProvider outside demo), src/models/provider_factory.ts:33 (MockModelProvider outside demo)
 - [ ] **Live Red-Team Security Attack Suite** (`security-attack-suite`): live red-team harness not yet wired to real agent loop (ASR unmeasured)
 

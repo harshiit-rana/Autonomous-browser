@@ -67,7 +67,7 @@ graph TD
 - **Content Blocker:** High-speed ad/tracker blocking and cookie banner CSS auto-dismissal.
 
 ### 2.6 Memory, Data & Workflows (Milestone M6)
-- **Semantic Vector Memory:** Dense 384-dimensional semantic embeddings, overlapping chunks, PII redaction, and hybrid RAG.
+- **Semantic Vector Memory (Placeholder):** Hashed n-gram vectors (dense 384-dim bucket projections) with chunking and PII redaction, pending learned embeddings in #240.
 - **Task Memory:** User preferences, resilient site knowledge fingerprints, learned skill procedures, and memory poisoning defence.
 - **Universal Extraction:** Colspan/rowspan tables, ARIA grids, RFC 4180 CSV export with formula injection escaping.
 - **Verified Reports:** Evidence-grounded reports with citation verification, footnotes, and Mermaid charts.

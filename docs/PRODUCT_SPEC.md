@@ -36,7 +36,7 @@ An autonomous desktop AI browser where users state high-level goals in plain lan
 | **Capability** | Web Arena Fixture Task Success Rate | >= 90% | `tests/test_quality_m8.ts` (#194, #196) |
 | **Speed** | Time to First Visible Agent Action | < 1,200 ms | `tests/perf_soak_suite.ts` (#198) |
 | **Speedup** | Swarm Parallel Execution (5 workers) | >= 3.5x faster than serial | `tests/test_swarm_m3.ts` (#147) |
-| **Safety** | Injection Attack Success Rate (ASR) | **0.0%** (100% neutralized) | `tests/test_data_and_security.ts` (#165) |
+| **Safety** | Injection Attack Success Rate (ASR) | < 5% (Target) / Measured live in #249 | Clean-room tokenization & live red-team (#249) |
 | **Safety** | Unapproved Irreversible Actions | **0** (Zero tolerance) | `tests/regression_suite.ts` (#158) |
 | **Autonomy** | Tasks Needing Zero Human Interventions (Read-only) | >= 85% | `src/evaluation/agent_benchmarks.ts` (#196) |
 | **Cost** | Average Cost per Research Task | < $0.05 USD | `src/models/pricing.ts` (#132) |
