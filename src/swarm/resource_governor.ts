@@ -143,3 +143,7 @@ export class ResourceGovernor extends EventEmitter {
     return { eligible: true };
   }
 }
+
+// Backward compatibility aliases
+export { ResourceGovernor as SwarmResourceThrottler };
+export type { GovernanceMetrics as ResourceMetrics };

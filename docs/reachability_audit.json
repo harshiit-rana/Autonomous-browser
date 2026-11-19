@@ -116,16 +116,8 @@
     "isReachable": true
   },
   {
-    "path": "core/cdp_manager.ts",
-    "isReachable": false
-  },
-  {
     "path": "core/dom_indexer.ts",
     "isReachable": true
-  },
-  {
-    "path": "core/model_hub.ts",
-    "isReachable": false
   },
   {
     "path": "data/advanced_extraction.ts",
@@ -292,10 +284,6 @@
     "isReachable": false
   },
   {
-    "path": "planning/mcts_planner.ts",
-    "isReachable": false
-  },
-  {
     "path": "planning/state_snapshotter.ts",
     "isReachable": false
   },
@@ -384,10 +372,6 @@
     "isReachable": true
   },
   {
-    "path": "security/security_shield.ts",
-    "isReachable": false
-  },
-  {
     "path": "session/download_pipeline.ts",
     "isReachable": false
   },
@@ -440,16 +424,8 @@
     "isReachable": true
   },
   {
-    "path": "swarm/health_daemon.ts",
-    "isReachable": false
-  },
-  {
     "path": "swarm/resource_governor.ts",
     "isReachable": true
-  },
-  {
-    "path": "swarm/resource_throttler.ts",
-    "isReachable": false
   },
   {
     "path": "swarm/scheduler.ts",
@@ -468,16 +444,8 @@
     "isReachable": true
   },
   {
-    "path": "swarm/swarm_worker.ts",
-    "isReachable": false
-  },
-  {
     "path": "swarm/url_frontier.ts",
     "isReachable": true
-  },
-  {
-    "path": "swarm/work_stealing_queue.ts",
-    "isReachable": false
   },
   {
     "path": "swarm/worker_host.ts",

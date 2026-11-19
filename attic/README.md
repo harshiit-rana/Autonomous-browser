@@ -28,3 +28,24 @@ This directory contains legacy or un-architected modules removed from active pro
 - **Findings:** Utilities without UI integration or runtime hooks.
 - **Status:** Quarantined to attic.
 - **Restoration Criteria:** Candidate for re-introduction as an on-demand user-invoked agent skill ("audit this page's accessibility", "translate this page") layered on top of AXTree perception (#118).
+
+### 6. `core/cdp_manager.ts` (Triaged in Issue #221)
+- **Findings:** Legacy prototype CDP manager superseded by the live action executor (`src/core/action_executor.ts`) and browser view manager (`src/main/view_manager.ts`).
+- **Status:** Quarantined to attic.
+- **Restoration Criteria:** None. Duplicate architecture removed to enforce single source of truth for CDP interactions.
+
+### 7. `core/model_hub.ts` (Triaged in Issue #221)
+- **Findings:** Legacy static model router with hardcoded responses, superseded by the production multi-provider architecture (`src/models/provider_factory.ts`, `src/models/gemini_provider.ts`, `src/models/anthropic_provider.ts`, `src/models/governor.ts`).
+- **Status:** Quarantined to attic alongside legacy unit test `attic/tests/test_model_hub.ts`.
+- **Restoration Criteria:** None. Fully replaced by production provider architecture.
+
+### 8. `planning/mcts_planner.ts` (Triaged in Issue #221)
+- **Findings:** Prototype Monte Carlo Tree Search rollouts for browser navigation. Superseded per ADR-004 by `SpeculativeBranchingEngine` which honors browser web state non-determinism.
+- **Status:** Quarantined to attic.
+- **Restoration Criteria:** Controlled algorithmic research into speculative web tree search if adopted by #228.
+
+### 9. `security/security_shield.ts` (Triaged in Issue #221)
+- **Findings:** Redundant regex-based prompt sanitization prototype duplicate of the production `src/security/prompt_isolation.ts` engine.
+- **Status:** Quarantined to attic.
+- **Restoration Criteria:** None. Redundant duplicate removed to enforce single source of truth for prompt isolation and XML boundary defense.
+
