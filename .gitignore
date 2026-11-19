@@ -8,6 +8,7 @@ dist/
 temp_*.enc
 *.db
 *.db-journal
-release/
+/release/
+!docs/release/
 .aegis-user-data/
 tests/output/
