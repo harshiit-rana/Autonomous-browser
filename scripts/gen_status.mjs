@@ -26,8 +26,9 @@ export function generateStatusDoc() {
   }
 
   const auditRaw = fs.readFileSync(auditPath, 'utf8');
-  const sha256 = crypto.createHash('sha256').update(auditRaw.replace(/\r\n/g, '\n').trim()).digest('hex');
-  const modules = JSON.parse(auditRaw);
+  const modules = JSON.parse(auditRaw).sort((a, b) => a.path.localeCompare(b.path));
+  const canonical = JSON.stringify(modules, null, 2);
+  const sha256 = crypto.createHash('sha256').update(canonical).digest('hex');
 
   let allowlist = { testOnly: [], attic: [], pending: {} };
   if (fs.existsSync(allowlistPath)) {

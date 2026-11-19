@@ -318,7 +318,9 @@ function checkDocsConsistency() {
   }
 
   const auditContent = fs.readFileSync(auditPath, 'utf8');
-  const sha256 = crypto.createHash('sha256').update(auditContent.replace(/\r\n/g, '\n').trim()).digest('hex');
+  const modules = JSON.parse(auditContent).sort((a, b) => a.path.localeCompare(b.path));
+  const canonical = JSON.stringify(modules, null, 2);
+  const sha256 = crypto.createHash('sha256').update(canonical).digest('hex');
 
   const statusFirstLine = fs.readFileSync(statusPath, 'utf8').split('\n')[0] || '';
   if (statusFirstLine.includes(sha256)) {
