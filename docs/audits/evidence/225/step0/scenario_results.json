@@ -1,0 +1,120 @@
+{
+  "generatedAt": "2026-11-19T16:53:47.635Z",
+  "environment": {
+    "os": "Microsoft Windows 11 Home Single Language 10.0.26300",
+    "cpu": "AMD Ryzen 7 7735HS with Radeon Graphics         x16",
+    "ramGB": 15,
+    "gpu": "AMD Radeon(TM) Graphics driver 32.0.11038.3; NVIDIA GeForce RTX 4050 Laptop GPU driver 32.0.16.1656",
+    "node": "v22.19.0",
+    "electron": "33.4.11",
+    "commit": "5941f025e9833ff85edc5f81b6147eea6b655330",
+    "stubPort": 60743,
+    "cdpPort": 9341,
+    "portNotes": []
+  },
+  "summary": [
+    {
+      "id": 5,
+      "title": "Run a mission \"open <page> and tell me the heading\"; observe step feed, cost counters, tab behaviour, result",
+      "status": "PARTIAL",
+      "passed": 1,
+      "total": 2
+    }
+  ],
+  "scenarios": [
+    {
+      "id": 5,
+      "title": "Run a mission \"open <page> and tell me the heading\"; observe step feed, cost counters, tab behaviour, result",
+      "expectation": "With a REAL model this needs a key (none available). Here: Ollama provider pointed at a scripted local stub; checks the loop wiring only.",
+      "status": "PARTIAL",
+      "checks": [
+        {
+          "name": "Test Connection works against /api/tags",
+          "ok": true,
+          "detail": "✓ Connected to local Ollama (1 models found) | ~0.0000 per step on deepseek-r1:8b (assumes ~6000 prompt + 400 completion tokens per step)"
+        },
+        {
+          "name": "default Ollama URL (no /v1) + default model dropdown can run a mission against an Ollama-shaped server",
+          "ok": false,
+          "detail": "state=undefined; "
+        }
+      ],
+      "observations": [
+        "MODEL IS A SCRIPTED LOCAL STUB, NOT A REAL MODEL. No API key and no Ollama install exist in this environment.",
+        "Ollama URL pre-filled by the form: http://localhost:11434",
+        "attempt 1 (dropdown=deepseek-r1:8b, URL without /v1): mission state=undefined; error=undefined; stub saw: []",
+        "SCENARIO ERROR: page.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#settings-btn')\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"icon-btn\" id=\"settings-btn\" title=\"AI Agent & Model Settings\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div id=\"settings-modal\" class=\"modal-overlay\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div id=\"settings-modal\" class=\"modal-overlay\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    58 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div id=\"settings-modal\" class=\"modal-overlay\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+      ],
+      "screenshots": [],
+      "durationMs": 46168
+    }
+  ],
+  "extra": {
+    "environment": {
+      "os": "Microsoft Windows 11 Home Single Language 10.0.26300",
+      "cpu": "AMD Ryzen 7 7735HS with Radeon Graphics         x16",
+      "ramGB": 15,
+      "gpu": "AMD Radeon(TM) Graphics driver 32.0.11038.3; NVIDIA GeForce RTX 4050 Laptop GPU driver 32.0.16.1656",
+      "node": "v22.19.0",
+      "electron": "33.4.11",
+      "commit": "5941f025e9833ff85edc5f81b6147eea6b655330",
+      "stubPort": 60743,
+      "cdpPort": 9341,
+      "portNotes": []
+    },
+    "profile": "%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-luRy62",
+    "launchArgs": [
+      "--remote-debugging-port=9341",
+      "--user-data-dir=%USERPROFILE%\\AppData\\Local\\Temp\\aegis-baseline-main-luRy62\\chromium",
+      "--disable-features=CalculateNativeWinOcclusion",
+      "<repo>\\dist\\main\\index.js"
+    ],
+    "attempt1": {
+      "stub": []
+    },
+    "mainAppConsoleMsgs": [],
+    "modelStubPathsSeen": [
+      "GET /api/tags"
+    ],
+    "profileTree": [
+      "aegis.sqlite",
+      "aegis.sqlite-shm",
+      "aegis.sqlite-wal",
+      "cache/",
+      "chromium/",
+      "chromium\\blob_storage/ (chromium cache)",
+      "chromium\\Cache/ (chromium cache)",
+      "chromium\\Code Cache/ (chromium cache)",
+      "chromium\\DawnGraphiteCache/ (chromium cache)",
+      "chromium\\DawnWebGPUCache/ (chromium cache)",
+      "chromium\\DevToolsActivePort",
+      "chromium\\GPUCache/ (chromium cache)",
+      "chromium\\Local State",
+      "chromium\\Local Storage/ (chromium cache)",
+      "chromium\\lockfile",
+      "chromium\\Network/ (chromium cache)",
+      "chromium\\Preferences",
+      "chromium\\Session Storage/ (chromium cache)",
+      "chromium\\Shared Dictionary/ (chromium cache)",
+      "downloads/",
+      "logs/",
+      "logs\\app.log",
+      "recordings/",
+      "session/"
+    ],
+    "errorLinesInLog": [],
+    "consoleLinesInLog": [
+      "[472:1119/222301.385:INFO:CONSOLE(2)] \"%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\r",
+      "[472:1119/222304.803:INFO:CONSOLE(0)] \"The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-1-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.\", source: https://duckduckgo.com/ (0)\r",
+      "[472:1119/222304.803:INFO:CONSOLE(0)] \"The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-3-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.\", source: https://duckduckgo.com/ (0)\r",
+      "[472:1119/222304.803:INFO:CONSOLE(0)] \"The resource https://duckduckgo.com/static-assets/image/sad/chrome/chrome-2-light-en-US.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.\", source: https://duckduckgo.com/ (0)\r"
+    ],
+    "mainExit": {
+      "code": 1,
+      "sig": null
+    },
+    "repoWrites": [
+      "!! docs/audits/evidence/225/"
+    ]
+  }
+}

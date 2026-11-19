@@ -1,0 +1,59 @@
+{
+  "measuredAt": "2026-11-19T17:08:01.587Z",
+  "electron": "33.4.11",
+  "results": {
+    "agent/perception.ts": {
+      "iframeSameOrigin_frameButtonFound": true,
+      "iframeSameOrigin_textFound": true,
+      "shadowDom_buttonFound": true,
+      "shadowDom_nestedLinkFound": true,
+      "hidden_displayNoneExcluded": true,
+      "hidden_visibilityHiddenExcluded": true,
+      "framesRaw": [
+        {
+          "ref": "e1",
+          "name": "Frame button"
+        },
+        {
+          "ref": "e2",
+          "name": "Shadow button"
+        },
+        {
+          "ref": "e3",
+          "name": "Deep shadow link"
+        }
+      ],
+      "occlusion_coveredButtonFlagged": true,
+      "occlusionRaw": [
+        {
+          "ref": "e4",
+          "name": "Under the cover",
+          "occluded": "div#cover"
+        }
+      ],
+      "stableIds_sameIdAfterInsertBefore": true,
+      "stableIds_detail": {
+        "before": "e6",
+        "after": "e6"
+      },
+      "heading_reachesModel": true
+    },
+    "perception/axtree_extractor.ts": {
+      "iframeSameOrigin_frameButtonFound": false,
+      "iframeSameOrigin_textFound": false,
+      "shadowDom_buttonFound": false,
+      "shadowDom_nestedLinkFound": false,
+      "hidden_displayNoneExcluded": true,
+      "hidden_visibilityHiddenExcluded": true,
+      "framesRaw": "[generic] \"Frames and shadow roots idle\"\n  [heading] \"Frames and shadow roots\"\n  [generic] \"idle\"",
+      "occlusion_coveredButtonFlagged": false,
+      "occlusionRaw": "[generic] \"Covered button Under the cover idle\"\n  [heading] \"Covered button\"\n  [button] \"Under the cover\"\n  [generic] \"idle\"",
+      "stableIds_sameIdAfterInsertBefore": true,
+      "stableIds_detail": {
+        "before": "ax_1",
+        "after": "ax_1"
+      },
+      "heading_reachesModel": true
+    }
+  }
+}

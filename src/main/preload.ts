@@ -11,7 +11,8 @@ import {
   WorkerEventPayload,
   EvidenceEventPayload,
   MissionStatusPayload,
-  MissionStartRequest
+  MissionStartRequest,
+  MissionQuestionPayload
 } from '../ipc/contract.js';
 
 contextBridge.exposeInMainWorld('aegis', {
@@ -64,6 +65,8 @@ contextBridge.exposeInMainWorld('aegis', {
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_STEER, { message, type }),
   undoAction: () =>
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_UNDO),
+  answerQuestion: (missionId: string, questionId: string, answer: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_ANSWER, { missionId, questionId, answer }),
 
   // Persistence: mission history, backup/restore (Issue #239)
   listMissions: (limit?: number) =>
@@ -110,6 +113,9 @@ contextBridge.exposeInMainWorld('aegis', {
   },
   onMissionStatus: (callback: (data: MissionStatusPayload) => void) => {
     ipcRenderer.on(IPC_CHANNELS.EVENT_MISSION_STATUS, (_, data) => callback(data));
+  },
+  onMissionQuestion: (callback: (data: MissionQuestionPayload) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.EVENT_MISSION_QUESTION, (_, data) => callback(data));
   },
   onTelemetry: (callback: (data: any) => void) => {
     ipcRenderer.on(IPC_CHANNELS.EVENT_TELEMETRY, (_, data) => callback(data));

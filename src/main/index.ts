@@ -27,6 +27,7 @@ import {
   ModelStatusRequest,
   ModelStatusResponse,
   DemoStartResponse,
+  MissionAnswerRequest,
   MODEL_NOT_CONFIGURED
 } from '../ipc/contract.js';
 
@@ -562,6 +563,13 @@ class MainApp {
       async () => {
         return AgentRuntime.getInstance().undoLastAction();
       }
+    );
+
+    // The user's answer to the agent's open question (ask_user / approval / stuck), #225
+    registerTypedHandler<MissionAnswerRequest, { ok: boolean; error?: string }>(
+      IPC_CHANNELS.MISSION_ANSWER,
+      getChrome,
+      (req) => AgentRuntime.getInstance().answerQuestion(String(req?.missionId), String(req?.questionId), String(req?.answer ?? ''))
     );
 
     // Settings
