@@ -1,14 +1,14 @@
 # Release Gate Status: **NOT READY (4 of 7 checks failing)**
 
-> Generated automatically by `scripts/release_gate.mjs` at 2026-11-19T09:07:03.650Z
-> Commit: `076a1fb` | Working tree dirty: `true`
+> Generated automatically by `scripts/release_gate.mjs` at 2026-11-19T09:21:13.851Z
+> Commit: `b1277c1` | Working tree dirty: `true`
 
 ## Gate Measurements Summary Table
 
 | Check ID | Area / Description | Verification Command | Status | Measured Evidence / Notes |
 |---|---|---|---|---|
-| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 1010ms |
-| `unit` | Unit & Integration Test Manifest | `tests/manifest.json` | **PASS** | Pre-verified unit manifest (passed via caller verification) |
+| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 1106ms |
+| `unit` | Unit & Integration Test Manifest | `tests/manifest.json (23 suites)` | **PASS** | 23/23 suites passed (10544ms total) |
 | `reachability` | Reachability Policy & Orphan Allowlist | `node scripts/audit_reachability.mjs` | **FAIL** | 63 orphaned modules awaiting wiring in allowlist pending list |
 | `e2e` | Real-App Electron E2E Suite | `npm run test:e2e` | **FAIL** | no real-app e2e suite (Playwright _electron) |
 | `docs-consistency` | Documentation Truth & Status Consistency | `scripts/gen_status.mjs hash check` | **PASS** | docs/STATUS.md matches reachability audit hash c1ef7520 |

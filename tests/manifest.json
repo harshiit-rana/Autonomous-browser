@@ -20,5 +20,6 @@
   { "id": "edge_cases", "cmd": "tsx tests/test_edge_cases.ts", "area": "edge_cases" },
   { "id": "security_audit", "cmd": "node scripts/security_audit.mjs", "area": "security" },
   { "id": "docs_truth", "cmd": "tsx tests/test_docs_truth.ts", "area": "docs" },
-  { "id": "reachability_audit", "cmd": "tsx tests/test_reachability_audit.ts", "area": "audit" }
+  { "id": "reachability_audit", "cmd": "tsx tests/test_reachability_audit.ts", "area": "audit" },
+  { "id": "issue_verification", "cmd": "tsx tests/test_issue_verification.ts", "area": "audit" }
 ]

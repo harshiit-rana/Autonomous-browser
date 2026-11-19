@@ -11,6 +11,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildIssueVerification } from './build_issue_verification.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +21,17 @@ export function generateStatusDoc() {
   const auditPath = path.join(ROOT_DIR, 'docs', 'reachability_audit.json');
   const allowlistPath = path.join(ROOT_DIR, 'scripts', 'reachability_allowlist.json');
   const statusPath = path.join(ROOT_DIR, 'docs', 'STATUS.md');
+
+  // Ensure issue verification ledger is up to date
+  let issueVer = null;
+  try {
+    issueVer = buildIssueVerification();
+  } catch (err) {
+    const issueVerPath = path.join(ROOT_DIR, 'docs', 'audits', 'issue_verification.json');
+    if (fs.existsSync(issueVerPath)) {
+      issueVer = JSON.parse(fs.readFileSync(issueVerPath, 'utf8'));
+    }
+  }
 
   if (!fs.existsSync(auditPath)) {
     throw new Error('docs/reachability_audit.json not found. Run node scripts/audit_reachability.mjs first.');
@@ -99,6 +111,22 @@ export function generateStatusDoc() {
     }
 
     lines.push(`| **${area}** | \`${filePath}\` | ${reachableLabel} | ${disposition} | ${owningIssue} |`);
+  }
+
+  if (issueVer) {
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+    lines.push('## 3. Legacy Issue Verification Summary (#101 - #217)');
+    lines.push('');
+    lines.push('An exhaustive audit of all 117 closed historical issues (#101–#217) was conducted under [Issue #222](https://github.com/harshiit-rana/Autonomous-browser/issues/222). Detailed findings per issue are recorded in [`docs/audits/ISSUE_VERIFICATION.md`](audits/ISSUE_VERIFICATION.md).');
+    lines.push('');
+    lines.push('| Category | Count | Percentage | Definition & Verification Gate |');
+    lines.push('|:---|:---:|:---:|:---|');
+    lines.push(`| **Fully Verified** | ${issueVer.verified} | ${Math.round((issueVer.verified / issueVer.total) * 100)}% | Requires live Playwright \`_electron\` E2E test (#254) or manual run log/screenshot (#223). |`);
+    lines.push(`| **Partial** | ${issueVer.partial} | ${Math.round((issueVer.partial / issueVer.total) * 100)}% | Code and unit tests exist; live running-app e2e verification pending in completion program. |`);
+    lines.push(`| **Not in App** | ${issueVer.notInApp} | ${Math.round((issueVer.notInApp / issueVer.total) * 100)}% | Orphaned, quarantined in \`attic/\`, mock-only, or pure specification/doc not in runtime. |`);
+    lines.push(`| **Total Audited** | **${issueVer.total}** | **100%** | All non-verified rows are mapped to active completion issues (#218–#262). |`);
   }
 
   lines.push('');
