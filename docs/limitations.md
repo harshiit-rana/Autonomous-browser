@@ -20,6 +20,7 @@ This file records what the product does not do (yet) and why. Entries are added 
 | Memory store | `MemoryStore` runs on the new layer but is still not reachable from the product (`memory/memory_store.ts` is allowlisted for #240). | |
 | Platforms | Verified on Windows x64 (Node 22 tests and Electron 33.4.11 ABI 130 in the running app). macOS, Linux and the packaged installer were not run. | #256, #258, #261. |
 
+<<<<<<< HEAD
 ## Swarm worker isolation (Issue #229, SWX-03)
 
 | Area | Status | Reason / next step |
@@ -36,3 +37,20 @@ This file records what the product does not do (yet) and why. Entries are added 
 | Cancel | `AgentRuntime.cancel()` shuts the swarm down, so in-flight worker calls fail; the coordinator is not told to stop scheduling. | #226, #227. |
 | Platforms | The run was on Windows x64 only. | #256. |
 
+=======
+## Packaging and release (#258 PKG-01)
+
+| Area | Limitation | Reason / follow-up |
+|---|---|---|
+| Fuses | `GrantFileProtocolExtraPrivileges` is **enabled**, not disabled. | The chrome window is loaded with `loadFile()` from inside `app.asar`. With the fuse off, Electron 33 answers that load with `ERR_FILE_NOT_FOUND` and the window is blank (observed with the packaged smoke test). Disabling it needs the renderer served from a custom protocol, a change in `src/main/index.ts`. Tracked as a follow-up under #237/#256. |
+| Fuses | `EnableEmbeddedAsarIntegrityValidation` is only set on Windows and macOS. | Electron does not support asar integrity validation on Linux. |
+| Preload | The chrome preload is bundled into one file by `scripts/bundle_preload.mjs` (added with #239). | The window uses `sandbox: true`; a sandboxed preload cannot `require` relative modules, so the raw tsc output never exposed `window.aegis` (also seen in the Step 0 packaged run: no tabs, no IPC). `npm run prepack:check` now fails if `dist/main/preload.js` still contains a relative `require`. |
+| Signing | All installers are unsigned. | Certificates and notarisation are #259. Expect SmartScreen / Gatekeeper warnings; antivirus products may flag unsigned Electron installers as false positives, and signing is the mitigation. |
+| macOS | Per-architecture builds (x64 and arm64 are built on matching hosts); no universal binary. | A universal build doubles the download and requires lipo-merging native modules (#239 will add one). Revisit when the native module set is final. |
+| macOS | Hardened runtime is on, but without a Developer ID certificate the app is only ad hoc signed. | #259. |
+| Linux | AppImage does not bundle `libsecret`. | The `.deb` declares `libsecret-1-0`. Without a keyring, `safeStorage` is unavailable and `CredentialVault` keeps keys in memory for the session only. |
+| Windows | Builds from deep directories can exceed MAX_PATH. | `npm run prepack:check` fails early with the offending path when the budget (240 chars including install dir) is exceeded; enable `LongPathsEnabled` or build from a shorter path. |
+| Windows | `dist:win` was run here but the installer was not tested on a clean Windows VM. | #261 tracks clean-machine installs; this PR installs per-user into a temp directory on the build machine and launches the installed app. |
+| Native modules | `asarUnpack` only globs `**/*.node`. | There are no native modules until #239 picks a database; that issue must extend the config and re-run `npm run smoke:packaged`. |
+| Auto-updater | Not wired into releases. | #259. |
+>>>>>>> 12fc1e6 (feat(packaging): working installer, afterPack fuses, sandbox-safe preload, icons, packaged smoke test [PKG-01] (#258))
