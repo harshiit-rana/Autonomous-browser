@@ -88,8 +88,8 @@ try {
   check('DEMO banner visible in the titlebar', bannerVisible && bannerText === 'DEMO - recorded session, no AI model is running', bannerText);
   shot('os_02_replay_demo_banner.png');
   await sleep(4500);
-  const feed = await chrome.evaluate(() => [...document.querySelectorAll('#timeline-feed, .timeline-item, [class*="timeline"] li')].map(e => e.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).slice(-8));
-  check('feed shows the recorded result with the demo label', feed.some(t => /DEMO/.test(t)), feed.slice(-2).join(' | ').slice(0, 200));
+  const feed = await chrome.$$eval('#evidence-feed .evidence-item .ev-text', els => els.map(e => e.textContent));
+  check('feed shows the recorded result with the demo label', feed.some(t => /DEMO.*AMD Radeon RX 7900 XTX/.test(t)), feed.slice(0, 3).join(' | ').slice(0, 240));
   shot('os_03_replay_demo_finished.png');
   const after = (await ipc('listMissions', 5)).data || [];
   check('replay demo created no mission row (nothing persisted)', after.length === 0, `missions=${after.length}`);
