@@ -122,7 +122,7 @@ function testPrepack() {
 
   const noRenderer = collectProblems(mkProject({ renderer: false }), { platform: 'linux' });
   assert.strictEqual(noRenderer.length, 1);
-  assert.ok(noRenderer[0].includes('dist/renderer/index.html is missing') && noRenderer[0].includes('vite build') === false && noRenderer[0].includes('npm run build'));
+  assert.ok(noRenderer[0].includes('dist/renderer/index.html is missing') && noRenderer[0].includes('npm run build'), noRenderer[0]);
   assert.throws(() => assertPrepack(mkProject({ renderer: false }), { platform: 'linux' }), /Pre-pack check failed/);
 
   const badAsset = collectProblems(mkProject({ badAsset: true }), { platform: 'linux' });
@@ -252,7 +252,8 @@ async function testConfigAndScripts() {
   assert.deepStrictEqual(b.linux.target.sort(), ['AppImage', 'deb']);
   assert.ok(b.deb.depends.includes('libsecret-1-0'), 'deb must depend on libsecret for safeStorage');
   assert.strictEqual(b.extraMetadata?.version, undefined, 'version must come from package.json only');
-  assert.ok(/^tsc -b && vite build && vite build --config vite\.preload\.config\.ts$/.test(pkg.scripts.build));
+  assert.ok(pkg.scripts.build.includes('bundle_preload.mjs') && pkg.scripts.build.includes('vite build'), 'build must bundle the preload and the renderer');
+  assert.ok(b.asarUnpack.some((g: string) => g.includes('better-sqlite3')), 'native sqlite module must be unpacked from the asar');
 
   // Every `npm run <script>` referenced by the release workflow and the releasing doc must exist.
   const referenced: Array<[string, string]> = [];

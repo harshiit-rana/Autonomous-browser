@@ -35,6 +35,10 @@ npm run dist:linux   # AppImage + deb
 
 Artifacts land in `release/`. The icon set under `build/` is generated from `build/icon.svg` with `npm run icons`.
 
+Local caveat: electron-builder's `npmRebuild` replaces `node_modules/better-sqlite3/build/Release/better_sqlite3.node`
+with the Electron-ABI binary in place. After a local `pack:dir` or `dist:*` run `npm rebuild better-sqlite3` before
+running `npm test` again (CI packages after the tests, so it is unaffected).
+
 ## Cut a release
 
 1. Bump `version` in `package.json` and merge to `main`.

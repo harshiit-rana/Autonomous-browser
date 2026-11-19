@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { findPackagedApp, ROOT_DIR } from './packaging.mjs';
+import { findPackagedApp, readPackageJson, ROOT_DIR } from './packaging.mjs';
 
 const args = process.argv.slice(2);
 const shotIdx = args.indexOf('--screenshot');
@@ -166,6 +166,12 @@ async function main() {
     if (!/Chrome renderer loaded successfully/.test(log)) throw new Error('renderer load not logged');
     const fatal = log.split('\n').filter((l) => l.includes('"level":"error"'));
     if (fatal.length) console.warn(`WARNING: ${fatal.length} error-level log line(s), first: ${fatal[0].slice(0, 300)}`);
+    // 4. the native database module loaded inside the packaged runtime (asarUnpack + Electron ABI) and created the profile db
+    const dbFile = path.join(userData, 'aegis.sqlite');
+    if (readPackageJson().dependencies?.['better-sqlite3']) {
+      if (!fs.existsSync(dbFile) || fs.statSync(dbFile).size === 0) throw new Error(`database ${dbFile} was not created: better-sqlite3 did not load in the packaged app`);
+      console.log(`Database created: ${dbFile} (${fs.statSync(dbFile).size} bytes)`);
+    }
     console.log('SMOKE PASSED: packaged app started, UI rendered, "Electron app ready" logged.');
   } catch (err) {
     exitCode = fail(err.message);
