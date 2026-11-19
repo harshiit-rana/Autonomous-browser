@@ -148,4 +148,17 @@ No numbers or reachable statuses in this document are edited by hand.
 | **workspace** | `src/workspace/template_library.ts` | No | Pending Integration | #242 |
 
 ---
+
+## 3. Legacy Issue Verification Summary (#101 - #217)
+
+An exhaustive audit of all 117 closed historical issues (#101–#217) was conducted under [Issue #222](https://github.com/harshiit-rana/Autonomous-browser/issues/222). Detailed findings per issue are recorded in [`docs/audits/ISSUE_VERIFICATION.md`](audits/ISSUE_VERIFICATION.md).
+
+| Category | Count | Percentage | Definition & Verification Gate |
+|:---|:---:|:---:|:---|
+| **Fully Verified** | 0 | 0% | Requires live Playwright `_electron` E2E test (#254) or manual run log/screenshot (#223). |
+| **Partial** | 99 | 85% | Code and unit tests exist; live running-app e2e verification pending in completion program. |
+| **Not in App** | 18 | 15% | Orphaned, quarantined in `attic/`, mock-only, or pure specification/doc not in runtime. |
+| **Total Audited** | **117** | **100%** | All non-verified rows are mapped to active completion issues (#218–#262). |
+
+---
 *Generated automatically by `scripts/gen_status.mjs`. Use `npm run docs:status` to regenerate.*
