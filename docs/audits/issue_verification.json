@@ -1,7 +1,7 @@
 {
   "total": 117,
-  "verified": 0,
-  "partial": 70,
+  "verified": 1,
+  "partial": 69,
   "notInApp": 47,
   "issues": [
     {
@@ -31,10 +31,9 @@
           "reachable": true
         }
       ],
-      "gap": "Mock provider fallback (provider_factory) and createMockView / title-as-evidence (worker_host, coordinator) are still on product paths.",
+      "gap": "Mock provider fallback (provider_factory) and title-as-evidence (coordinator) are still on product paths; the mock worker view was removed by #229.",
       "owningIssues": [
         224,
-        229,
         227
       ]
     },
@@ -534,7 +533,7 @@
         {
           "path": "src/perception/settle_detector.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         },
         {
           "path": "src/swarm/worker_host.ts",
@@ -1194,7 +1193,7 @@
       "number": 148,
       "title": "[SWM-02] Worker isolation & lifecycle: dedicated views, session partitions, spawn/retire, correct teardown",
       "kind": "code",
-      "result": "partial",
+      "result": "verified",
       "evidence": [
         {
           "path": "src/swarm/worker_host.ts",
@@ -1205,9 +1204,22 @@
           "path": "src/swarm/swarm_manager.ts",
           "type": "module",
           "reachable": true
+        },
+        {
+          "path": "tests/test_worker_isolation.ts",
+          "type": "test",
+          "inSuite": true
+        },
+        {
+          "path": "scripts/e2e_worker_isolation.mjs",
+          "type": "file"
+        },
+        {
+          "path": "docs/audits/evidence/SWX-03/report.json",
+          "type": "file"
         }
       ],
-      "gap": "createMockView still present; real teardown not verified.",
+      "gap": "Verified in the running app by scripts/e2e_worker_isolation.mjs (#229): distinct partitions and sessions, cookie isolation, guards, crash recovery and teardown back to baseline. Open: worker views are not shown in the UI (#232), no ResourceGovernor hibernation (#231), downloads are cancelled rather than routed to a mission folder (#252).",
       "owningIssues": [
         229
       ]

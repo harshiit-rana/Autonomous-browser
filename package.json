@@ -22,7 +22,8 @@
     "licences": "node scripts/supply_chain.mjs",
     "rebuild": "node scripts/sqlite_native.mjs electron",
     "rebuild:verify": "node scripts/sqlite_native.mjs verify",
-    "e2e:persistence": "node scripts/e2e_persistence.mjs"
+    "e2e:persistence": "node scripts/e2e_persistence.mjs",
+    "e2e:workers": "node scripts/e2e_worker_isolation.mjs"
   },
   "engines": {
     "node": ">=20.0.0"

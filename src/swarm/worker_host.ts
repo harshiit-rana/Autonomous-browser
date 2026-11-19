@@ -17,7 +17,7 @@
 
 import { EventEmitter } from 'node:events';
 import { WebContentsView, BrowserWindow, session } from 'electron';
-import type { Session } from 'electron';
+import type { Session, WebContents } from 'electron';
 import { ActionExecutor } from '../core/action_executor.js';
 import { PageDOMState } from '../core/dom_indexer.js';
 import { logger } from '../infrastructure/logger.js';
@@ -160,6 +160,8 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
   public readonly isolationLevel: IsolationLevel;
   public readonly partitionName: string;
   public readonly view: WebContentsView;
+  /** Captured at construction: Electron's `view.webContents` is undefined once the contents are destroyed. */
+  private readonly wc: WebContents;
   public readonly executor: ActionExecutor;
   public status: WorkerStatus = 'idle';
   public lastError?: string;
@@ -202,6 +204,7 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
 
       this.view = runtime.createView(partition);
       const wc = this.view.webContents;
+      this.wc = wc;
       const ownsSession = Boolean(partition);
 
       this.disposeGuards = applyAgentTabGuards(wc, {
@@ -254,13 +257,17 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
     return this.crashCount;
   }
 
+  public get webContents(): WebContents {
+    return this.wc;
+  }
+
   public get isDestroyed(): boolean {
-    return this.view.webContents.isDestroyed();
+    return this.wc.isDestroyed();
   }
 
   private assertUsable(): void {
     if (this.isTornDown) throw new Error(`Worker ${this.id} is torn down`);
-    if (this.view.webContents.isDestroyed()) throw new Error(`Worker ${this.id} view was destroyed (window closed?)`);
+    if (this.wc.isDestroyed()) throw new Error(`Worker ${this.id} view was destroyed (window closed?)`);
   }
 
   public async navigate(url: string): Promise<PageDOMState> {
@@ -277,7 +284,7 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
     this.lastUrl = target.url;
 
     try {
-      await this.view.webContents.loadURL(target.url);
+      await this.wc.loadURL(target.url);
       await this.waitForSettle();
 
       this.status = 'indexing';
@@ -324,9 +331,9 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
    * WebContents, so partition, identity and guards stay intact. Returns false if it could not be recovered.
    */
   public async recover(): Promise<boolean> {
-    if (this.isTornDown || this.view.webContents.isDestroyed()) return false;
+    if (this.isTornDown || this.wc.isDestroyed()) return false;
     try {
-      const wc = this.view.webContents;
+      const wc = this.wc;
       await wc.loadURL(this.lastUrl && this.lastUrl !== '' ? this.lastUrl : 'about:blank');
       this.status = 'idle';
       this.lastError = undefined;
@@ -341,10 +348,10 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
 
   /** Reset / clear session data when recycling a worker for a new task. */
   public async resetStorage(): Promise<void> {
-    if (this.isTornDown || this.view.webContents.isDestroyed()) return;
+    if (this.isTornDown || this.wc.isDestroyed()) return;
     if (this.isolationLevel !== 'ephemeral') return; // never wipe a persistent or user profile
     try {
-      const sess = this.view.webContents.session;
+      const sess = this.wc.session;
       await sess.clearStorageData({ storages: ['cookies', 'localstorage', 'indexdb', 'cachestorage', 'serviceworkers'] });
       await sess.clearCache();
       logger.info('Worker storage cleared for recycling', { workerId: this.id });
@@ -363,7 +370,7 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
   }
 
   private async doTeardown(): Promise<void> {
-    const wc = this.view.webContents;
+    const wc = this.wc;
     this.status = 'idle';
     try {
       // 1. Stop talking to the page
@@ -419,7 +426,7 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
     if (this.isTornDown) {
       return { ...base, url: 'about:blank', title: 'Terminated', status: 'terminated' };
     }
-    const wc = this.view.webContents;
+    const wc = this.wc;
     const gone = wc.isDestroyed();
     return {
       ...base,
@@ -431,7 +438,7 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
   }
 
   private async waitForSettle(): Promise<SettleResult> {
-    const result = await settlePage(this.view.webContents, this.network);
+    const result = await settlePage(this.wc, this.network);
     this.lastSettle = result;
     if (!result.settled) {
       logger.warn('Worker page did not settle before the deadline', { workerId: this.id, waitedMs: result.waitedMs, inFlight: result.inFlightAtEnd });
