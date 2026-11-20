@@ -7,7 +7,7 @@
 import { BrowserWindow } from 'electron';
 import { WebArenaServer } from '../../src/testing/arena_server.js';
 import { PerceptionEngine } from '../../src/agent/perception.js';
-import { AXTreeExtractor } from '../../src/perception/axtree_extractor.js';
+import { AXTreeExtractor } from '../../attic/perception/axtree_extractor.js';
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 

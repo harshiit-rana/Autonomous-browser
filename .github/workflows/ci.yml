@@ -49,9 +49,6 @@ jobs:
       - name: Run Stealth Simulation Tests
         run: npx tsx tests/test_stealth.ts
 
-      - name: Run Perception Tests
-        run: npx tsx tests/test_perception.ts
-
       - name: Run Swarm Infrastructure Tests
         run: npx tsx tests/test_swarm_infrastructure.ts
 

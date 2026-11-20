@@ -1,7 +1,7 @@
-import { AXTreeExtractor, AXNode } from '../src/perception/axtree_extractor.js';
-import { SoMOverlayGenerator } from '../src/perception/som_overlay.js';
-import { SpatialReasoner } from '../src/perception/spatial_reasoner.js';
-import { IndexedElement } from '../src/core/dom_indexer.js';
+import { AXTreeExtractor, AXNode } from '../perception/axtree_extractor.js';
+import { SoMOverlayGenerator } from '../perception/som_overlay.js';
+import { SpatialReasoner } from '../perception/spatial_reasoner.js';
+import { IndexedElement } from '../../src/core/dom_indexer.js';
 import * as assert from 'node:assert';
 
 function testAXTreePruning() {
