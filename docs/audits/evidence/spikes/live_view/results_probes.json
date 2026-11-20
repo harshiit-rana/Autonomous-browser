@@ -1,0 +1,256 @@
+{
+  "host": {
+    "platform": "win32",
+    "release": "10.0.26300",
+    "cpus": "AMD Ryzen 7 7735HS with Radeon Graphics        ",
+    "threads": 16,
+    "totalMemMB": 15611,
+    "node": "20.18.3",
+    "electron": "33.4.11",
+    "chrome": "130.0.6723.191",
+    "date": "2026-11-20T12:29:24.640Z"
+  },
+  "args": [
+    "--matrix",
+    "false",
+    "--out",
+    "docs/audits/evidence/spikes/live_view",
+    "--name",
+    "results_probes_clean2.json"
+  ],
+  "durMs": 20000,
+  "cells": [],
+  "probes": {
+    "debuggerAttach": {
+      "firstAttach": "ok",
+      "secondAttach": "throws: Debugger is already attached to the target",
+      "isAttachedAfterDouble": true,
+      "sharedSessionRuntimeEvaluate": 2,
+      "isAttachedAfterOneDetach": false,
+      "framesBeforeDetach": 93,
+      "framesAfterDetach": 0
+    },
+    "inputLands": {
+      "stage-1000x700": {
+        "clicksLanded": 1,
+        "moves": 1,
+        "viewport": "1000x700",
+        "dpr": 1.25,
+        "elementFromPoint160_120": "btn"
+      },
+      "tile-320x200": {
+        "clicksLanded": 1,
+        "moves": 1,
+        "viewport": "320x200",
+        "dpr": 1.25,
+        "elementFromPoint160_120": "btn"
+      },
+      "tiny-1x1": {
+        "clicksLanded": 0,
+        "moves": 0,
+        "viewport": "2x2",
+        "dpr": 1.25,
+        "elementFromPoint160_120": "(none)"
+      },
+      "offscreen-x-6000": {
+        "clicksLanded": 0,
+        "moves": 0,
+        "viewport": "0x0",
+        "dpr": 1.25,
+        "elementFromPoint160_120": "(none)"
+      },
+      "covered-by-opaque-view": {
+        "clicksLanded": 1,
+        "moves": 1,
+        "viewport": "1000x700",
+        "dpr": 1.25,
+        "elementFromPoint160_120": "btn"
+      },
+      "hidden-setVisible-false": {
+        "clicksLanded": 1,
+        "moves": 1,
+        "viewport": "1000x700",
+        "dpr": 1.25,
+        "elementFromPoint160_120": "btn"
+      },
+      "tilezoom-0.32": {
+        "clicksLanded": 1,
+        "moves": 1,
+        "viewport": "1000x625",
+        "dpr": 0.4000000059604645,
+        "elementFromPoint160_120": "btn"
+      },
+      "unattached": {
+        "clicksLanded": 0,
+        "moves": 0,
+        "viewport": "0x0",
+        "dpr": 1,
+        "elementFromPoint160_120": "(none)"
+      }
+    },
+    "bringToFront": {
+      "before": {
+        "otherFocused": true,
+        "mainFocused": false,
+        "osForegroundHwndPid": "263946 14744",
+        "mainPid": 14744
+      },
+      "afterBringToFront": {
+        "otherFocused": false,
+        "mainFocused": true,
+        "viewWebContentsFocused": true,
+        "osForegroundHwndPid": "525346 14744"
+      },
+      "focusEmulation": {
+        "documentHasFocusWhileOtherWindowFocused": true,
+        "otherStillFocused": true
+      },
+      "afterCdpClickWithFocusEmulation": {
+        "otherFocused": true,
+        "osForegroundHwndPid": "263946 14744"
+      }
+    },
+    "osVisibility": {
+      "tile-6": {
+        "shot": true,
+        "attempts": 1,
+        "info": "rect=85,0,1750,1020 dpi=120 iconic=False foreground=True",
+        "imageSizePx": "1750x1020",
+        "bluePixelsPerRegion": [
+          51,
+          43,
+          43,
+          43,
+          52,
+          50
+        ],
+        "magentaCoverPixels": 0
+      },
+      "tilezoom-6": {
+        "shot": true,
+        "attempts": 1,
+        "info": "rect=85,0,1750,1020 dpi=120 iconic=False foreground=True",
+        "imageSizePx": "1750x1020",
+        "bluePixelsPerRegion": [
+          1004,
+          1005,
+          1005,
+          1004,
+          1004,
+          1039
+        ],
+        "magentaCoverPixels": 0
+      },
+      "osr-attached-1": {
+        "shot": true,
+        "attempts": 1,
+        "info": "rect=85,0,1750,1020 dpi=120 iconic=False foreground=True",
+        "imageSizePx": "1750x1020",
+        "bluePixelsPerRegion": [
+          0
+        ],
+        "magentaCoverPixels": 0
+      },
+      "covered-1": {
+        "shot": true,
+        "attempts": 1,
+        "info": "rect=85,0,1750,1020 dpi=120 iconic=False foreground=True",
+        "imageSizePx": "1750x1020",
+        "bluePixelsPerRegion": [
+          0
+        ],
+        "magentaCoverPixels": 1018723
+      },
+      "hidden-1": {
+        "shot": true,
+        "attempts": 1,
+        "info": "rect=85,0,1750,1020 dpi=120 iconic=False foreground=True",
+        "imageSizePx": "1750x1020",
+        "bluePixelsPerRegion": [
+          0
+        ],
+        "magentaCoverPixels": 0
+      },
+      "offscreen-1": {
+        "shot": true,
+        "attempts": 1,
+        "info": "rect=85,0,1750,1020 dpi=120 iconic=False foreground=True",
+        "imageSizePx": "1750x1020",
+        "bluePixelsPerRegion": [
+          0
+        ],
+        "magentaCoverPixels": 0
+      },
+      "tiny-1": {
+        "shot": true,
+        "attempts": 1,
+        "info": "rect=85,0,1750,1020 dpi=120 iconic=False foreground=True",
+        "imageSizePx": "1750x1020",
+        "bluePixelsPerRegion": [
+          0
+        ],
+        "magentaCoverPixels": 0
+      }
+    },
+    "minimised": {
+      "normal": {
+        "label": "normal",
+        "screencastFps": 95.78,
+        "rafPerSec": 143.9,
+        "timerPerSec": 10,
+        "vis": "visible"
+      },
+      "minimized": {
+        "label": "minimized",
+        "screencastFps": 0,
+        "rafPerSec": 0,
+        "timerPerSec": 1,
+        "vis": "hidden"
+      },
+      "restored": {
+        "label": "restored",
+        "screencastFps": 95.9,
+        "rafPerSec": 143.9,
+        "timerPerSec": 10,
+        "vis": "visible"
+      }
+    },
+    "osrWindow": {
+      "browserWindowOffscreen": {
+        "paintEventsIn5s": 301,
+        "frameRate": 60
+      },
+      "webContentsViewOffscreen_listenerAfterLoad": {
+        "paintEventsIn3s": 0,
+        "isPainting": true
+      },
+      "webContentsViewOffscreen_afterStartPainting": {
+        "paintEventsTotal": 0,
+        "isPainting": true
+      }
+    }
+  },
+  "display": {
+    "scaleFactor": 1.25,
+    "size": {
+      "width": 1536,
+      "height": 864
+    },
+    "workAreaSize": {
+      "width": 1536,
+      "height": 816
+    }
+  },
+  "winBoundsDip": {
+    "x": 68,
+    "y": 0,
+    "width": 1400,
+    "height": 816
+  },
+  "contentBoundsDip": {
+    "x": 75,
+    "y": 56,
+    "width": 1386,
+    "height": 753
+  }
+}

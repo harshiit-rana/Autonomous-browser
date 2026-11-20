@@ -11,6 +11,9 @@ import { once } from 'node:events';
 import path from 'node:path';
 import fs from 'node:fs';
 import * as C from './spike_common.mjs';
+import os from 'node:os';
+// Chromium persists per-host zoom in the profile; an isolated throw-away profile keeps runs independent (a stale zoom polluted an early probe run).
+app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'spike_live_view-')));
 
 const args = C.parseArgs();
 const DUR_MS = Number(args.dur ?? 20) * 1000;
@@ -126,7 +129,8 @@ function startCapture(kind, view) {
           if (method !== 'Page.screencastFrame') return;
           rec.frames.push(C.now()); rec.bytes += params.data.length * 0.75;
           if (rec.hashes.size < 5000) rec.hashes.add(C.md5(params.data));
-          dbg.sendCommand('Page.screencastFrameAck', { sessionId: params.sessionId }).catch(() => {});
+          const ack = () => dbg.sendCommand('Page.screencastFrameAck', { sessionId: params.sessionId }).catch(() => {});
+          if (kind === 'screencast15') { const wait = Math.max(0, 1000 / 15 - (C.now() - lastAck)); lastAck = C.now() + wait; setTimeout(ack, wait); } else ack();
         };
         dbg.on('message', onMsg);
         try { await dbg.sendCommand('Page.startScreencast', { format: 'jpeg', quality: 60, maxWidth: 320, maxHeight: 200, everyNthFrame: kind === 'screencastNth10' ? 10 : 1 }); }
@@ -343,6 +347,25 @@ async function probeOsVisibility() {
   return out;
 }
 
+
+async function probeOsrWindow() {
+  // Does 'paint' fire for webPreferences.offscreen:true at all? Compare a BrowserWindow(show:false) with a WebContentsView.
+  const out = {};
+  const bw = new BrowserWindow({ show: false, width: 800, height: 600, webPreferences: { ...WEB_PREFS, offscreen: true } });
+  let n = 0; bw.webContents.on('paint', () => { n++; });
+  await bw.loadURL(baseUrl + '/visibility.html'); await C.sleep(5000);
+  out.browserWindowOffscreen = { paintEventsIn5s: n, frameRate: bw.webContents.getFrameRate?.() };
+  bw.destroy();
+  const v = await makeView({ offscreen: true }, baseUrl + '/visibility.html');
+  let m = 0; v.webContents.on('paint', () => { m++; });
+  await C.sleep(3000);
+  out.webContentsViewOffscreen_listenerAfterLoad = { paintEventsIn3s: m, isPainting: v.webContents.isPainting?.() };
+  v.webContents.startPainting?.(); await C.sleep(3000);
+  out.webContentsViewOffscreen_afterStartPainting = { paintEventsTotal: m, isPainting: v.webContents.isPainting?.() };
+  v.webContents.close();
+  return out;
+}
+
 async function probeMinimised() {
   const { views } = await setupPlacement({ place: 'tile' }, 1);
   const v = views[0]; await C.sleep(800);
@@ -370,7 +393,7 @@ async function main() {
   log('window ready', JSON.stringify(results.display), 'args', process.argv.slice(2).join(' '));
   const save = () => C.writeJson(path.join(OUT, args.name ?? 'results.json'), results);
   if (RUN_PROBES) {
-    for (const [name, fn] of [['debuggerAttach', probeDebuggerAttach], ['inputLands', probeInputLands], ['bringToFront', probeBringToFront], ['osVisibility', probeOsVisibility], ['minimised', probeMinimised]]) {
+    for (const [name, fn] of [['debuggerAttach', probeDebuggerAttach], ['inputLands', probeInputLands], ['bringToFront', probeBringToFront], ['osVisibility', probeOsVisibility], ['minimised', probeMinimised], ['osrWindow', probeOsrWindow]]) {
       if (ONLY && !ONLY.has('probe:' + name) && !ONLY.has('probes')) continue;
       log('probe', name);
       try { results.probes[name] = await fn(); } catch (e) { results.probes[name] = { error: e.stack || e.message }; }

@@ -1,0 +1,1515 @@
+{
+  "host": {
+    "platform": "win32",
+    "release": "10.0.26300",
+    "cpus": "AMD Ryzen 7 7735HS with Radeon Graphics        ",
+    "threads": 16,
+    "totalMemMB": 15611,
+    "node": "20.18.3",
+    "electron": "33.4.11",
+    "chrome": "130.0.6723.191",
+    "date": "2026-11-20T12:21:33.272Z"
+  },
+  "args": [
+    "--reps",
+    "1",
+    "--probes",
+    "false",
+    "--only",
+    "tile-screencast15,osr-paint,tilezoom-none,tilezoom-screencast15,covered-screencast15,offscreen-screencast15",
+    "--out",
+    "docs/audits/evidence/spikes/live_view",
+    "--name",
+    "results_rep1c.json"
+  ],
+  "durMs": 20000,
+  "cells": [
+    {
+      "id": "tile-screencast15__n1__r1",
+      "cell": "tile-screencast15",
+      "place": "tile",
+      "cap": "screencast15",
+      "N": 1,
+      "rep": 1,
+      "wallSec": 20,
+      "cpuWindowSec": 20.34,
+      "sysBefore": {
+        "freeMemMB": 6789,
+        "systemCpuLoadPct": 9
+      },
+      "loadOk": [
+        true
+      ],
+      "loadMs": [
+        122
+      ],
+      "fpsPerTileMean": 15,
+      "fpsPerTileMin": 15,
+      "fpsPerTileMax": 15,
+      "frameIntervalMsP50": 63.34,
+      "frameIntervalMsP95": 82.32,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": 2.7,
+      "distinctFramesMin": 313,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 4.2,
+      "cpuPctOfOneCoreByType": {
+        "GPU": 27.9,
+        "Tab": 18.9,
+        "Utility": 0,
+        "Browser": 4.3
+      },
+      "totalCpuPctOfOneCore": 51.1,
+      "workingSetMBByType": {
+        "Browser": 98,
+        "GPU": 114,
+        "Utility": 49,
+        "Tab": 156
+      },
+      "workingSetMBTotal": 417,
+      "pageLiveness": [
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        }
+      ],
+      "pageRafPerSecMean": 143.8,
+      "pageTimerPerSecMean": 10,
+      "viewportAtLoad": {
+        "iw": 320,
+        "ih": 200
+      }
+    },
+    {
+      "id": "tile-screencast15__n5__r1",
+      "cell": "tile-screencast15",
+      "place": "tile",
+      "cap": "screencast15",
+      "N": 5,
+      "rep": 1,
+      "wallSec": 20,
+      "cpuWindowSec": 20.39,
+      "sysBefore": {
+        "freeMemMB": 6648,
+        "systemCpuLoadPct": 10
+      },
+      "loadOk": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "loadMs": [
+        96,
+        96,
+        97,
+        100,
+        101
+      ],
+      "fpsPerTileMean": 7.98,
+      "fpsPerTileMin": 7.95,
+      "fpsPerTileMax": 8,
+      "frameIntervalMsP50": 63.12,
+      "frameIntervalMsP95": 83.48,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": 2.9,
+      "distinctFramesMin": 175,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 12.6,
+      "cpuPctOfOneCoreByType": {
+        "Tab": 51.5,
+        "GPU": 39.2,
+        "Utility": 0,
+        "Browser": 13.6
+      },
+      "totalCpuPctOfOneCore": 104.3,
+      "workingSetMBByType": {
+        "Browser": 103,
+        "GPU": 139,
+        "Utility": 49,
+        "Tab": 539
+      },
+      "workingSetMBTotal": 830,
+      "pageLiveness": [
+        {
+          "rafPerSec": 77.9,
+          "tmrPerSec": 6,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 78,
+          "tmrPerSec": 6,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 77.9,
+          "tmrPerSec": 6,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 77.9,
+          "tmrPerSec": 6,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 77.9,
+          "tmrPerSec": 6,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.25
+        }
+      ],
+      "pageRafPerSecMean": 77.9,
+      "pageTimerPerSecMean": 6,
+      "viewportAtLoad": {
+        "iw": 320,
+        "ih": 200
+      }
+    },
+    {
+      "id": "tile-screencast15__n6__r1",
+      "cell": "tile-screencast15",
+      "place": "tile",
+      "cap": "screencast15",
+      "N": 6,
+      "rep": 1,
+      "wallSec": 20.01,
+      "cpuWindowSec": 20.39,
+      "sysBefore": {
+        "freeMemMB": 6299,
+        "systemCpuLoadPct": 29
+      },
+      "loadOk": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "loadMs": [
+        106,
+        108,
+        116,
+        111,
+        118,
+        119
+      ],
+      "fpsPerTileMean": 14.3,
+      "fpsPerTileMin": 14.3,
+      "fpsPerTileMax": 14.3,
+      "frameIntervalMsP50": 63.63,
+      "frameIntervalMsP95": 79.91,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": 2.7,
+      "distinctFramesMin": 300,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 17.6,
+      "cpuPctOfOneCoreByType": {
+        "GPU": 72.5,
+        "Tab": 109.4,
+        "Utility": 0,
+        "Browser": 17.5
+      },
+      "totalCpuPctOfOneCore": 199.3,
+      "workingSetMBByType": {
+        "Browser": 107,
+        "GPU": 143,
+        "Utility": 49,
+        "Tab": 682
+      },
+      "workingSetMBTotal": 980,
+      "pageLiveness": [
+        {
+          "rafPerSec": 134.8,
+          "tmrPerSec": 9.6,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 134.9,
+          "tmrPerSec": 9.5,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 135,
+          "tmrPerSec": 9.6,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 134.9,
+          "tmrPerSec": 9.6,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 134.9,
+          "tmrPerSec": 9.5,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 134.9,
+          "tmrPerSec": 9.5,
+          "visAfter": "visible",
+          "visEvents": 2,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        }
+      ],
+      "pageRafPerSecMean": 134.9,
+      "pageTimerPerSecMean": 9.6,
+      "viewportAtLoad": {
+        "iw": 320,
+        "ih": 200
+      }
+    },
+    {
+      "id": "tile-screencast15__n10__r1",
+      "cell": "tile-screencast15",
+      "place": "tile",
+      "cap": "screencast15",
+      "N": 10,
+      "rep": 1,
+      "wallSec": 20,
+      "cpuWindowSec": 20.46,
+      "sysBefore": {
+        "freeMemMB": 6845,
+        "systemCpuLoadPct": 8
+      },
+      "loadOk": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "loadMs": [
+        227,
+        108,
+        104,
+        108,
+        108,
+        105,
+        108,
+        111,
+        115,
+        132
+      ],
+      "fpsPerTileMean": 15,
+      "fpsPerTileMin": 15,
+      "fpsPerTileMax": 15,
+      "frameIntervalMsP50": 63.37,
+      "frameIntervalMsP95": 77.64,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": 2.7,
+      "distinctFramesMin": 317,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 22.2,
+      "cpuPctOfOneCoreByType": {
+        "Tab": 164.7,
+        "GPU": 117.4,
+        "Utility": 0,
+        "Browser": 22.1
+      },
+      "totalCpuPctOfOneCore": 304.2,
+      "workingSetMBByType": {
+        "Browser": 110,
+        "GPU": 161,
+        "Utility": 49,
+        "Tab": 1023
+      },
+      "workingSetMBTotal": 1342,
+      "pageLiveness": [
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 320,
+          "ih": 200,
+          "dpr": 1.5
+        }
+      ],
+      "pageRafPerSecMean": 143.8,
+      "pageTimerPerSecMean": 10,
+      "viewportAtLoad": {
+        "iw": 320,
+        "ih": 200
+      }
+    },
+    {
+      "id": "tilezoom-none__n6__r1",
+      "cell": "tilezoom-none",
+      "place": "tilezoom",
+      "cap": "none",
+      "N": 6,
+      "rep": 1,
+      "wallSec": 20,
+      "cpuWindowSec": 20.35,
+      "sysBefore": {
+        "freeMemMB": 6822,
+        "systemCpuLoadPct": 2
+      },
+      "loadOk": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "loadMs": [
+        229,
+        111,
+        105,
+        103,
+        111,
+        107
+      ],
+      "fpsPerTileMean": 0,
+      "fpsPerTileMin": 0,
+      "fpsPerTileMax": 0,
+      "frameIntervalMsP50": null,
+      "frameIntervalMsP95": null,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": null,
+      "distinctFramesMin": 0,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 0,
+      "cpuPctOfOneCoreByType": {
+        "Tab": 91.8,
+        "GPU": 50.4,
+        "Utility": 0,
+        "Browser": 0
+      },
+      "totalCpuPctOfOneCore": 142.2,
+      "workingSetMBByType": {
+        "Browser": 107,
+        "GPU": 126,
+        "Utility": 49,
+        "Tab": 624
+      },
+      "workingSetMBTotal": 906,
+      "pageLiveness": [
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        }
+      ],
+      "pageRafPerSecMean": 143.8,
+      "pageTimerPerSecMean": 10,
+      "viewportAtLoad": {
+        "iw": 1000,
+        "ih": 625
+      }
+    },
+    {
+      "id": "tilezoom-none__n10__r1",
+      "cell": "tilezoom-none",
+      "place": "tilezoom",
+      "cap": "none",
+      "N": 10,
+      "rep": 1,
+      "wallSec": 20,
+      "cpuWindowSec": 20.4,
+      "sysBefore": {
+        "freeMemMB": 6834,
+        "systemCpuLoadPct": 3
+      },
+      "loadOk": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "loadMs": [
+        225,
+        110,
+        102,
+        106,
+        106,
+        109,
+        113,
+        111,
+        119,
+        123
+      ],
+      "fpsPerTileMean": 0,
+      "fpsPerTileMin": 0,
+      "fpsPerTileMax": 0,
+      "frameIntervalMsP50": null,
+      "frameIntervalMsP95": null,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": null,
+      "distinctFramesMin": 0,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 0.5,
+      "cpuPctOfOneCoreByType": {
+        "Tab": 153,
+        "GPU": 72.6,
+        "Utility": 0,
+        "Browser": 0.6
+      },
+      "totalCpuPctOfOneCore": 226.2,
+      "workingSetMBByType": {
+        "Browser": 108,
+        "GPU": 130,
+        "Utility": 49,
+        "Tab": 997
+      },
+      "workingSetMBTotal": 1284,
+      "pageLiveness": [
+        {
+          "rafPerSec": 143.7,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.7,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.7,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.7,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.7,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.7,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.7,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.7,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.7,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.7,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        }
+      ],
+      "pageRafPerSecMean": 143.7,
+      "pageTimerPerSecMean": 10,
+      "viewportAtLoad": {
+        "iw": 1000,
+        "ih": 625
+      }
+    },
+    {
+      "id": "tilezoom-screencast15__n6__r1",
+      "cell": "tilezoom-screencast15",
+      "place": "tilezoom",
+      "cap": "screencast15",
+      "N": 6,
+      "rep": 1,
+      "wallSec": 20.01,
+      "cpuWindowSec": 20.35,
+      "sysBefore": {
+        "freeMemMB": 6032,
+        "systemCpuLoadPct": 3
+      },
+      "loadOk": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "loadMs": [
+        225,
+        108,
+        104,
+        106,
+        107,
+        111
+      ],
+      "fpsPerTileMean": 15,
+      "fpsPerTileMin": 15,
+      "fpsPerTileMax": 15,
+      "frameIntervalMsP50": 62.98,
+      "frameIntervalMsP95": 77.19,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": 1.7,
+      "distinctFramesMin": 314,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 15.3,
+      "cpuPctOfOneCoreByType": {
+        "Tab": 102.1,
+        "GPU": 78.2,
+        "Utility": 0,
+        "Browser": 15.1
+      },
+      "totalCpuPctOfOneCore": 195.4,
+      "workingSetMBByType": {
+        "Browser": 109,
+        "GPU": 136,
+        "Utility": 49,
+        "Tab": 713
+      },
+      "workingSetMBTotal": 1006,
+      "pageLiveness": [
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        },
+        {
+          "rafPerSec": 143.8,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 1000,
+          "ih": 625,
+          "dpr": 0.47999998927116394
+        }
+      ],
+      "pageRafPerSecMean": 143.8,
+      "pageTimerPerSecMean": 10,
+      "viewportAtLoad": {
+        "iw": 1000,
+        "ih": 625
+      }
+    },
+    {
+      "id": "covered-screencast15__n6__r1",
+      "cell": "covered-screencast15",
+      "place": "covered",
+      "cap": "screencast15",
+      "N": 6,
+      "rep": 1,
+      "wallSec": 20.01,
+      "cpuWindowSec": 20.3,
+      "sysBefore": {
+        "freeMemMB": 6169,
+        "systemCpuLoadPct": 1
+      },
+      "loadOk": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "loadMs": [
+        253,
+        109,
+        99,
+        98,
+        97,
+        96
+      ],
+      "fpsPerTileMean": 0,
+      "fpsPerTileMin": 0,
+      "fpsPerTileMax": 0,
+      "frameIntervalMsP50": null,
+      "frameIntervalMsP95": null,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": null,
+      "distinctFramesMin": 0,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 1.5,
+      "cpuPctOfOneCoreByType": {
+        "GPU": 0.7,
+        "Tab": 0.4,
+        "Utility": 0,
+        "Browser": 1.5
+      },
+      "totalCpuPctOfOneCore": 2.5,
+      "workingSetMBByType": {
+        "Browser": 108,
+        "GPU": 116,
+        "Utility": 49,
+        "Tab": 760
+      },
+      "workingSetMBTotal": 1033,
+      "pageLiveness": [
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 1,
+          "iw": 1000,
+          "ih": 700,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 1,
+          "iw": 1000,
+          "ih": 700,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 1,
+          "iw": 1000,
+          "ih": 700,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 1,
+          "iw": 1000,
+          "ih": 700,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 1,
+          "iw": 1000,
+          "ih": 700,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 1,
+          "iw": 1000,
+          "ih": 700,
+          "dpr": 1.5
+        }
+      ],
+      "pageRafPerSecMean": 0,
+      "pageTimerPerSecMean": 1,
+      "viewportAtLoad": {
+        "iw": 1000,
+        "ih": 700
+      }
+    },
+    {
+      "id": "offscreen-screencast15__n6__r1",
+      "cell": "offscreen-screencast15",
+      "place": "offscreen",
+      "cap": "screencast15",
+      "N": 6,
+      "rep": 1,
+      "wallSec": 20.01,
+      "cpuWindowSec": 20.27,
+      "sysBefore": {
+        "freeMemMB": 6076,
+        "systemCpuLoadPct": 6
+      },
+      "loadOk": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "loadMs": [
+        291,
+        106,
+        103,
+        120,
+        108,
+        120
+      ],
+      "fpsPerTileMean": 0,
+      "fpsPerTileMin": 0,
+      "fpsPerTileMax": 0,
+      "frameIntervalMsP50": null,
+      "frameIntervalMsP95": null,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": null,
+      "distinctFramesMin": 0,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 0.2,
+      "cpuPctOfOneCoreByType": {
+        "Tab": 0.2,
+        "GPU": 0.6,
+        "Utility": 0,
+        "Browser": 0.2
+      },
+      "totalCpuPctOfOneCore": 1,
+      "workingSetMBByType": {
+        "Browser": 108,
+        "GPU": 115,
+        "Utility": 49,
+        "Tab": 667
+      },
+      "workingSetMBTotal": 939,
+      "pageLiveness": [
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.5
+        },
+        {
+          "rafPerSec": 0,
+          "tmrPerSec": 1,
+          "visAfter": "hidden",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.5
+        }
+      ],
+      "pageRafPerSecMean": 0,
+      "pageTimerPerSecMean": 1,
+      "viewportAtLoad": {
+        "iw": 0,
+        "ih": 0
+      }
+    },
+    {
+      "id": "osr-paint__n1__r1",
+      "cell": "osr-paint",
+      "place": "osr",
+      "cap": "paint",
+      "N": 1,
+      "rep": 1,
+      "wallSec": 20,
+      "cpuWindowSec": 20.28,
+      "sysBefore": {
+        "freeMemMB": 6561,
+        "systemCpuLoadPct": 4
+      },
+      "loadOk": [
+        true
+      ],
+      "loadMs": [
+        230
+      ],
+      "fpsPerTileMean": 0,
+      "fpsPerTileMin": 0,
+      "fpsPerTileMax": 0,
+      "frameIntervalMsP50": null,
+      "frameIntervalMsP95": null,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": null,
+      "distinctFramesMin": 0,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 0.2,
+      "cpuPctOfOneCoreByType": {
+        "GPU": 3.7,
+        "Tab": 3.7,
+        "Utility": 0.1,
+        "Browser": 0.2
+      },
+      "totalCpuPctOfOneCore": 7.7,
+      "workingSetMBByType": {
+        "Browser": 106,
+        "GPU": 113,
+        "Utility": 49,
+        "Tab": 153
+      },
+      "workingSetMBTotal": 422,
+      "pageLiveness": [
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        }
+      ],
+      "pageRafPerSecMean": 60,
+      "pageTimerPerSecMean": 10,
+      "viewportAtLoad": {
+        "iw": 0,
+        "ih": 0
+      }
+    },
+    {
+      "id": "osr-paint__n6__r1",
+      "cell": "osr-paint",
+      "place": "osr",
+      "cap": "paint",
+      "N": 6,
+      "rep": 1,
+      "wallSec": 20.01,
+      "cpuWindowSec": 20.3,
+      "sysBefore": {
+        "freeMemMB": 6591,
+        "systemCpuLoadPct": 5
+      },
+      "loadOk": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "loadMs": [
+        218,
+        98,
+        95,
+        93,
+        95,
+        94
+      ],
+      "fpsPerTileMean": 0,
+      "fpsPerTileMin": 0,
+      "fpsPerTileMax": 0,
+      "frameIntervalMsP50": null,
+      "frameIntervalMsP95": null,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": null,
+      "distinctFramesMin": 0,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 0,
+      "cpuPctOfOneCoreByType": {
+        "Tab": 16.1,
+        "GPU": 14,
+        "Utility": 0,
+        "Browser": 0
+      },
+      "totalCpuPctOfOneCore": 30.1,
+      "workingSetMBByType": {
+        "Browser": 107,
+        "GPU": 115,
+        "Utility": 49,
+        "Tab": 589
+      },
+      "workingSetMBTotal": 861,
+      "pageLiveness": [
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        }
+      ],
+      "pageRafPerSecMean": 60,
+      "pageTimerPerSecMean": 10,
+      "viewportAtLoad": {
+        "iw": 0,
+        "ih": 0
+      }
+    },
+    {
+      "id": "osr-paint__n10__r1",
+      "cell": "osr-paint",
+      "place": "osr",
+      "cap": "paint",
+      "N": 10,
+      "rep": 1,
+      "wallSec": 20.01,
+      "cpuWindowSec": 20.34,
+      "sysBefore": {
+        "freeMemMB": 6115,
+        "systemCpuLoadPct": 4
+      },
+      "loadOk": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "loadMs": [
+        94,
+        93,
+        100,
+        98,
+        103,
+        104,
+        105,
+        102,
+        113,
+        103
+      ],
+      "fpsPerTileMean": 0,
+      "fpsPerTileMin": 0,
+      "fpsPerTileMax": 0,
+      "frameIntervalMsP50": null,
+      "frameIntervalMsP95": null,
+      "captureLatencyMsP50": null,
+      "captureLatencyMsP95": null,
+      "captureTimeouts": 0,
+      "captureErrors": 0,
+      "captureEmpty": 0,
+      "startErr": null,
+      "lastErr": null,
+      "kBPerFrame": null,
+      "distinctFramesMin": 0,
+      "mainProcCpuPct_nodeCpuUsageCrossCheck": 0.2,
+      "cpuPctOfOneCoreByType": {
+        "Tab": 34.6,
+        "GPU": 22.1,
+        "Utility": 0,
+        "Browser": 0.2
+      },
+      "totalCpuPctOfOneCore": 56.9,
+      "workingSetMBByType": {
+        "Browser": 110,
+        "GPU": 117,
+        "Utility": 49,
+        "Tab": 1089
+      },
+      "workingSetMBTotal": 1365,
+      "pageLiveness": [
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        },
+        {
+          "rafPerSec": 60,
+          "tmrPerSec": 10,
+          "visAfter": "visible",
+          "visEvents": 0,
+          "iw": 0,
+          "ih": 0,
+          "dpr": 1.25
+        }
+      ],
+      "pageRafPerSecMean": 60,
+      "pageTimerPerSecMean": 10,
+      "viewportAtLoad": {
+        "iw": 0,
+        "ih": 0
+      }
+    }
+  ],
+  "probes": {},
+  "display": {
+    "scaleFactor": 1.25,
+    "size": {
+      "width": 1536,
+      "height": 864
+    },
+    "workAreaSize": {
+      "width": 1536,
+      "height": 816
+    }
+  },
+  "winBoundsDip": {
+    "x": 68,
+    "y": 0,
+    "width": 1400,
+    "height": 816
+  },
+  "contentBoundsDip": {
+    "x": 75,
+    "y": 56,
+    "width": 1386,
+    "height": 753
+  }
+}

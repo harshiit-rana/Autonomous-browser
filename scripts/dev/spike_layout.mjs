@@ -11,6 +11,9 @@ import { once } from 'node:events';
 import path from 'node:path';
 import fs from 'node:fs';
 import * as C from './spike_common.mjs';
+import os from 'node:os';
+// Chromium persists per-host zoom in the profile; an isolated throw-away profile keeps runs independent (a stale zoom polluted an early probe run).
+app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'spike_layout-')));
 
 const args = C.parseArgs();
 const OUT = path.resolve(C.repoRoot, args.out ?? 'docs/audits/evidence/spikes/layout');
