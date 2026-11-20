@@ -288,15 +288,14 @@
    "kind": "code",
    "modules": [
     "agent/perception.ts",
-    "core/dom_indexer.ts",
-    "perception/axtree_extractor.ts",
-    "perception/som_overlay.ts"
+    "agent/som_bitmap.ts",
+    "core/dom_indexer.ts"
    ],
    "tests": [
-    "test_perception.ts"
+    "test_agent_loop.ts"
    ],
    "files": [],
-   "gap": "axtree_extractor and som_overlay are orphaned; the running path is agent/perception.ts only.",
+   "gap": "Covered in a real Electron view by test_agent_loop.ts (shadow DOM, same-origin frames, occlusion, bitmap Set-of-Marks). Cross-origin iframes are listed but not entered. Old axtree_extractor/som_overlay moved to attic/.",
    "owning": [
     225
    ]
@@ -306,12 +305,14 @@
    "title": "[AGT-05] Stable element references: fix duplicate-id bug, stop mutating the page, handle staleness",
    "kind": "code",
    "modules": [
-    "core/dom_indexer.ts",
-    "agent/perception.ts"
+    "agent/perception.ts",
+    "core/dom_indexer.ts"
    ],
-   "tests": [],
+   "tests": [
+    "test_agent_loop.ts"
+   ],
    "files": [],
-   "gap": "Staleness handling not exercised in the app.",
+   "gap": "Ref stability and stale-ref errors tested in Electron (test_agent_loop.ts); not exercised with a real model.",
    "owning": [
     225
    ]
@@ -322,11 +323,13 @@
    "kind": "code",
    "modules": [
     "core/action_executor.ts",
-    "perception/spatial_reasoner.ts"
+    "agent/tools.ts"
    ],
-   "tests": [],
+   "tests": [
+    "test_agent_loop.ts"
+   ],
    "files": [],
-   "gap": "spatial_reasoner is orphaned.",
+   "gap": "CDP input, occlusion re-check, select, hover, drag, upload and dialogs tested in Electron (test_agent_loop.ts). spatial_reasoner moved to attic/.",
    "owning": [
     225
    ]

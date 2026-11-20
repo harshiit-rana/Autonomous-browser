@@ -1,0 +1,97 @@
+
+[2026-11-20T12:26:13.970Z] [INFO] [main:main] Initializing Autonomous Browser... 
+[2026-11-20T12:26:13.973Z] [INFO] [main:main] App paths initialized {
+  paths: {
+    isPortable: false,
+    userData: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR',
+    sessionData: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\session',
+    diskCache: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\cache',
+    database: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\aegis.sqlite',
+    vault: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\vault.enc',
+    logs: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\logs',
+    recordings: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\recordings',
+    downloads: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\downloads'
+  }
+}
+
+DevTools listening on ws://127.0.0.1:9346/devtools/browser/f8e78eb0-abae-4c09-9b23-d4186b0aaae1
+[2026-11-20T12:26:14.020Z] [INFO] [main:persistence] Persistence ready {
+  file: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\aegis.sqlite',
+  schemaVersion: 4,
+  interruptedMissions: 0
+}
+[2026-11-20T12:26:14.021Z] [INFO] [main:main] Electron app ready. Creating primary window... 
+[2026-11-20T12:26:14.060Z] [INFO] [main:tab-group-manager] Created tab group {
+  id: 'group_1795177574060_ks95a',
+  name: 'General',
+  color: '#4A90E2',
+  ownerMissionId: undefined
+}
+[2026-11-20T12:26:14.061Z] [INFO] [main:main] Loading chrome renderer HTML { rendererHtml: 'D:\\REA\\wt-RUN-03\\dist\\renderer\\index.html' }
+[2026-11-20T12:26:14.245Z] [INFO] [main:main] Chrome renderer loaded successfully 
+[2026-11-20T12:26:14.246Z] [INFO] [main:view-manager] Creating tab {
+  id: 'tab_1795177574246_nvc51',
+  url: 'https://duckduckgo.com',
+  isBackgroundAgent: false,
+  owner: 'user'
+}
+[20556:1120/175615.276:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[2026-11-20T12:26:16.914Z] [INFO] [main:main] Mission start requested {
+  prompt: 'Open the arena page and report its heading',
+  model: 'gemini-2.0-flash'
+}
+[2026-11-20T12:26:16.915Z] [INFO] [main:main] PowerSaveBlocker activated for background mission { blockerId: 0 }
+[2026-11-20T12:26:16.916Z] [INFO] [main:agent-runtime] Starting mission {
+  missionId: 'm_1795177576916_wyz9',
+  prompt: 'Open the arena page and report its heading',
+  model: 'gemini-2.0-flash',
+  tabId: 'tab_1795177574246_nvc51'
+}
+[2026-11-20T12:26:16.929Z] [WARN] [main:e2e-scripted] AEGIS_E2E_MODEL_MODE=scripted: model output comes from a script, not a model {
+  scriptPath: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\actor.json',
+  steps: 4
+}
+[2026-11-20T12:26:16.936Z] [WARN] [main:e2e-scripted] AEGIS_E2E_MODEL_MODE=scripted: verifier output comes from a script, not a model {
+  scriptPath: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\verifier.json',
+  steps: 2
+}
+[2026-11-20T12:26:17.115Z] [INFO] [main] Security PDP requires human approval for cross-origin navigation {
+  targetUrl: 'http://127.0.0.1:62503/agent/nav/a',
+  allowedOrigins: [ 'duckduckgo.com' ]
+}
+[2026-11-20T12:26:19.162Z] [INFO] [main:tools] Executing tool {
+  name: 'navigate',
+  args: { url: 'http://127.0.0.1:62503/agent/nav/a' }
+}
+[20556:1120/175619.374:INFO:CONSOLE(82)] "Uncaught TypeError: Cannot read properties of null (reading 'appendChild')", source:  (82)
+[20556:1120/175619.391:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (2)
+[2026-11-20T12:26:20.149Z] [INFO] [main:tools] Executing tool {
+  name: 'ask_user',
+  args: {
+    question: 'Should I report the page heading or the page title?',
+    options: [ 'Heading', 'Title' ]
+  }
+}
+[2026-11-20T12:26:23.771Z] [INFO] [main:agent-runtime] Mission finished {
+  state: 'completed',
+  result: 'The heading is "Page A"',
+  error: undefined,
+  verifier: 'pass'
+}
+[2026-11-20T12:26:23.786Z] [INFO] [main:agent-runtime] Deliverable report saved {
+  filePath: 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-225-jI63NR\\deliverables\\m_1795177576916_wyz9_report.md'
+}

@@ -47,7 +47,9 @@ export class GeminiModelProvider implements IModelProvider {
           systemInstruction: request.systemPrompt || undefined,
           temperature: request.temperature ?? 0.2,
           maxOutputTokens: request.maxTokens ?? 2048,
-          tools: toolsConfig as any
+          tools: toolsConfig as any,
+          // Cancelling a mission must abort the HTTP request (#225).
+          abortSignal: request.abortSignal
         }
       });
 

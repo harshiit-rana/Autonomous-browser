@@ -1,0 +1,45 @@
+{
+  "measuredAt": "2026-11-19T17:02:53.056Z",
+  "electron": "33.4.11",
+  "results": {
+    "agent/perception.ts": {
+      "iframeSameOrigin_frameButtonFound": false,
+      "iframeSameOrigin_textFound": false,
+      "shadowDom_buttonFound": false,
+      "shadowDom_nestedLinkFound": false,
+      "hidden_displayNoneExcluded": true,
+      "hidden_visibilityHiddenExcluded": true,
+      "framesRaw": [],
+      "occlusion_coveredButtonFlagged": false,
+      "occlusionRaw": [
+        {
+          "ref": "e1",
+          "name": "Under the cover"
+        }
+      ],
+      "stableIds_sameIdAfterInsertBefore": false,
+      "stableIds_detail": {
+        "before": "e2",
+        "after": "e3"
+      },
+      "heading_reachesModel": false
+    },
+    "perception/axtree_extractor.ts": {
+      "iframeSameOrigin_frameButtonFound": false,
+      "iframeSameOrigin_textFound": false,
+      "shadowDom_buttonFound": false,
+      "shadowDom_nestedLinkFound": false,
+      "hidden_displayNoneExcluded": true,
+      "hidden_visibilityHiddenExcluded": true,
+      "framesRaw": "[generic] \"Frames and shadow roots idle\"\n  [heading] \"Frames and shadow roots\"\n  [generic] \"idle\"",
+      "occlusion_coveredButtonFlagged": false,
+      "occlusionRaw": "[generic] \"Covered button Under the cover idle\"\n  [heading] \"Covered button\"\n  [button] \"Under the cover\"\n  [generic] \"idle\"",
+      "stableIds_sameIdAfterInsertBefore": true,
+      "stableIds_detail": {
+        "before": "ax_1",
+        "after": "ax_1"
+      },
+      "heading_reachesModel": true
+    }
+  }
+}

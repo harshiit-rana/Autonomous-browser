@@ -5,7 +5,7 @@
  * - Issue #27: PERC-02 Visual 'Set-of-Mark' (SoM) Dynamic Overlay Generator
  */
 
-import { IndexedElement } from '../core/dom_indexer.js';
+import { IndexedElement } from '../../src/core/dom_indexer.js';
 
 export interface SoMMarker {
   id: string; // e.g. "1", "2"
