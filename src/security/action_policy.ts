@@ -58,14 +58,60 @@ export interface PolicyEvaluationResult {
   blockedTarget?: string;
 }
 
+/**
+ * A user policy rule (settings.policyRules, #225). A rule replaces the built-in decision for one risk class, optionally
+ * only on one host (exact host or a parent domain). Rules can never allow `code-exec`.
+ */
+export interface PolicyRule {
+  riskClass: ActionRiskClass;
+  decision: PolicyDecision;
+  host?: string;
+}
+
 export class ActionPolicyEngine {
+  private readonly rules: PolicyRule[];
+  /** Mission scope: hosts the mission may act on without asking. Grows when the user approves an origin. */
+  private readonly scope: Set<string>;
+
+  constructor(options: { rules?: PolicyRule[]; allowedHosts?: string[] } = {}) {
+    this.rules = (options.rules || []).filter(r => r && r.riskClass && ['allow', 'ask', 'deny'].includes(r.decision));
+    this.scope = new Set((options.allowedHosts || []).map(h => ActionPolicyEngine.hostOf(h)).filter(Boolean));
+  }
+
+  /** Host of a URL, or the string itself when it is already a host. */
+  public static hostOf(urlOrHost: string): string {
+    try {
+      return new URL(urlOrHost).hostname.toLowerCase();
+    } catch {
+      return String(urlOrHost || '').toLowerCase().replace(/^\*\./, '').split('/')[0].split(':')[0];
+    }
+  }
+
+  public allowHost(urlOrHost: string): void {
+    const h = ActionPolicyEngine.hostOf(urlOrHost);
+    if (h) this.scope.add(h);
+  }
+
+  public getAllowedHosts(): string[] {
+    return Array.from(this.scope);
+  }
+
+  /** True when `url` is inside the mission scope (non-http pages such as about:blank never count as leaving it). */
+  public isInScope(url: string): boolean {
+    if (!/^https?:/i.test(url)) return true;
+    return this.scope.size === 0 || ActionPolicyEngine.isOriginAllowed(url, Array.from(this.scope));
+  }
+
   /**
-   * Helper to extract eTLD+1 or hostname
+   * Helper to extract eTLD+1 or hostname. IP addresses and single-label hosts (localhost) are returned whole:
+   * splitting `127.0.0.1` into `0.1` made every local origin look foreign (baseline defect D4).
    */
   public static getETLDPlusOne(urlStr: string): string {
     try {
       const parsed = new URL(urlStr);
-      const parts = parsed.hostname.toLowerCase().split('.');
+      const host = parsed.hostname.toLowerCase();
+      if (/^\d+(\.\d+){3}$/.test(host) || host.startsWith('[') || !host.includes('.')) return host;
+      const parts = host.split('.');
       if (parts.length > 2) {
         return parts.slice(-2).join('.');
       }
@@ -86,12 +132,22 @@ export class ActionPolicyEngine {
       const candidateHost = new URL(candidateUrl).hostname.toLowerCase();
       const candidateEtld = ActionPolicyEngine.getETLDPlusOne(candidateUrl);
 
+      const isIp = /^\d+(\.\d+){3}$/.test(candidateHost) || candidateHost.startsWith('[');
       for (const allowed of allowedOrigins) {
-        const cleanAllowed = allowed.toLowerCase().replace(/^\*\./, '');
+        const cleanAllowed = ActionPolicyEngine.hostOf(allowed);
+        if (!cleanAllowed) continue;
+        if (isIp) {
+          if (candidateHost === cleanAllowed) return true;
+          continue;
+        }
         if (candidateHost === cleanAllowed || candidateHost.endsWith('.' + cleanAllowed)) {
           return true;
         }
         if (candidateEtld === cleanAllowed || candidateEtld.endsWith('.' + cleanAllowed)) {
+          return true;
+        }
+        // Same registrable domain (www.example.com allows shop.example.com).
+        if (candidateEtld && candidateEtld.includes('.') && candidateEtld === ActionPolicyEngine.getETLDPlusOne(`http://${cleanAllowed}/`)) {
           return true;
         }
       }
@@ -118,7 +174,7 @@ export class ActionPolicyEngine {
     }
 
     // 2. Navigation actions
-    if (actionName === 'navigate') {
+    if (actionName === 'navigate' || actionName === 'open_tab') {
       const allowed = ActionPolicyEngine.isOriginAllowed(targetUrl, allowedOrigins);
       return allowed ? 'navigate-in-scope' : 'navigate-out-of-scope';
     }
@@ -149,7 +205,7 @@ export class ActionPolicyEngine {
     }
 
     // 6. File Egress: Downloads / Uploads
-    if (actionName === 'upload' || actionName === 'download' || facts?.type === 'file') {
+    if (actionName === 'upload' || actionName === 'upload_file' || actionName === 'download' || facts?.type === 'file') {
       return 'file-egress';
     }
 
@@ -166,6 +222,23 @@ export class ActionPolicyEngine {
    * Main Policy Decision Point (PDP)
    */
   public evaluateAction(req: PolicyEvaluationRequest): PolicyEvaluationResult {
+    const allowedOrigins = req.allowedOrigins.length ? req.allowedOrigins : Array.from(this.scope);
+    const base = this.evaluateBuiltin({ ...req, allowedOrigins });
+    if (base.riskClass === 'code-exec') return base;
+    const targetHost = ActionPolicyEngine.hostOf(req.actionArgs?.url || req.currentUrl || '');
+    const rule = this.rules.find(r => r.riskClass === base.riskClass &&
+      (!r.host || targetHost === r.host.toLowerCase() || targetHost.endsWith('.' + r.host.toLowerCase())));
+    if (!rule || rule.decision === base.decision) return base;
+    return {
+      ...base,
+      decision: rule.decision,
+      reason: `User policy rule: ${rule.decision} ${rule.riskClass}${rule.host ? ` on ${rule.host}` : ''} (built-in decision was ${base.decision}: ${base.reason})`,
+      requiresUserConfirmation: rule.decision === 'ask',
+      policyTrace: [...base.policyTrace, `Rule override -> ${rule.decision.toUpperCase()}`]
+    };
+  }
+
+  private evaluateBuiltin(req: PolicyEvaluationRequest): PolicyEvaluationResult {
     const trace: string[] = [];
     trace.push(`PDP evaluating action '${req.actionName}' for mission '${req.missionId}'`);
 

@@ -49,3 +49,8 @@ This directory contains legacy or un-architected modules removed from active pro
 - **Status:** Quarantined to attic.
 - **Restoration Criteria:** None. Redundant duplicate removed to enforce single source of truth for prompt isolation and XML boundary defense.
 
+### 10. `perception/axtree_extractor.ts`, `perception/som_overlay.ts`, `perception/spatial_reasoner.ts` (Triaged in Issue #225)
+- **Findings:** Never reached from the product. Measured against the new `src/agent/perception.ts` on the `/agent/*` fixtures in a real Electron view (`docs/audits/evidence/225/step0/perception_compare_*.json`): the old extractor did not see elements in open shadow roots or same-origin iframes and did not detect occlusion. `som_overlay` drew marks into the page DOM, which the page can read and which changes layout; marks are now drawn on the captured bitmap (`src/agent/som_bitmap.ts`).
+- **Status:** Quarantined to attic. `attic/tests/test_perception.ts` still runs against them; `tests/agent_loop/perception_compare.ts` imports the old extractor for the comparison.
+- **Restoration Criteria:** None planned; the replacement covers the same ground.
+

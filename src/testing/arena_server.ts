@@ -20,6 +20,7 @@
 
 import * as http from 'node:http';
 import * as url from 'node:url';
+import { handleAgentFixture } from './agent_fixtures.js';
 
 export interface OracleState {
   orders: Array<{ orderId: string; item: string; price: number; address: string; timestamp: number }>;
@@ -71,6 +72,9 @@ export class WebArenaServer {
   public async stop(): Promise<void> {
     return new Promise((resolve) => {
       if (this.server) {
+        // Browsers keep idle keep-alive sockets open for minutes; close() alone would wait for them.
+        const srv = this.server;
+        setImmediate(() => srv.closeAllConnections?.());
         this.server.close(() => {
           this.server = null;
           resolve();
@@ -171,6 +175,11 @@ export class WebArenaServer {
       return;
     }
 
+    // 9. /agent fixtures for the single-agent tool surface (#225)
+    if (pathname === '/agent' || pathname.startsWith('/agent/')) {
+      if (handleAgentFixture(pathname, res)) return;
+    }
+
     // 8. /chaos Fixture (flaky, 429, 503, slow)
     if (pathname === '/chaos' || pathname.startsWith('/chaos/')) {
       this.handleChaos(req, res, pathname, parsed.query);
@@ -192,6 +201,7 @@ export class WebArenaServer {
     <li><a href="/structure">/structure - Iframes & Shadow DOM</a></li>
     <li><a href="/hostile">/hostile - Adversarial Payloads</a></li>
     <li><a href="/chaos">/chaos - Fault Injection</a></li>
+    <li><a href="/agent">/agent - Agent Tool Arena</a></li>
   </ul>
 </body>
 </html>`);

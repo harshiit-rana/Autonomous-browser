@@ -63,7 +63,8 @@ export class ViewManager {
       canGoForward: false,
       isAudible: false,
       isCrashed: false,
-      owner: isBackgroundAgent ? (owner.startsWith('agent:') ? owner : `agent:${owner}`) : 'user'
+      // An explicit `agent:<missionId>` owner is kept for foreground tabs too (agent-opened tabs and their popups, #225).
+      owner: owner.startsWith('agent:') ? owner : (isBackgroundAgent ? `agent:${owner}` : 'user')
     };
 
     const tab: TabView = {

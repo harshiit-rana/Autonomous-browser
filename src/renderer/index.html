@@ -139,6 +139,17 @@
         <button id="steering-send-btn" class="badge-btn" title="Send steering message">Send</button>
       </div>
 
+      <!-- Agent question / approval card (#225): mission:question -> answer -> mission:answer -->
+      <div id="question-card" class="question-card hidden" role="dialog" aria-live="assertive" aria-labelledby="question-text">
+        <div class="question-kind" id="question-kind">The agent is asking</div>
+        <div class="question-text" id="question-text"></div>
+        <div class="question-options" id="question-options"></div>
+        <div class="question-free">
+          <input type="text" id="question-input" placeholder="Type your answer...">
+          <button id="question-send-btn" class="badge-btn">Answer</button>
+        </div>
+      </div>
+
       <!-- Worker Cards Container -->
       <div id="worker-cards-container">
         <div id="no-workers-msg" class="empty-state-text">No active agent workers</div>

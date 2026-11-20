@@ -34,17 +34,20 @@ jobs:
       - name: Audit Module Reachability Policy
         run: node scripts/audit_reachability.mjs --check
 
+      # tests/test_agent_loop.ts drives real Electron pages (#225): Linux runners need a virtual display.
       - name: Run Milestone Suites (M1 - M7)
+        if: runner.os != 'Linux'
         run: npm test
+
+      - name: Run Milestone Suites (M1 - M7, Linux under xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm test
 
       - name: Run Memory and Vault Unit Tests
         run: npx tsx tests/test_memory_and_vault.ts
 
       - name: Run Stealth Simulation Tests
         run: npx tsx tests/test_stealth.ts
-
-      - name: Run Perception Tests
-        run: npx tsx tests/test_perception.ts
 
       - name: Run Swarm Infrastructure Tests
         run: npx tsx tests/test_swarm_infrastructure.ts
@@ -78,7 +81,7 @@ jobs:
         run: npm ci
 
       - name: Run Programmatic Release Gate
-        run: npm run gate
+        run: xvfb-run -a npm run gate
         continue-on-error: ${{ github.ref != 'refs/heads/release' && !startsWith(github.ref, 'refs/heads/release/') }}
 
       - name: Upload Gate Report

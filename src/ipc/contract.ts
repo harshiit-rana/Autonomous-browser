@@ -124,10 +124,25 @@ export interface EvidenceEventPayload {
 
 export interface MissionStatusPayload {
   missionId?: string;
-  status: 'idle' | 'planning' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
+  status: 'idle' | 'planning' | 'running' | 'paused' | 'waiting_user' | 'completed' | 'completed_unverified' | 'failed' | 'cancelled';
   message?: string;
   /** `demo` while a recorded replay is playing: the renderer shows the DEMO banner. Absent means a live mission. */
   source?: MissionSource;
+}
+
+/** The agent asks the user something and waits (ask_user, a policy approval, a stuck escalation) (#225). */
+export interface MissionQuestionPayload {
+  missionId: string;
+  id: string;
+  text: string;
+  options?: string[];
+  kind: 'question' | 'approval' | 'stuck' | 'handoff';
+}
+
+export interface MissionAnswerRequest {
+  missionId: string;
+  questionId: string;
+  answer: string;
 }
 
 export interface TelemetryEventPayload {
@@ -255,6 +270,7 @@ export const IPC_CHANNELS = {
   MISSION_HANDBACK: 'mission:handback',
   MISSION_STEER: 'mission:steer',
   MISSION_UNDO: 'mission:undo',
+  MISSION_ANSWER: 'mission:answer',
 
   // Persistence: mission history and backup/restore (Issue #239)
   MISSIONS_LIST: 'missions:list',
@@ -286,7 +302,8 @@ export const IPC_CHANNELS = {
   EVENT_EVIDENCE: 'evidence:event',
   EVENT_MISSION_STATUS: 'mission:status',
   EVENT_TELEMETRY: 'telemetry:event',
-  EVENT_PRESENCE: 'presence:event'
+  EVENT_PRESENCE: 'presence:event',
+  EVENT_MISSION_QUESTION: 'mission:question'
 } as const;
 
 export type IPCChannelName = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

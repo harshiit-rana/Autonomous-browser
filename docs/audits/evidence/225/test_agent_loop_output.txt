@@ -1,0 +1,31 @@
+✓ settings v1 -> v2 migration (privacyMode, policyRules, maxSteps, maxCostUSD, verifierModel)
+✓ policy: IP/localhost origins, user rules, mission scope growth, code-exec never allowed
+✓ record_extraction quote rules
+✓ 22 tools, each with schema and risk class; argument validation
+✓ Set-of-Marks drawn on the bitmap
+✓ [electron] select_option: native <select> and ARIA listbox (854 ms): page events ["size=l","color=Green"]
+✓ [electron] hover reveals a menu that the next observation contains (660 ms): hover -> menu -> click -> page B
+✓ [electron] drag: HTML5 drag-and-drop reaches the drop zone (451 ms): ["dropped card-a"]
+✓ [electron] go_back / go_forward (and navigation caused by a click) (994 ms): http://127.0.0.1:62511/agent/nav/a -> http://127.0.0.1:62511/agent/nav/b -> http://127.0.0.1:62511/agent/nav/a -> http://127.0.0.1:62511/agent/nav/b
+✓ [electron] tab tools: open/switch/close agent tabs, popup adoption, user tabs protected (2132 ms): start=tab_1795177608345_60b4d opened=tab_1795177608614_y4jar
+✓ [electron] extract + record_extraction: values without a real quote are rejected (1023 ms): Error [UNKNOWN]: Extraction rejected: q3Revenue: no quote. E / Error [UNKNOWN]: Extraction rejected: q3Revenue: quote "Q3 2 / Extraction x1 accepted (1 quoted v
+✓ [electron] verifier: separate call, rejects then accepts on retry (430 ms): attempts=2
+✓ [electron] verifier: three rejections end as completed_unverified (587 ms): completed_unverified after 3 checks
+✓ [electron] ask_user: real round trip, no model calls while waiting (2067 ms): answered Blue after 1.2 s, 0 model calls while waiting
+✓ [electron] stuck detection: hint after 3 repeats, then escalation to the user (1565 ms): hint at 3, escalation at 6
+✓ [electron] no tool call: at most 2 nudges, then the mission fails (723 ms): The model returned no tool call 3 times in a row
+✓ [electron] two tools in one turn: sequential, stop at first failure, every call answered (481 ms): Clicked [e1] "Vanish" | Error [STALE_REF]: Element e1 is no long | Skipped: an earlier tool call in this tu | end
+✓ [electron] invalid arguments: bad JSON and missing fields are tool errors, not crashes (890 ms): Invalid call to click: Arguments were not valid JS | Invalid call to type: Missing required argument "t | Invalid call to scroll: Argument "direction" must  | I
+✓ [electron] dialogs: confirm is dismissed, alert accepted, both reported (665 ms): ["confirm=false","alert-closed"]
+✓ [electron] policy: out-of-scope navigation asks once, approval persists for the mission; rule from settings skips the ask (1825 ms): asked 2x, rule run asked 0x
+✓ [electron] policy: the page leaving the allowed origin by itself is re-checked (799 ms): The page moved to localhost (http://localhost:62511/agent/nav/b), which is outsi
+✓ [electron] shadow DOM and same-origin iframe elements are clickable (891 ms): ["shadow clicked","frame clicked"]
+✓ [electron] occluded element is reported and not clicked through the cover (425 ms): occlusion reported
+✓ [electron] upload_file: only inside the mission folder, file-egress needs approval or a rule (1094 ms): ["file=note.txt bytes=29 text=hello from the mission folder"]
+✓ [electron] screenshot with marks: image drawn on the bitmap, page DOM untouched (702 ms): 7578 pixels changed by marks, DOM nodes 27 -> 27
+✓ [electron] find_text: page, shadow root and frame (638 ms): 1 match(es) for "code 42891"; the first is scrolled into view: 1. [frame] …Frame paragraph: code 42891…
+✓ [electron] budgets: step budget and cost cap stop the mission with a reason (1545 ms): Step budget reached: 3 steps used without finishing | Cost cap reached: $0.0808 spent of $0.05 allowed
+✓ [electron] cancel during a model call aborts the HTTP request (534 ms): cancelled after 530 ms; server saw the socket close
+✓ [electron] 60-step run: history stays bounded (pruneHistory works) (13512 ms): 61 steps: 2 full observations, 59 pruned, history 30096 chars (page text now 66031 chars)
+✓ [electron] privacy mode and policy engine come from settings, one instance per mission (539 ms): Standard / Local-only honoured
+✓ 25 real-Electron agent loop scenarios passed

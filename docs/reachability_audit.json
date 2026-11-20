@@ -1,5 +1,9 @@
 [
   {
+    "path": "agent/agent_loop.ts",
+    "isReachable": true
+  },
+  {
     "path": "agent/errors.ts",
     "isReachable": true
   },
@@ -9,6 +13,10 @@
   },
   {
     "path": "agent/runtime.ts",
+    "isReachable": true
+  },
+  {
+    "path": "agent/som_bitmap.ts",
     "isReachable": true
   },
   {
@@ -340,20 +348,8 @@
     "isReachable": false
   },
   {
-    "path": "perception/axtree_extractor.ts",
-    "isReachable": false
-  },
-  {
     "path": "perception/settle_detector.ts",
     "isReachable": true
-  },
-  {
-    "path": "perception/som_overlay.ts",
-    "isReachable": false
-  },
-  {
-    "path": "perception/spatial_reasoner.ts",
-    "isReachable": false
   },
   {
     "path": "planning/state_snapshotter.ts",
@@ -537,6 +533,10 @@
   },
   {
     "path": "swarm/worker_identity.ts",
+    "isReachable": true
+  },
+  {
+    "path": "testing/agent_fixtures.ts",
     "isReachable": true
   },
   {

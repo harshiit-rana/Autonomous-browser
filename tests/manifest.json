@@ -27,5 +27,6 @@
   { "id": "persistence", "cmd": "tsx tests/test_persistence.ts", "area": "persistence" },
   { "id": "worker_isolation", "cmd": "tsx tests/test_worker_isolation.ts", "area": "swarm" },
   { "id": "packaging", "cmd": "tsx tests/test_packaging.ts", "area": "packaging" },
-  { "id": "provider_factory", "cmd": "tsx tests/test_provider_factory.ts", "area": "models" }
+  { "id": "provider_factory", "cmd": "tsx tests/test_provider_factory.ts", "area": "models" },
+  { "id": "agent_loop", "cmd": "tsx tests/test_agent_loop.ts", "area": "agent" }
 ]

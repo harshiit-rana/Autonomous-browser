@@ -184,4 +184,20 @@ export class ModelProviderFactory {
         return new GeminiModelProvider({ apiKey: lookupApiKey('gemini', settings), modelName: check.model });
     }
   }
+
+  /**
+   * Provider for the completion verifier (#225): `verifierModel` from settings when it is usable (a cheaper model is
+   * allowed), otherwise the mission's own model. In real-app e2e runs it is a second, separate scripted queue.
+   */
+  public static async createVerifierProvider(missionModel: string, verifierModel?: string): Promise<IModelProvider> {
+    if (process.env.AEGIS_E2E_MODEL_MODE === 'scripted') {
+      const e2e = await import('./demo/e2e_scripted.js');
+      return e2e.createE2EScriptedVerifier();
+    }
+    if (verifierModel && ModelProviderFactory.inspect(verifierModel).configured) {
+      return ModelProviderFactory.createProvider(verifierModel);
+    }
+    if (verifierModel) logger.warn('Verifier model is not configured; using the mission model', { verifierModel, missionModel });
+    return ModelProviderFactory.createProvider(missionModel);
+  }
 }

@@ -5,7 +5,7 @@
  * - Issue #29: PERC-04 Spatial Relationship & Visual Hierarchy Reasoning Engine
  */
 
-import { IndexedElement } from '../core/dom_indexer.js';
+import { IndexedElement } from '../../src/core/dom_indexer.js';
 
 export type SpatialDirection = 'above' | 'below' | 'left' | 'right';
 

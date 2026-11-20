@@ -14,6 +14,7 @@ import {
   PresenceEventPayload,
   SwarmPreviewItem,
   MissionStatusPayload,
+  MissionQuestionPayload,
   MODEL_NOT_CONFIGURED
 } from '../ipc/contract.js';
 
@@ -218,6 +219,12 @@ export class BrowserApp {
       } else if (data.status === 'running' || data.status === 'planning') {
         this.demoBanner.classList.add('hidden');
       }
+    });
+
+    // Agent question / approval card (#225): the loop waits (no model calls) until this is answered.
+    aegis.onMissionQuestion?.((q: MissionQuestionPayload) => this.showQuestion(q));
+    aegis.onMissionStatus?.((data: MissionStatusPayload) => {
+      if (data.status !== 'waiting_user') this.hideQuestion();
     });
 
     // Evidence & Activity Timeline feed
@@ -458,6 +465,48 @@ export class BrowserApp {
         this.applyTimelineFilter();
       });
     });
+  }
+
+  private openQuestion: MissionQuestionPayload | null = null;
+
+  private showQuestion(q: MissionQuestionPayload): void {
+    const card = document.getElementById('question-card');
+    const text = document.getElementById('question-text');
+    const kind = document.getElementById('question-kind');
+    const opts = document.getElementById('question-options');
+    const input = document.getElementById('question-input') as HTMLInputElement | null;
+    const send = document.getElementById('question-send-btn') as HTMLButtonElement | null;
+    if (!card || !text || !kind || !opts || !input || !send) return;
+    this.openQuestion = q;
+    kind.textContent = q.kind === 'approval' ? 'Approval needed' : q.kind === 'stuck' ? 'The agent is stuck' : q.kind === 'handoff' ? 'Your help is needed in the page' : 'The agent is asking';
+    text.textContent = sanitizeText(q.text);
+    opts.textContent = '';
+    for (const o of q.options || []) {
+      const b = document.createElement('button');
+      b.className = 'badge-btn question-option';
+      b.textContent = sanitizeText(o);
+      b.addEventListener('click', () => void this.sendAnswer(o));
+      opts.appendChild(b);
+    }
+    input.value = '';
+    send.onclick = () => { if (input.value.trim()) void this.sendAnswer(input.value.trim()); };
+    input.onkeydown = (e) => { if (e.key === 'Enter' && input.value.trim()) void this.sendAnswer(input.value.trim()); };
+    card.classList.remove('hidden');
+    this.addTimelineItem(`[Question] ${q.text}`, undefined, 'actions');
+  }
+
+  private hideQuestion(): void {
+    this.openQuestion = null;
+    document.getElementById('question-card')?.classList.add('hidden');
+  }
+
+  private async sendAnswer(answer: string): Promise<void> {
+    const q = this.openQuestion;
+    if (!q) return;
+    const res = await (window as any).aegis.answerQuestion(q.missionId, q.id, answer);
+    const ok = res?.data?.ok ?? res?.ok;
+    if (ok) this.hideQuestion();
+    else this.addTimelineItem(`[Error] Answer not accepted: ${res?.data?.error || res?.error || 'unknown'}`);
   }
 
   private addTimelineItem(text: string, timestamp?: string, forcedCategory?: TimelineCategory): void {

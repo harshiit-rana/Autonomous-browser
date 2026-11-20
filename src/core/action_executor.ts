@@ -4,6 +4,7 @@ import { MouseTrajectoryGenerator, Point } from '../stealth/mouse_trajectory.js'
 import { KeyboardTyper } from '../stealth/keyboard_typer.js';
 import { FingerprintShield } from '../stealth/fingerprint_shield.js';
 import { CURSOR_OVERLAY_SCRIPT } from '../stealth/cursor_overlay.js';
+import { RESOLVE_LOCATOR_JS } from '../agent/perception.js';
 
 export interface ClickOptions {
   button?: 'left' | 'right' | 'middle';
@@ -242,6 +243,158 @@ export class ActionExecutor {
       yDistance: -deltaY,
       speed: 800
     });
+  }
+
+  // ------------------------------------------------------------------ agent tool primitives (#225)
+  // Elements are addressed by a locator from `agent/perception.ts` (works through open shadow roots and same-origin
+  // frames). Input goes through CDP at absolute viewport coordinates, so the page sees trusted events.
+
+  /** JS dialogs (alert/confirm/prompt/beforeunload) that opened since the last drain, and how they were answered. */
+  private dialogs: Array<{ type: string; message: string; accepted: boolean }> = [];
+  private dialogListener: ((event: any, method: string, params: any) => void) | null = null;
+  private dragIntercepted: any = null;
+
+  private ensureCdpListener(): void {
+    if (this.dialogListener || this.webContents.isDestroyed()) return;
+    this.dialogListener = (_e: any, method: string, params: any) => {
+      if (method === 'Page.javascriptDialogOpening') {
+        // Never block the page: alerts and beforeunload are accepted, confirm/prompt are DISMISSED (the safe answer).
+        const accept = params.type === 'alert' || params.type === 'beforeunload';
+        this.dialogs.push({ type: params.type, message: String(params.message || ''), accepted: accept });
+        this.webContents.debugger.sendCommand('Page.handleJavaScriptDialog', { accept }).catch(() => {});
+      } else if (method === 'Input.dragIntercepted') {
+        this.dragIntercepted = params.data;
+      }
+    };
+    this.webContents.debugger.on('message', this.dialogListener as any);
+  }
+
+  /** Attaches CDP (once) and the dialog/drag listener. */
+  public async ensureReady(): Promise<void> {
+    await this.attachCDP();
+    this.ensureCdpListener();
+  }
+
+  public drainDialogs(): Array<{ type: string; message: string; accepted: boolean }> {
+    const d = this.dialogs;
+    this.dialogs = [];
+    return d;
+  }
+
+  private async cdp(method: string, params: Record<string, any> = {}): Promise<any> {
+    const call = this.webContents.debugger.sendCommand(method, params);
+    if (!method.startsWith('Input.')) return call;
+    // Input events are acknowledged only once the renderer produces a frame; a page that stops painting (hidden or
+    // occluded window) must fail the action instead of hanging the agent loop.
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<never>((_, rej) => { timer = setTimeout(() => rej(new Error(`${method} was not acknowledged within 10s (page not rendering?)`)), 10_000); });
+    try { return await Promise.race([call, timeout]); } finally { clearTimeout(timer); }
+  }
+
+  /**
+   * Resolves a locator in the page, scrolls it into view and returns its absolute centre, or null when the element is
+   * gone (stale ref). `expectTag` guards against a path that now points at a different element.
+   */
+  public async locate(locator: unknown, expectTag?: string): Promise<{ x: number; y: number; width: number; height: number; tag: string } | null> {
+    const r = await this.webContents.executeJavaScript(`(() => {
+      ${RESOLVE_LOCATOR_JS}
+      const el = __aegisResolve(${JSON.stringify(locator)});
+      if (!el || !el.isConnected) return null;
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      const r = __aegisAbsRect(el);
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2, width: r.width, height: r.height, tag: el.tagName.toLowerCase() };
+    })()`);
+    if (!r) return null;
+    if (expectTag && r.tag !== expectTag) return null;
+    return r;
+  }
+
+  public async mouseMove(x: number, y: number): Promise<void> {
+    await this.ensureReady();
+    await this.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+    this.lastMousePos = { x, y };
+  }
+
+  public async clickAt(x: number, y: number, button: 'left' | 'right' = 'left'): Promise<void> {
+    await this.ensureReady();
+    await this.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+    await this.cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button, clickCount: 1 });
+    await this.sleep(40);
+    // A dialog opened by mousedown/click blocks the release until it is handled; never await it forever.
+    await Promise.race([this.cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button, clickCount: 1 }), this.sleep(3000)]);
+    this.lastMousePos = { x, y };
+  }
+
+  public async insertText(text: string): Promise<void> {
+    await this.ensureReady();
+    for (const ch of text) {
+      await this.cdp('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, key: ch, unmodifiedText: ch });
+      await this.cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: ch });
+    }
+  }
+
+  public async pressKey(key: string, modifiers = 0): Promise<void> {
+    await this.ensureReady();
+    const KEYS: Record<string, { code: string; keyCode: number; text?: string }> = {
+      Enter: { code: 'Enter', keyCode: 13, text: '\r' }, Tab: { code: 'Tab', keyCode: 9 }, Escape: { code: 'Escape', keyCode: 27 },
+      Backspace: { code: 'Backspace', keyCode: 8 }, Delete: { code: 'Delete', keyCode: 46 }, ArrowDown: { code: 'ArrowDown', keyCode: 40 },
+      ArrowUp: { code: 'ArrowUp', keyCode: 38 }, ArrowLeft: { code: 'ArrowLeft', keyCode: 37 }, ArrowRight: { code: 'ArrowRight', keyCode: 39 },
+      PageDown: { code: 'PageDown', keyCode: 34 }, PageUp: { code: 'PageUp', keyCode: 33 }, Home: { code: 'Home', keyCode: 36 }, End: { code: 'End', keyCode: 35 },
+      Space: { code: 'Space', keyCode: 32, text: ' ' }
+    };
+    const k = KEYS[key] || { code: key.length === 1 ? `Key${key.toUpperCase()}` : key, keyCode: key.length === 1 ? key.toUpperCase().charCodeAt(0) : 0, text: key.length === 1 ? key : undefined };
+    const keyName = key === 'Space' ? ' ' : key;
+    await this.cdp('Input.dispatchKeyEvent', { type: k.text && !modifiers ? 'keyDown' : 'rawKeyDown', key: keyName, code: k.code, windowsVirtualKeyCode: k.keyCode, text: modifiers ? undefined : k.text, modifiers });
+    await this.cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code: k.code, windowsVirtualKeyCode: k.keyCode, modifiers });
+  }
+
+  /**
+   * Drag from one point to another. HTML5 drag-and-drop (draggable=true) is driven through CDP drag interception
+   * (the OS drag loop never starts for synthetic input); pointer-based drags get the plain move sequence.
+   */
+  public async dragBetween(from: { x: number; y: number }, to: { x: number; y: number }): Promise<'html5' | 'pointer'> {
+    await this.ensureReady();
+    this.dragIntercepted = null;
+    await this.cdp('Input.setInterceptDrags', { enabled: true });
+    try {
+      await this.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: from.x, y: from.y });
+      await this.cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: from.x, y: from.y, button: 'left', clickCount: 1 });
+      const steps = 8;
+      for (let i = 1; i <= steps; i++) {
+        const x = from.x + ((to.x - from.x) * i) / steps;
+        const y = from.y + ((to.y - from.y) * i) / steps;
+        await this.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'left', buttons: 1 });
+        await this.sleep(15);
+        if (this.dragIntercepted) break;
+      }
+      if (this.dragIntercepted) {
+        const data = this.dragIntercepted;
+        await this.cdp('Input.dispatchDragEvent', { type: 'dragEnter', x: to.x, y: to.y, data });
+        await this.cdp('Input.dispatchDragEvent', { type: 'dragOver', x: to.x, y: to.y, data });
+        await this.cdp('Input.dispatchDragEvent', { type: 'drop', x: to.x, y: to.y, data });
+        await this.cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: to.x, y: to.y, button: 'left', clickCount: 1 });
+        return 'html5';
+      }
+      await this.cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: to.x, y: to.y, button: 'left', clickCount: 1 });
+      return 'pointer';
+    } finally {
+      this.dragIntercepted = null;
+      await this.cdp('Input.setInterceptDrags', { enabled: false }).catch(() => {});
+      this.lastMousePos = { x: to.x, y: to.y };
+    }
+  }
+
+  /** Sets the files of an `<input type=file>` addressed by locator (paths must already be validated by the caller). */
+  public async setInputFiles(locator: unknown, files: string[]): Promise<boolean> {
+    await this.ensureReady();
+    const { result } = await this.cdp('Runtime.evaluate', {
+      expression: `(() => { ${RESOLVE_LOCATOR_JS} return __aegisResolve(${JSON.stringify(locator)}); })()`,
+      returnByValue: false
+    });
+    if (!result || result.subtype === 'null' || !result.objectId) return false;
+    await this.cdp('DOM.setFileInputFiles', { files, objectId: result.objectId });
+    await this.cdp('Runtime.releaseObject', { objectId: result.objectId }).catch(() => {});
+    return true;
   }
 
   private async syntheticClick(agentId: string): Promise<void> {

@@ -10,7 +10,10 @@
     "core/cdp_manager.ts",
     "core/model_hub.ts",
     "planning/mcts_planner.ts",
-    "security/security_shield.ts"
+    "security/security_shield.ts",
+    "perception/axtree_extractor.ts",
+    "perception/som_overlay.ts",
+    "perception/spatial_reasoner.ts"
   ],
   "pending": {
     "assistant/continuous_assistant.ts": "#246",
@@ -47,10 +50,7 @@
     "memory/task_memory.ts": "#240",
     "memory/vault.ts": "#248",
     "native/extension_runtime.ts": "#252",
-    "native/ocr_canvas_extractor.ts": "#225",
-    "perception/axtree_extractor.ts": "#225",
-    "perception/som_overlay.ts": "#225",
-    "perception/spatial_reasoner.ts": "#225",
+    "native/ocr_canvas_extractor.ts": "#252",
     "planning/state_snapshotter.ts": "#228",
     "platform/auto_updater.ts": "#259",
     "platform/cli_runner.ts": "#253",

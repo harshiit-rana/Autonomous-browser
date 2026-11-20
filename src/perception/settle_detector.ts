@@ -116,7 +116,10 @@ export class VisualSettleDetector {
     const quiet = options.quietWindowMs ?? 150;
     const checkAnim = options.checkAnimations !== false;
     try {
-      const r = await webContents.executeJavaScript(VisualSettleDetector.getSettleScript(quiet, timeout, checkAnim), true);
+      // If the page navigates away while the script waits, Electron never settles this promise: bound it here too.
+      let timer: NodeJS.Timeout | undefined;
+      const cap = new Promise<{ reason: string }>(res => { timer = setTimeout(() => res({ reason: 'timeout_reached' }), timeout + 1000); });
+      const r: any = await Promise.race([webContents.executeJavaScript(VisualSettleDetector.getSettleScript(quiet, timeout, checkAnim), true), cap]).finally(() => clearTimeout(timer));
       const reason = String(r?.reason ?? 'unknown');
       return { settled: reason !== 'timeout_reached', reason };
     } catch (err: any) {
