@@ -1,13 +1,15 @@
 import { test, expect } from './fixtures.js';
-import { startMission, waitForStatus } from './helpers.js';
+import { startMission, waitForStatus, verifierPasses } from './helpers.js';
 
 /** Pause and Resume in the mission-control drawer act on the running loop in the main process. */
 test.describe('pause and resume a running mission', () => {
-  const waits = Array.from({ length: 8 }, () => ({ expectTools: ['wait'], respond: { tool: 'wait', args: { ms: 100 } } }));
+  // Distinct arguments each time: repeating one action on one page would (rightly) trip the loop's stuck detection.
+  const waits = Array.from({ length: 8 }, (_, i) => ({ expectTools: ['wait'], respond: { tool: 'wait', args: { ms: 100 + i } } }));
   test.use({
     script: {
       build: () => [...waits, { respond: { tool: 'done', args: { result: 'Finished after a pause.', evidence: [] } } }]
-    }
+    },
+    verifierScript: { build: () => [verifierPasses('Finished after a pause.')] }
   });
 
   test('pausing holds the loop, resuming lets it finish', async ({ app }) => {
@@ -30,6 +32,6 @@ test.describe('pause and resume a running mission', () => {
     expect(paused).toBeGreaterThan(-1);
     expect(order.slice(paused)).toEqual(expect.arrayContaining(['running', 'completed']));
     expect(order.indexOf('running', paused)).toBeLessThan(order.lastIndexOf('completed'));
-    expect((await app.snapshot()).model).toMatchObject({ consumed: 9, scriptSteps: 9, deviations: [] });
+    expect((await app.snapshot()).model).toMatchObject({ deviations: [], roles: { actor: { consumed: 9, scriptSteps: 9 } } });
   });
 });

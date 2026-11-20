@@ -9,7 +9,7 @@
  */
 import { app, Notification, webContents } from 'electron';
 import { IPC_CHANNELS } from '../ipc/contract.js';
-import type { MissionStatusPayload, WorkerEventPayload, TabsSnapshot, TabPatch, TabState } from '../ipc/contract.js';
+import type { MissionStatusPayload, MissionQuestionPayload, WorkerEventPayload, TabsSnapshot, TabPatch, TabState } from '../ipc/contract.js';
 
 export interface E2EContentsInfo {
   id: number;
@@ -32,8 +32,10 @@ export interface E2ESnapshot {
   /** Ground truth from Electron itself: every live WebContents, whatever the product reported. */
   contents: E2EContentsInfo[];
   notifications: Array<{ title: string; body: string }>;
-  /** Missions paused waiting for the user (status text from the runtime; real approval objects arrive with #238). */
-  approvals: MissionStatusPayload[];
+  /** Every question the agent put to the user (ask_user, policy approvals, stuck and hand-off prompts), oldest first. */
+  questions: MissionQuestionPayload[];
+  /** The subset of `questions` that are policy approvals. */
+  approvals: MissionQuestionPayload[];
   model: unknown | null;
   userData: string;
   electronVersion: string;
@@ -52,6 +54,7 @@ export function installE2EHooks(): void {
   const workers: Record<string, WorkerEventPayload> = {};
   const evidence: string[] = [];
   const notifications: Array<{ title: string; body: string }> = [];
+  const questions: MissionQuestionPayload[] = [];
   let telemetry: E2ESnapshot['telemetry'] = null;
   let presence: unknown | null = null;
   let tabs: TabState[] = [];
@@ -68,6 +71,9 @@ export function installE2EHooks(): void {
         }
         break;
       }
+      case IPC_CHANNELS.EVENT_MISSION_QUESTION:
+        questions.push(payload as MissionQuestionPayload);
+        break;
       case IPC_CHANNELS.EVENT_WORKER: {
         const p = payload as WorkerEventPayload;
         workers[p.id] = p;
@@ -129,7 +135,8 @@ export function installE2EHooks(): void {
       title: wc.isDestroyed() ? '' : wc.getTitle()
     })),
     notifications: [...notifications],
-    approvals: statusHistory.filter(s => s.status === 'paused' && /approval/i.test(s.message ?? '')),
+    questions: [...questions],
+    approvals: questions.filter(q => q.kind === 'approval'),
     model: (globalThis as any)[MODEL_STATE_KEY] ?? null,
     userData: app.getPath('userData'),
     electronVersion: process.versions.electron

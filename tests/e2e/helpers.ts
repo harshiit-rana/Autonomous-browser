@@ -8,8 +8,18 @@ import type { TestInfo } from '@playwright/test';
 import { expect, type AppHandle, type ArenaState } from './fixtures.js';
 import type { E2ESnapshot } from '../../src/main/e2e_hooks.js';
 import type { MissionStatusPayload } from '../../src/ipc/contract.js';
+import type { E2EScriptStep } from '../../src/models/demo/e2e_scripted.js';
 
 export type MissionState = MissionStatusPayload['status'];
+
+/** A scripted verifier answer: the independent completion check passes, after seeing the proposed answer in its prompt. */
+export function verifierPasses(proposedAnswerContains: string, reason = 'the observations support the answer'): E2EScriptStep {
+  return {
+    expectTools: ['report_verdict'],
+    expectPromptContains: ['Proposed answer:', proposedAnswerContains],
+    respond: { tool: 'report_verdict', args: { pass: true, reasons: [reason] } }
+  };
+}
 
 /**
  * Navigates the active tab the way a user does (omnibar + Enter) and waits until the native view reports the URL.
@@ -55,10 +65,19 @@ export async function tabs(app: AppHandle): Promise<E2ESnapshot['tabs']> {
   return (await app.snapshot()).tabs;
 }
 
-/** Resumes a mission that paused. Real approval objects (approve/deny with a screenshot) arrive with #238, see docs/limitations.md. */
-export async function resume(app: AppHandle): Promise<void> {
-  await app.chromePage.evaluate(() => (window as any).aegis.resumeMission());
+/**
+ * Answers the agent's open question (an approval, ask_user, a stuck prompt) by clicking the option in the question card,
+ * the way a user does. Resolves when the card has closed. Approvals with a screenshot and policy reasoning arrive with #238.
+ */
+export async function answerQuestion(app: AppHandle, option: string): Promise<void> {
+  const card = app.chromePage.locator('#question-card');
+  await expect(card).not.toHaveClass(/hidden/);
+  await card.locator('.question-option').filter({ hasText: option }).click();
+  await expect(card).toHaveClass(/hidden/);
 }
+
+export const approve = (app: AppHandle): Promise<void> => answerQuestion(app, 'Approve');
+export const deny = (app: AppHandle): Promise<void> => answerQuestion(app, 'Deny');
 
 /** Screenshot of the chrome window into the test's output dir; also attached to the report. */
 export async function screenshot(app: AppHandle, testInfo: TestInfo, name: string): Promise<string> {

@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { test, expect, ROOT } from './fixtures.js';
-import { openUrl, startMission, waitForStatus, assertArenaState, screenshot } from './helpers.js';
+import { openUrl, startMission, waitForStatus, assertArenaState, screenshot, verifierPasses } from './helpers.js';
 
 /**
  * Smoke: the REAL app launches, and a scripted mission drives it end to end.
@@ -52,11 +52,12 @@ test.describe('scripted mission', () => {
         },
         {
           // The click really navigated the native tab: the loop now perceives the shop page.
-          expectPageContains: ['Hardware Shop - Web Arena', '[e1] button "Buy Now"'],
+          expectPageContains: ['Hardware Shop - Web Arena', 'button "Buy Now"', 'h1: Hardware Express'],
           respond: { tool: 'done', args: { result: 'Shop reached: Hardware Express lists three GPUs.', evidence: ['Hardware Express'] } }
         }
       ]
-    }
+    },
+    verifierScript: { build: () => [verifierPasses('Shop reached')] }
   });
 
   test('clicks through to the arena shop and completes', async ({ app }, testInfo) => {
@@ -76,7 +77,9 @@ test.describe('scripted mission', () => {
     // The step feed in the chrome UI shows the agent's action.
     await expect(app.chromePage.locator('#evidence-feed')).toContainText('[Action] click');
     // The model was consulted exactly as scripted, nothing more.
-    expect(snap.model).toMatchObject({ mode: 'scripted', consumed: 2, scriptSteps: 2, deviations: [] });
+    // The independent verifier ran as a separate call and passed; its verdict is in the status message.
+    expect(done.message).toMatch(/verifier: pass/);
+    expect(snap.model).toMatchObject({ mode: 'scripted', deviations: [], roles: { actor: { consumed: 2, scriptSteps: 2 }, verifier: { consumed: 1, scriptSteps: 1 } } });
 
     await screenshot(app, testInfo, 'mission-completed');
   });

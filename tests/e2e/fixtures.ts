@@ -62,6 +62,8 @@ interface TestOptions {
   modelMode: ModelMode;
   /** Scripted mode: the model's answers, built once the arena port is known. */
   script: ScriptSpec | undefined;
+  /** Scripted mode: the independent completion verifier's answers (`report_verdict`). Empty means any verifier call is a deviation. */
+  verifierScript: ScriptSpec | undefined;
   /** Replay mode: path of a recording (record new misses with AEGIS_E2E_RECORD=1 and a live key). */
   replayFile: string | undefined;
   /** Negative tests only: the script is expected to be violated, so recorded deviations do not fail the test. */
@@ -73,6 +75,7 @@ interface TestOptions {
 export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: ArenaHandle }>({
   modelMode: ['scripted', { option: true }],
   script: [undefined, { option: true }],
+  verifierScript: [undefined, { option: true }],
   replayFile: [undefined, { option: true }],
   allowDeviations: [false, { option: true }],
   allowUnconsumedScript: [false, { option: true }],
@@ -93,7 +96,7 @@ export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: Arena
     { scope: 'worker' }
   ],
 
-  app: async ({ arena, modelMode, script, replayFile, allowDeviations, allowUnconsumedScript }, use, testInfo) => {
+  app: async ({ arena, modelMode, script, verifierScript, replayFile, allowDeviations, allowUnconsumedScript }, use, testInfo) => {
     await arena.reset();
     if (modelMode === 'live' && !process.env.AEGIS_E2E_MAX_COST_USD) {
       throw new Error('modelMode "live" requires AEGIS_E2E_MAX_COST_USD (hard cost cap in USD)');
@@ -122,6 +125,9 @@ export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: Arena
       const file = path.join(tmp, 'script.json');
       fs.writeFileSync(file, JSON.stringify(script ? script.build({ arenaUrl: arena.baseUrl }) : [], null, 2));
       env.AEGIS_E2E_SCRIPT = file;
+      const verifierFile = path.join(tmp, 'verifier_script.json');
+      fs.writeFileSync(verifierFile, JSON.stringify(verifierScript ? verifierScript.build({ arenaUrl: arena.baseUrl }) : [], null, 2));
+      env.AEGIS_E2E_VERIFIER_SCRIPT = verifierFile;
     } else if (modelMode === 'replay') {
       if (!replayFile) throw new Error('replay mode needs test.use({ replayFile })');
       env.AEGIS_E2E_REPLAY = path.resolve(ROOT, replayFile);
@@ -209,12 +215,14 @@ export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: Arena
     if (useError !== undefined) throw useError;
 
     // ---- the model script is part of the assertion: deviations and unconsumed steps fail the test
-    const model = finalSnapshot?.model as { deviations: string[]; scriptSteps: number; consumed: number; mode: string } | null | undefined;
+    const model = finalSnapshot?.model as { deviations: string[]; roles: Record<string, { scriptSteps: number; consumed: number }>; mode: string } | null | undefined;
     if (modelMode === 'scripted' && !allowDeviations) {
       expect(model?.deviations ?? [], 'model script deviations').toEqual([]);
     }
     if (modelMode === 'scripted' && !allowUnconsumedScript && !allowDeviations && model) {
-      expect(model.consumed, 'scripted steps consumed by the agent loop').toBe(model.scriptSteps);
+      for (const [role, progress] of Object.entries(model.roles)) {
+        expect(progress.consumed, `scripted ${role} steps consumed by the agent loop`).toBe(progress.scriptSteps);
+      }
     }
   }
 });

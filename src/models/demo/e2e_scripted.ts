@@ -27,12 +27,22 @@ export interface E2EScriptStep {
   expectTools?: string[];
   /** Substrings that must appear in the most recent page observation the loop sent. */
   expectPageContains?: string[];
+  /** Substrings that must appear in the last user message (the verifier's single prompt, for instance). */
+  expectPromptContains?: string[];
   respond: { tool: string; args?: Record<string, any>; text?: string } | { text: string };
 }
 
+export interface E2EScriptProgress {
+  scriptSteps: number;
+  consumed: number;
+}
+
+/** One per process: the actor and the completion verifier are separate providers that share it. */
 export interface E2EModelState {
   mode: E2EModelMode;
-  scriptSteps: number;
+  /** Scripted mode: progress per role (`actor`, `verifier`). */
+  roles: Record<string, E2EScriptProgress>;
+  /** Replay and live modes: model calls answered. */
   consumed: number;
   requests: number;
   costUSD: number;
@@ -46,11 +56,16 @@ export function getE2EModelState(): E2EModelState | undefined {
   return (globalThis as any)[STATE_KEY];
 }
 
-function initState(mode: E2EModelMode, scriptSteps = 0): E2EModelState {
-  const state: E2EModelState = { mode, scriptSteps, consumed: 0, requests: 0, costUSD: 0, deviations: [] };
+function sharedState(mode: E2EModelMode): E2EModelState {
+  const existing = getE2EModelState();
+  if (existing && existing.mode === mode) return existing;
+  const state: E2EModelState = { mode, roles: {}, consumed: 0, requests: 0, costUSD: 0, deviations: [] };
   (globalThis as any)[STATE_KEY] = state;
   return state;
 }
+
+/** One ledger per process so the actor's and the verifier's live spend add up against the same cap. */
+const liveLedger = new UsageLedger();
 
 export class E2EDeviationError extends Error {
   constructor(message: string) {
@@ -64,6 +79,7 @@ export class E2EDeviationError extends Error {
 interface NormalizedStep {
   expectTools: string[];
   expectPageContains: string[];
+  expectPromptContains: string[];
   response: ScriptedStepResponse;
 }
 
@@ -74,6 +90,7 @@ export function normalizeScript(raw: unknown): NormalizedStep[] {
     if (!s || typeof s !== 'object') throw new Error(`E2E script step ${i + 1} is not an object`);
     const expectTools = Array.isArray(s.expectTools) ? s.expectTools.map(String) : [];
     const expectPageContains = Array.isArray(s.expectPageContains) ? s.expectPageContains.map(String) : [];
+    const expectPromptContains = Array.isArray(s.expectPromptContains) ? s.expectPromptContains.map(String) : [];
     let response: ScriptedStepResponse;
     if (s.respond) {
       const r = s.respond;
@@ -90,7 +107,7 @@ export function normalizeScript(raw: unknown): NormalizedStep[] {
     } else {
       throw new Error(`E2E script step ${i + 1} has neither "respond" nor "text"/"toolCalls"`);
     }
-    return { expectTools, expectPageContains, response };
+    return { expectTools, expectPageContains, expectPromptContains, response };
   });
 }
 
@@ -109,11 +126,15 @@ export class E2EScriptedProvider implements IModelProvider {
   private index = 0;
   private failure: E2EDeviationError | null = null;
   private readonly queue = new ScriptedModelProvider();
+  private readonly progress: E2EScriptProgress;
 
-  constructor(private readonly steps: NormalizedStep[], private readonly state: E2EModelState) {}
+  constructor(private readonly steps: NormalizedStep[], private readonly state: E2EModelState, private readonly role = 'actor') {
+    this.progress = { scriptSteps: steps.length, consumed: 0 };
+    state.roles[role] = this.progress;
+  }
 
   private deviate(message: string): never {
-    const full = `E2E script deviation at model call ${this.index + 1}: ${message}`;
+    const full = `E2E script deviation (${this.role}) at model call ${this.index + 1}: ${message}`;
     this.failure = new E2EDeviationError(full);
     this.state.deviations.push(full);
     logger.error(full);
@@ -137,8 +158,16 @@ export class E2EScriptedProvider implements IModelProvider {
       }
     }
 
+    if (step.expectPromptContains.length > 0) {
+      const last = [...request.messages].reverse().find(m => m.role === 'user');
+      const text = typeof last?.content === 'string' ? last.content : JSON.stringify(last?.content ?? '');
+      for (const needle of step.expectPromptContains) {
+        if (!text.includes(needle)) this.deviate(`expected the prompt to contain "${needle}", it was: ${text.slice(0, 400)}`);
+      }
+    }
+
     this.index += 1;
-    this.state.consumed = this.index;
+    this.progress.consumed = this.index;
     this.queue.enqueueResponse(step.response);
     return this.queue.generate(request);
   }
@@ -227,7 +256,7 @@ export class E2EReplayProvider implements IModelProvider {
 export class CostCappedProvider implements IModelProvider {
   public readonly providerName: string;
   public readonly modelName: string;
-  private readonly ledger = new UsageLedger();
+  private readonly ledger = liveLedger;
 
   constructor(private readonly inner: IModelProvider, private readonly maxCostUSD: number, private readonly state: E2EModelState) {
     this.providerName = inner.providerName;
@@ -270,12 +299,12 @@ export async function createE2EProvider(mode: string, makeLive: () => Promise<IM
     const scriptPath = process.env.AEGIS_E2E_SCRIPT;
     const steps = scriptPath ? normalizeScript(JSON.parse(fs.readFileSync(scriptPath, 'utf8'))) : [];
     logger.warn('AEGIS_E2E_MODEL_MODE=scripted: model output comes from a script, not a model', { scriptPath, steps: steps.length });
-    return new E2EScriptedProvider(steps, initState('scripted', steps.length));
+    return new E2EScriptedProvider(steps, sharedState('scripted'), 'actor');
   }
   if (mode === 'replay') {
     const file = process.env.AEGIS_E2E_REPLAY;
     if (!file) throw new Error('AEGIS_E2E_MODEL_MODE=replay requires AEGIS_E2E_REPLAY=<recording json>');
-    const state = initState('replay');
+    const state = sharedState('replay');
     if (process.env.AEGIS_E2E_RECORD === '1') {
       const cap = parseMaxCost(process.env.AEGIS_E2E_MAX_COST_USD);
       logger.warn('AEGIS_E2E_MODEL_MODE=replay with AEGIS_E2E_RECORD=1: misses call the real model', { file, capUSD: cap });
@@ -287,18 +316,19 @@ export async function createE2EProvider(mode: string, makeLive: () => Promise<IM
   if (mode === 'live') {
     const cap = parseMaxCost(process.env.AEGIS_E2E_MAX_COST_USD);
     logger.warn('AEGIS_E2E_MODEL_MODE=live: real model with a hard cost cap', { capUSD: cap });
-    return new CostCappedProvider(await makeLive(), cap, initState('live'));
+    return new CostCappedProvider(await makeLive(), cap, sharedState('live'));
   }
   throw new Error(`Unsupported AEGIS_E2E_MODEL_MODE "${mode}" (expected scripted, replay or live)`);
 }
 
 /**
- * The completion verifier's script for real-app e2e runs (`AEGIS_E2E_VERIFIER_SCRIPT`, same format). A separate queue
- * so verifier answers never interleave with the actor's.
+ * The completion verifier's script for real-app e2e runs (`AEGIS_E2E_VERIFIER_SCRIPT`, same step format, answering with the
+ * `report_verdict` tool). A separate queue so verifier answers never interleave with the actor's; it reports into the same
+ * state, so a verdict that was not scripted is a recorded deviation like any other.
  */
 export function createE2EScriptedVerifier(): IModelProvider {
   const scriptPath = process.env.AEGIS_E2E_VERIFIER_SCRIPT;
-  const script: ScriptedStepResponse[] = scriptPath ? JSON.parse(fs.readFileSync(scriptPath, 'utf8')) : [];
-  logger.warn('AEGIS_E2E_MODEL_MODE=scripted: verifier output comes from a script, not a model', { scriptPath, steps: script.length });
-  return new ScriptedModelProvider(script);
+  const steps = scriptPath ? normalizeScript(JSON.parse(fs.readFileSync(scriptPath, 'utf8'))) : [];
+  logger.warn('AEGIS_E2E_MODEL_MODE=scripted: verifier output comes from a script, not a model', { scriptPath, steps: steps.length });
+  return new E2EScriptedProvider(steps, sharedState('scripted'), 'verifier');
 }
