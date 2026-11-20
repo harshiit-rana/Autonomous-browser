@@ -1,0 +1,71 @@
+{
+  "at": "2026-11-20T12:26:27.454Z",
+  "model": "scripted e2e provider (no real model)",
+  "results": [
+    {
+      "name": "arena fixture heading read",
+      "ok": true,
+      "detail": "Page A"
+    },
+    {
+      "name": "mission started (scripted e2e provider)",
+      "ok": true,
+      "detail": "{\"started\":true,\"missionId\":\"m_1795177576916_wyz9\"}"
+    },
+    {
+      "name": "policy \"ask\" for the out-of-scope navigation shows Approve/Deny in the question card",
+      "ok": true,
+      "detail": "Allow navigate to http://127.0.0.1:62503/agent/nav/a? Action targets external origin '127.0.0.1' outside approved mission scope (duckduckgo.com). [Approve, Deny]"
+    },
+    {
+      "name": "mission is waiting_user during the approval",
+      "ok": true,
+      "detail": "waiting_user"
+    },
+    {
+      "name": "ask_user shows the question card in the drawer",
+      "ok": true,
+      "detail": "Should I report the page heading or the page title? [Heading, Title]"
+    },
+    {
+      "name": "mission is waiting_user while the question is open",
+      "ok": true,
+      "detail": "waiting_user"
+    },
+    {
+      "name": "question card closed after the answer",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mission completed (verifier pass after one rejected answer)",
+      "ok": true,
+      "detail": "completed The heading is \"Page A\""
+    },
+    {
+      "name": "feed shows the verifier rejecting the first answer",
+      "ok": true,
+      "detail": "[Verifier] pass: The observed h1 is \"Page A\" | [Verifier] fail (1/3): The page heading in the observation is not \"Nothing here\""
+    },
+    {
+      "name": "feed shows the verifier pass",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mission status message names the verifier verdict",
+      "ok": true,
+      "detail": "[Mission Finished] Mission succeeded (verifier: pass): The heading is \"Page A\""
+    },
+    {
+      "name": "log marks the scripted provider as test-only",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "log has no unhandled error",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

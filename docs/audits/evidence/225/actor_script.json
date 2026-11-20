@@ -1,0 +1,57 @@
+[
+  {
+    "text": "Open the page first.",
+    "toolCalls": [
+      {
+        "id": "c_us6k7o",
+        "name": "navigate",
+        "arguments": {
+          "url": "http://127.0.0.1:62503/agent/nav/a"
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_3aq8ke",
+        "name": "ask_user",
+        "arguments": {
+          "question": "Should I report the page heading or the page title?",
+          "options": [
+            "Heading",
+            "Title"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_a1tpec",
+        "name": "done",
+        "arguments": {
+          "result": "The heading is \"Nothing here\"",
+          "evidence": [
+            "guess"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_2gp1i0",
+        "name": "done",
+        "arguments": {
+          "result": "The heading is \"Page A\"",
+          "evidence": [
+            "h1: Page A"
+          ]
+        }
+      }
+    ]
+  }
+]

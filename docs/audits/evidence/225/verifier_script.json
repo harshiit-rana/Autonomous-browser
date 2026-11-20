@@ -1,0 +1,30 @@
+[
+  {
+    "toolCalls": [
+      {
+        "id": "c_5sv7em",
+        "name": "report_verdict",
+        "arguments": {
+          "pass": false,
+          "reasons": [
+            "The page heading in the observation is not \"Nothing here\""
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_5rt1rr",
+        "name": "report_verdict",
+        "arguments": {
+          "pass": true,
+          "reasons": [
+            "The observed h1 is \"Page A\""
+          ]
+        }
+      }
+    ]
+  }
+]
