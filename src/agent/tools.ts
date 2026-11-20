@@ -258,11 +258,26 @@ export class ToolExecutor {
             return { x: r.x + r.width / 2, y: r.y + r.height / 2, label: o.textContent.trim() };
           })()`);
           let opt: any = { err: 'gone' };
+          let reopened = r.el.role === 'listbox'; // a bare listbox has no opener to click again
           for (let i = 0; i < 20; i++) {
             await sleep(100);
             opt = await findOption();
             if (!opt.err || opt.err === 'gone') break;
+            // A real click can be lost (first input after the view is shown, headless CI): the list never opened.
+            // After ~0.6 s without a visible option, read the opener's CURRENT rect and click it once more, unless
+            // the page already says it is expanded.
+            if (!reopened && i === 5) {
+              reopened = true;
+              const opener: any = await wc.executeJavaScript(`(() => { ${RESOLVE_LOCATOR_JS}
+                const el = __aegisResolve(${JSON.stringify(r.el.locator)}); if (!el) return null;
+                if (el.getAttribute('aria-expanded') === 'true') return null;
+                const q = __aegisAbsRect(el); if (!q.width || !q.height) return null;
+                return { x: q.x + q.width / 2, y: q.y + q.height / 2 };
+              })()`);
+              if (opener) await ex.clickAt(Math.round(opener.x), Math.round(opener.y));
+            }
           }
+          if (opt.err === 'option not visible after opening the list') opt.err = 'the list did not open (no visible option after clicking the control twice)';
           if (opt.err) return { ok: false, error: 'select_failed', output: `select_option failed on [${args.ref}]: ${opt.err}${opt.options ? `. Options: ${opt.options.join(' | ')}` : ''}` };
           await ex.clickAt(Math.round(opt.x), Math.round(opt.y));
           return { ok: true, effect: { selected: opt.label }, output: `Selected "${opt.label}" in listbox [${args.ref}]` };

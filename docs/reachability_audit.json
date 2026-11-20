@@ -252,6 +252,14 @@
     "isReachable": true
   },
   {
+    "path": "main/frame_hub.ts",
+    "isReachable": true
+  },
+  {
+    "path": "main/grid_layout.ts",
+    "isReachable": true
+  },
+  {
     "path": "main/index.ts",
     "isReachable": true
   },
@@ -261,6 +269,10 @@
   },
   {
     "path": "main/preload.ts",
+    "isReachable": true
+  },
+  {
+    "path": "main/test_hooks.ts",
     "isReachable": true
   },
   {
@@ -389,6 +401,10 @@
   },
   {
     "path": "renderer/history_panel.ts",
+    "isReachable": true
+  },
+  {
+    "path": "renderer/swarm_grid.ts",
     "isReachable": true
   },
   {
@@ -533,6 +549,10 @@
   },
   {
     "path": "swarm/worker_identity.ts",
+    "isReachable": true
+  },
+  {
+    "path": "swarm/worker_view_registry.ts",
     "isReachable": true
   },
   {

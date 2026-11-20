@@ -1,10 +1,17 @@
 import { WebContentsView, BrowserWindow } from 'electron';
 import { ActionExecutor } from '../core/action_executor.js';
-import { TabState, TabsSnapshot, TabPatch, IPC_CHANNELS, SwarmPreviewItem, PresenceEventPayload } from '../ipc/contract.js';
+import {
+  TabState, TabsSnapshot, TabPatch, IPC_CHANNELS, PresenceEventPayload,
+  GridSource, GridSourcesPayload, LayoutRect, LayoutReport, WorkerPresentation
+} from '../ipc/contract.js';
 import { rootLogger } from '../infrastructure/logger.js';
 import { TabGroupManager } from '../browser/tab_group_manager.js';
 import { PopupManager } from '../browser/popup_manager.js';
 import { ErrorPageRenderer } from '../browser/error_pages.js';
+import { FrameHub, electronFrameSource } from './frame_hub.js';
+import { parseLayoutReport, tilesById, tileZoomFactor } from './grid_layout.js';
+import { workerViews, WorkerViewRegistry, LiveWorkerView } from '../swarm/worker_view_registry.js';
+import type { WorkerEvent } from '../swarm/worker_host.js';
 
 export interface TabView {
   id: string;
@@ -14,7 +21,17 @@ export interface TabView {
   openerId?: string;
 }
 
+interface WorkerEntry {
+  worker: LiveWorkerView;
+  crashed: boolean;
+  loading: boolean;
+  cleanups: Array<() => void>;
+}
+
 const logger = rootLogger.child('view-manager');
+
+/** Default layout viewport of a worker when its host does not say (WorkerHost default). */
+const DEFAULT_WORKER_VIEWPORT = { width: 1280, height: 800 };
 
 export class ViewManager {
   private window: BrowserWindow;
@@ -28,8 +45,31 @@ export class ViewManager {
   private tabGroupManager: TabGroupManager = new TabGroupManager();
   private popupManager: PopupManager = new PopupManager();
 
-  constructor(window: BrowserWindow) {
+  // Live Grid (#232)
+  public readonly frameHub: FrameHub = new FrameHub();
+  private workers: Map<string, WorkerEntry> = new Map();
+  /** Views this manager added to the window (the only code that adds/removes child views, ADR 0012). */
+  private attached = new Set<WebContentsView>();
+  private presentation = new Map<string, WorkerPresentation>();
+  private stagedWorkerId: string | null = null;
+  private lastReport: LayoutReport | null = null;
+  private lastReportSeq = 0;
+  private gridBroadcastTimer: NodeJS.Timeout | null = null;
+  private registry: WorkerViewRegistry;
+
+  constructor(window: BrowserWindow, registry: WorkerViewRegistry = workerViews) {
     this.window = window;
+    this.registry = registry;
+    const onAdded = (w: LiveWorkerView) => this.addWorker(w);
+    const onRemoved = (w: LiveWorkerView) => this.removeWorker(w.id);
+    registry.on('added', onAdded);
+    registry.on('removed', onRemoved);
+    for (const w of registry.list()) this.addWorker(w);
+    window.once('closed', () => {
+      registry.removeListener('added', onAdded);
+      registry.removeListener('removed', onRemoved);
+      this.frameHub.dispose();
+    });
   }
 
   public getTabGroupManager(): TabGroupManager {
@@ -40,6 +80,36 @@ export class ViewManager {
     return this.popupManager;
   }
 
+  // ------------------------------------------------------------------------------------------- child views
+  private ensureAttached(view: WebContentsView): void {
+    if (this.attached.has(view) || this.window.isDestroyed()) return;
+    try {
+      this.window.contentView.addChildView(view);
+      this.attached.add(view);
+    } catch {}
+  }
+
+  private detachView(view: WebContentsView): void {
+    if (!this.attached.has(view)) return;
+    this.attached.delete(view);
+    try {
+      this.window.contentView.removeChildView(view);
+    } catch {}
+  }
+
+  /** ADR 0012: a view that should not be seen is hidden with setVisible(false), never shrunk to 0x0. */
+  private setViewVisible(view: WebContentsView, visible: boolean): void {
+    try { view.setVisible(visible); } catch {}
+  }
+
+  private present(id: string, p: WorkerPresentation): void {
+    if (this.presentation.get(id) === p) return;
+    this.presentation.set(id, p);
+    this.frameHub.setPresentation(id, p);
+    this.scheduleGridBroadcast();
+  }
+
+  // ------------------------------------------------------------------------------------------- tabs
   public createTab(url: string = 'https://duckduckgo.com', isBackgroundAgent: boolean = false, owner: string = 'user'): TabView {
     const id = `tab_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     logger.info('Creating tab', { id, url, isBackgroundAgent, owner });
@@ -77,6 +147,8 @@ export class ViewManager {
 
     this.tabs.set(id, tab);
     this.tabOrder.push(id);
+    this.frameHub.addSource(electronFrameSource(id, view.webContents, executor));
+    this.presentation.set(id, 'parked');
 
     this.wireWebContentsEvents(tab);
 
@@ -90,6 +162,7 @@ export class ViewManager {
       this.setActiveTab(id);
     } else {
       this.broadcastTabsSnapshot();
+      if (this.layoutMode === 'grid') this.relayout();
     }
 
     return tab;
@@ -115,14 +188,18 @@ export class ViewManager {
       tab.state.url = wc.getURL() || tab.state.url;
       tab.state.canGoBack = wc.navigationHistory.canGoBack();
       tab.state.canGoForward = wc.navigationHistory.canGoForward();
+      const recovered = tab.state.isCrashed;
+      tab.state.isCrashed = false;
 
       this.broadcastTabPatch(id, {
         isLoading: false,
         title: tab.state.title,
         url: tab.state.url,
         canGoBack: tab.state.canGoBack,
-        canGoForward: tab.state.canGoForward
+        canGoForward: tab.state.canGoForward,
+        ...(recovered ? { isCrashed: false } : {})
       });
+      if (recovered) this.relayout();
     });
 
     wc.on('did-navigate', (_, url) => {
@@ -208,6 +285,8 @@ export class ViewManager {
       tab.state.isCrashed = true;
       tab.state.isLoading = false;
       this.broadcastTabPatch(id, { isCrashed: true, isLoading: false, title: 'Crashed' });
+      // The crashed page shows nothing: hide it so its tile shows the last frame with a badge.
+      this.relayout();
     });
 
     wc.on('unresponsive', () => {
@@ -237,24 +316,15 @@ export class ViewManager {
   public setActiveTab(id: string): void {
     const targetTab = this.tabs.get(id);
     if (!targetTab) return;
+    this.stagedWorkerId = null;
 
     if (this.activeTabId === id) {
       this.relayout();
       return;
     }
 
-    if (this.activeTabId && this.tabs.has(this.activeTabId)) {
-      const currentTab = this.tabs.get(this.activeTabId)!;
-      try {
-        this.window.contentView.removeChildView(currentTab.view);
-      } catch {}
-    }
-
     this.activeTabId = id;
-    try {
-      this.window.contentView.addChildView(targetTab.view);
-    } catch {}
-
+    this.ensureAttached(targetTab.view);
     this.relayout();
     this.broadcastTabsSnapshot();
   }
@@ -268,12 +338,11 @@ export class ViewManager {
     const closedIndex = this.tabOrder.indexOf(id);
     const wasActive = this.activeTabId === id;
 
-    if (wasActive) {
-      try {
-        this.window.contentView.removeChildView(tab.view);
-      } catch {}
-      this.activeTabId = null;
-    }
+    // Frames first: the hub must stop using the page's debugger session before the executor detaches it.
+    this.frameHub.removeSource(id);
+    this.presentation.delete(id);
+    this.detachView(tab.view);
+    if (wasActive) this.activeTabId = null;
 
     tab.executor.detachCDP();
     try {
@@ -299,6 +368,7 @@ export class ViewManager {
       }
     } else {
       this.broadcastTabsSnapshot();
+      this.relayout();
     }
   }
 
@@ -314,6 +384,91 @@ export class ViewManager {
     return this.createTab(tab.state.url, false, tab.state.owner);
   }
 
+  // ------------------------------------------------------------------------------------------- workers (#232)
+  private addWorker(worker: LiveWorkerView): void {
+    if (this.workers.has(worker.id)) return;
+    const wc = worker.webContents;
+    const entry: WorkerEntry = { worker, crashed: false, loading: false, cleanups: [] };
+    this.workers.set(worker.id, entry);
+    this.frameHub.addSource(electronFrameSource(worker.id, wc, worker.executor));
+    this.presentation.set(worker.id, 'parked');
+    // Attached from the start (ADR 0010 decision 1); hidden until the Grid or the Stage shows it.
+    this.setViewVisible(worker.view, false);
+    this.ensureAttached(worker.view);
+
+    const onEvent = (e: WorkerEvent) => {
+      if (e.type === 'render-process-gone') { entry.crashed = true; this.relayout(); }
+      else if (e.type === 'recovered') { entry.crashed = false; this.relayout(); }
+      this.scheduleGridBroadcast();
+    };
+    worker.on('event', onEvent);
+    entry.cleanups.push(() => worker.off('event', onEvent));
+    const touch = () => this.scheduleGridBroadcast();
+    const onStart = () => { entry.loading = true; touch(); };
+    const onStop = () => { entry.loading = false; touch(); };
+    for (const [ev, fn] of [['did-start-loading', onStart], ['did-stop-loading', onStop], ['page-title-updated', touch], ['did-navigate', touch]] as const) {
+      try { wc.on(ev as any, fn as any); entry.cleanups.push(() => { try { wc.removeListener(ev as any, fn as any); } catch {} }); } catch {}
+    }
+    logger.info('Worker view registered for the Grid', { workerId: worker.id });
+    this.relayout();
+    this.scheduleGridBroadcast();
+  }
+
+  /** Runs synchronously from the registry, before the worker's teardown detaches CDP and closes the contents. */
+  private removeWorker(id: string): void {
+    const entry = this.workers.get(id);
+    if (!entry) return;
+    this.frameHub.removeSource(id);
+    this.presentation.delete(id);
+    for (const c of entry.cleanups.splice(0)) c();
+    this.setViewVisible(entry.worker.view, false);
+    this.detachView(entry.worker.view);
+    this.workers.delete(id);
+    if (this.stagedWorkerId === id) this.stagedWorkerId = null;
+    this.relayout();
+    this.scheduleGridBroadcast();
+  }
+
+  /** Click on a Grid tile: show that source on the Stage without reloading it (#232 step 4). */
+  public promote(id: string): boolean {
+    if (this.tabs.has(id)) {
+      this.layoutMode = 'stage';
+      this.setActiveTab(id);
+      this.scheduleGridBroadcast();
+      return true;
+    }
+    if (this.workers.has(id)) {
+      this.stagedWorkerId = id;
+      this.layoutMode = 'stage';
+      this.relayout();
+      this.scheduleGridBroadcast();
+      return true;
+    }
+    return false;
+  }
+
+  private workerViewport(w: LiveWorkerView): { width: number; height: number } {
+    const vp = (w as any).viewport;
+    return vp && vp.width > 0 && vp.height > 0 ? vp : DEFAULT_WORKER_VIEWPORT;
+  }
+
+  private setWorkerZoom(w: LiveWorkerView, factor: number): void {
+    try {
+      if (!w.webContents.isDestroyed() && Math.abs(w.webContents.getZoomFactor() - factor) > 0.001) w.webContents.setZoomFactor(factor);
+    } catch {}
+  }
+
+  /** A worker that is not shown keeps its full layout viewport (bounds = viewport, zoom 1) while hidden. */
+  private parkWorker(entry: WorkerEntry): void {
+    const w = entry.worker;
+    this.setViewVisible(w.view, false);
+    const vp = this.workerViewport(w);
+    try { w.view.setBounds({ x: 0, y: 0, width: vp.width, height: vp.height }); } catch {}
+    this.setWorkerZoom(w, 1);
+    this.present(w.id, 'parked');
+  }
+
+  // ------------------------------------------------------------------------------------------- layout
   public setDrawerWidth(width: number): void {
     this.drawerWidth = width;
     this.relayout();
@@ -322,7 +477,13 @@ export class ViewManager {
   public setLayoutMode(mode: 'stage' | 'grid' | 'theatre'): void {
     logger.info('Setting layout mode', { mode });
     this.layoutMode = mode;
+    if (mode === 'grid') this.stagedWorkerId = null;
     this.relayout();
+    this.scheduleGridBroadcast();
+  }
+
+  public getLayoutMode(): 'stage' | 'grid' | 'theatre' {
+    return this.layoutMode;
   }
 
   public setOverlayActive(active: boolean): void {
@@ -330,73 +491,157 @@ export class ViewManager {
     this.relayout();
   }
 
+  /** `layout:report` from the chrome renderer (ADR 0012). Only the newest seq is applied. */
+  public applyLayoutReport(raw: unknown): boolean {
+    const report = parseLayoutReport(raw, this.lastReportSeq);
+    if (!report) return false;
+    this.lastReportSeq = report.seq;
+    this.lastReport = report;
+    if (this.layoutMode === 'grid') this.relayout();
+    return true;
+  }
+
+  /** The chrome renderer reloaded: its layout reports start again from seq 1 and it starts in Stage. */
+  public resetRendererState(): void {
+    this.lastReportSeq = 0;
+    this.lastReport = null;
+    this.layoutMode = 'stage';
+    this.stagedWorkerId = null;
+    this.relayout();
+  }
+
+  public setWindowMinimised(minimised: boolean): void {
+    this.frameHub.setWindowMinimised(minimised);
+    this.scheduleGridBroadcast();
+  }
+
   public relayout(): void {
-    const bounds = this.window.getBounds();
-    if (!this.activeTabId) return;
+    if (this.window.isDestroyed()) return;
 
-    const activeTab = this.tabs.get(this.activeTabId);
-    if (!activeTab) return;
-
-    // Issue #138: If modal overlay is active or grid mode is active,
-    // shrink native WebContentsView to 0x0 so renderer DOM is never occluded.
-    if (this.isOverlayActive || this.layoutMode === 'grid') {
-      try {
-        activeTab.view.setBounds({ x: 0, y: 0, width: 0, height: 0 });
-      } catch {}
+    // Issue #138 / ADR 0012: while a DOM modal is open no native view may cover it; hide them all (setVisible).
+    if (this.isOverlayActive) {
+      for (const tab of this.tabs.values()) { this.setViewVisible(tab.view, false); this.present(tab.id, 'parked'); }
+      for (const entry of this.workers.values()) this.parkWorker(entry);
       return;
     }
 
+    if (this.layoutMode === 'grid') {
+      this.layoutGrid();
+      return;
+    }
+
+    const bounds = this.window.getBounds();
     const contentWidth = Math.max(200, bounds.width - this.drawerWidth);
     const contentHeight = Math.max(200, bounds.height - this.topChromeHeight);
+    const stageRect: LayoutRect = this.layoutMode === 'theatre'
+      // Centered cinematic view with focus borders
+      ? { x: 24, y: this.topChromeHeight + 12, width: Math.max(200, contentWidth - 48), height: Math.max(200, contentHeight - 24) }
+      // Standard Stage layout
+      : { x: 0, y: this.topChromeHeight, width: contentWidth, height: contentHeight };
 
-    try {
-      if (this.layoutMode === 'theatre') {
-        // Centered cinematic view with focus borders
-        activeTab.view.setBounds({
-          x: 24,
-          y: this.topChromeHeight + 12,
-          width: Math.max(200, contentWidth - 48),
-          height: Math.max(200, contentHeight - 24)
-        });
-      } else {
-        // Standard Stage layout
-        activeTab.view.setBounds({
-          x: 0,
-          y: this.topChromeHeight,
-          width: contentWidth,
-          height: contentHeight
-        });
+    const staged = this.stagedWorkerId ? this.workers.get(this.stagedWorkerId) : undefined;
+    for (const tab of this.tabs.values()) {
+      const show = !staged && tab.id === this.activeTabId;
+      if (show) {
+        this.ensureAttached(tab.view);
+        try { tab.view.setBounds(stageRect); } catch {}
       }
-    } catch {}
+      this.setViewVisible(tab.view, show);
+      this.present(tab.id, show ? 'visible' : 'parked');
+    }
+    for (const entry of this.workers.values()) {
+      if (entry === staged && !entry.crashed) {
+        this.setWorkerZoom(entry.worker, 1);
+        try { entry.worker.view.setBounds(stageRect); } catch {}
+        this.setViewVisible(entry.worker.view, true);
+        this.present(entry.worker.id, 'visible');
+      } else {
+        this.parkWorker(entry);
+      }
+    }
   }
 
-  public async getSwarmPreviews(): Promise<SwarmPreviewItem[]> {
-    const items: SwarmPreviewItem[] = [];
+  /** Grid (ADR 0010 / 0012): every source whose tile frame is fully on screen is its own live native view there. */
+  private layoutGrid(): void {
+    const content = this.window.getContentBounds();
+    const tiles = tilesById(this.lastReport?.mode === 'grid' ? this.lastReport : null, content);
+    for (const tab of this.tabs.values()) {
+      const rect = tiles.get(tab.id);
+      if (rect && !tab.state.isCrashed) {
+        this.ensureAttached(tab.view);
+        // User tabs share the default session, where zoom is stored per host and persists: never zoom them.
+        try { tab.view.setBounds(rect); } catch {}
+        this.setViewVisible(tab.view, true);
+        this.present(tab.id, 'visible');
+      } else {
+        this.setViewVisible(tab.view, false);
+        this.present(tab.id, 'parked');
+      }
+    }
+    for (const entry of this.workers.values()) {
+      const rect = tiles.get(entry.worker.id);
+      if (rect && !entry.crashed) {
+        const w = entry.worker;
+        this.ensureAttached(w.view);
+        this.setWorkerZoom(w, tileZoomFactor(rect.width, this.workerViewport(w).width));
+        try { w.view.setBounds(rect); } catch {}
+        this.setViewVisible(w.view, true);
+        this.present(w.id, 'visible');
+      } else {
+        this.parkWorker(entry);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------- grid sources
+  public getGridSources(): GridSource[] {
+    const out: GridSource[] = [];
+    const staged = this.stagedWorkerId;
     for (const id of this.tabOrder) {
       const tab = this.tabs.get(id);
       if (!tab) continue;
-
-      let thumbnailBase64: string | undefined = undefined;
-      try {
-        const image = await tab.view.webContents.capturePage();
-        if (!image.isEmpty()) {
-          const resized = image.resize({ width: 320 });
-          thumbnailBase64 = resized.toDataURL();
-        }
-      } catch {}
-
-      items.push({
-        tabId: tab.id,
-        title: tab.state.title,
-        url: tab.state.url,
-        owner: tab.state.owner,
-        thumbnailBase64,
-        isActive: tab.id === this.activeTabId
+      out.push({
+        id, kind: 'tab', title: tab.state.title, url: tab.state.url, owner: tab.state.owner,
+        presentation: this.presentation.get(id) || 'parked', crashed: !!tab.state.isCrashed, loading: !!tab.state.isLoading,
+        isActive: id === this.activeTabId, staged: !staged && id === this.activeTabId && this.layoutMode !== 'grid'
       });
     }
-    return items;
+    for (const entry of this.workers.values()) {
+      const w = entry.worker;
+      const wc = w.webContents;
+      const gone = wc.isDestroyed();
+      out.push({
+        id: w.id, kind: 'worker', title: gone ? '' : wc.getTitle(), url: gone ? '' : wc.getURL(),
+        name: w.identity.name, color: w.identity.color, glyph: w.identity.glyph,
+        presentation: this.presentation.get(w.id) || 'parked', crashed: entry.crashed, loading: entry.loading,
+        isActive: false, staged: staged === w.id && this.layoutMode !== 'grid'
+      });
+    }
+    return out;
   }
 
+  private scheduleGridBroadcast(): void {
+    if (this.gridBroadcastTimer) return;
+    this.gridBroadcastTimer = setTimeout(() => {
+      this.gridBroadcastTimer = null;
+      try {
+        if (!this.window.isDestroyed()) {
+          const payload: GridSourcesPayload = { sources: this.getGridSources() };
+          this.window.webContents.send(IPC_CHANNELS.EVENT_GRID_SOURCES, payload);
+        }
+      } catch {}
+    }, 50);
+  }
+
+  public listWorkerIds(): string[] {
+    return [...this.workers.keys()];
+  }
+
+  public getWorker(id: string): LiveWorkerView | undefined {
+    return this.workers.get(id)?.worker;
+  }
+
+  // ------------------------------------------------------------------------------------------- broadcast
   public broadcastPresence(payload: PresenceEventPayload): void {
     try {
       if (!this.window.isDestroyed()) {
@@ -423,6 +668,7 @@ export class ViewManager {
         this.window.webContents.send(IPC_CHANNELS.EVENT_TABS_SYNC, snapshot);
       }
     } catch {}
+    this.scheduleGridBroadcast();
   }
 
   public broadcastTabPatch(id: string, patch: Partial<TabState>): void {
@@ -432,6 +678,7 @@ export class ViewManager {
         this.window.webContents.send(IPC_CHANNELS.EVENT_TAB_PATCH, payload);
       }
     } catch {}
+    this.scheduleGridBroadcast();
   }
 
   public getTab(id: string): TabView | undefined {

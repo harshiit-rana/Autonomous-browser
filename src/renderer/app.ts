@@ -5,6 +5,7 @@
 
 import { OmnibarParser } from '../ui/omnibar_parser.js';
 import { HistoryPanel } from './history_panel.js';
+import { SwarmGrid } from './swarm_grid.js';
 import {
   TabState,
   TabsSnapshot,
@@ -12,7 +13,7 @@ import {
   WorkerEventPayload,
   EvidenceEventPayload,
   PresenceEventPayload,
-  SwarmPreviewItem,
+  GridSourcesPayload,
   MissionStatusPayload,
   MissionQuestionPayload,
   MODEL_NOT_CONFIGURED
@@ -54,6 +55,7 @@ export class BrowserApp {
 
   // Swarm Grid & Presence Overlay (Issues #135, #136)
   private swarmGridContainer: HTMLElement;
+  private swarmGrid: SwarmGrid;
   private presenceOverlay: HTMLElement;
   private cursorElement: HTMLElement | null = null;
 
@@ -169,6 +171,15 @@ export class BrowserApp {
     this.groupOllamaUrl = document.getElementById('group-ollama-url') as HTMLElement;
     this.settingsStatusMsg = document.getElementById('settings-status-msg') as HTMLElement;
 
+    // Live Swarm Grid (#232). The frames port is handed over by the preload with window.postMessage.
+    this.swarmGrid = new SwarmGrid(this.swarmGridContainer, (window as any).aegis || {}, {
+      testMode: false,
+      onPromote: () => this.setLayout('stage')
+    });
+    window.addEventListener('message', (ev: MessageEvent) => {
+      if (ev.source === window && ev.data?.type === 'aegis:frames-port' && ev.ports?.[0]) this.swarmGrid.attachPort(ev.ports[0]);
+    });
+
     this.bindEvents();
     this.bindLayoutEvents();
     this.bindControls();
@@ -192,10 +203,15 @@ export class BrowserApp {
       this.currentTabs = snapshot.tabs;
       this.activeTabId = snapshot.activeTabId;
       this.renderTabs();
-      if (this.currentLayout === 'grid') {
-        this.refreshSwarmGrid();
-      }
     });
+
+    // Live Grid sources (tabs + workers, with their presentation) pushed by the main process (#232)
+    aegis.onGridSources?.((data: GridSourcesPayload) => {
+      this.swarmGrid.setSources(data.sources || []);
+    });
+    aegis.getRuntimeFlags?.().then((res: any) => {
+      if (res?.data?.testMode) this.swarmGrid.enableTestStats();
+    }).catch(() => {});
 
     aegis.onTabPatch((patchData: TabPatch) => {
       const tab = this.currentTabs.find(t => t.id === patchData.id);
@@ -209,6 +225,7 @@ export class BrowserApp {
     aegis.onWorkerEvent((data: WorkerEventPayload) => {
       this.activeWorkers.set(data.id, data);
       this.renderWorkerCards();
+      this.swarmGrid.onWorkerEvent(data);
     });
 
     // Replay demo banner (#224): shown while a demo transcript plays, and for its final result
@@ -297,74 +314,8 @@ export class BrowserApp {
     const aegis = (window as any).aegis;
     aegis?.setLayoutMode?.(mode);
 
-    if (mode === 'grid') {
-      this.swarmGridContainer.classList.remove('hidden');
-      this.refreshSwarmGrid();
-    } else {
-      this.swarmGridContainer.classList.add('hidden');
-    }
-  }
-
-  private async refreshSwarmGrid(): Promise<void> {
-    const aegis = (window as any).aegis;
-    if (!aegis?.getSwarmPreviews) return;
-
-    const res = await aegis.getSwarmPreviews();
-    const items: SwarmPreviewItem[] = res?.data || res || [];
-
-    this.swarmGridContainer.replaceChildren();
-
-    if (items.length === 0) {
-      const msg = document.createElement('div');
-      msg.className = 'empty-state-text';
-      msg.textContent = 'No open tabs or active workers in swarm grid';
-      this.swarmGridContainer.appendChild(msg);
-      return;
-    }
-
-    for (const item of items) {
-      const card = document.createElement('div');
-      card.className = `swarm-grid-card ${item.isActive ? 'active-tab' : ''}`;
-
-      if (item.thumbnailBase64) {
-        const img = document.createElement('img');
-        img.className = 'swarm-card-thumb';
-        img.src = item.thumbnailBase64;
-        card.appendChild(img);
-      } else {
-        const placeholder = document.createElement('div');
-        placeholder.className = 'swarm-card-thumb';
-        placeholder.style.display = 'flex';
-        placeholder.style.alignItems = 'center';
-        placeholder.style.justifyContent = 'center';
-        placeholder.style.color = 'var(--text-muted)';
-        placeholder.textContent = 'Rendering...';
-        card.appendChild(placeholder);
-      }
-
-      const body = document.createElement('div');
-      body.className = 'swarm-card-body';
-
-      const title = document.createElement('div');
-      title.className = 'swarm-card-title';
-      title.textContent = sanitizeText(item.title || 'Tab');
-      body.appendChild(title);
-
-      const meta = document.createElement('div');
-      meta.className = 'swarm-card-meta';
-      meta.textContent = item.owner.startsWith('agent:') ? 'Agent Worker' : 'User Tab';
-      body.appendChild(meta);
-
-      card.appendChild(body);
-
-      // Clicking card switches active tab and promotes back to Stage
-      card.addEventListener('click', () => {
-        aegis?.switchTab(item.tabId);
-        this.setLayout('stage');
-      });
-
-      this.swarmGridContainer.appendChild(card);
-    }
+    this.swarmGridContainer.classList.toggle('hidden', mode !== 'grid');
+    this.swarmGrid.setActive(mode === 'grid');
   }
 
   // ==========================================
