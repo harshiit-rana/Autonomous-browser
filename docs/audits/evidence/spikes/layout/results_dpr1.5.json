@@ -1,0 +1,454 @@
+{
+  "host": {
+    "platform": "win32",
+    "release": "10.0.26300",
+    "cpus": "AMD Ryzen 7 7735HS with Radeon Graphics        ",
+    "threads": 16,
+    "totalMemMB": 15611,
+    "node": "20.18.3",
+    "electron": "33.4.11",
+    "chrome": "130.0.6723.191",
+    "date": "2026-11-20T12:45:53.637Z"
+  },
+  "args": [
+    "--force-device-scale-factor=1.5",
+    "--parts",
+    "resize,modal",
+    "--out",
+    "docs/audits/evidence/spikes/layout",
+    "--name",
+    "results_dpr1.5.json",
+    "--tag",
+    "dpr1.5"
+  ],
+  "tag": "dpr1.5",
+  "parts": {
+    "modal": {
+      "baseline": {
+        "orangePagePixels": 19801
+      },
+      "domModal_pageViewVisible": {
+        "yellowCardPixels": 0,
+        "fractionOfCardVisible": 0
+      },
+      "domModal_pageViewHidden": {
+        "yellowCardPixels": 312120,
+        "orangePagePixels": 0
+      },
+      "overlayView_coldCreateAndLoadMs": 217,
+      "overlayView_showLatencyMs_toSecondRaf": {
+        "p50": 12.34,
+        "p95": 12.64,
+        "max": 13.08,
+        "n": 20,
+        "note": "renderer-side (addChildView+setBounds+openDialog until 2 rAF); compositor/OS present time not included"
+      },
+      "overlayView_open": {
+        "fractionOfCardVisible": 0.994,
+        "pageButtonVisibleDimmedPixels": 12260,
+        "pageButtonFullColourPixels": 0,
+        "clickOk": {
+          "hit": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=5064 rootpid=5064 clicked=true"
+        },
+        "clickPageButtonBehindScrim": {
+          "hit": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=5064 rootpid=5064 clicked=true"
+        },
+        "dialogOkClicksDelta": 1,
+        "pageClicksDelta": 0,
+        "escKey": {
+          "hit": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=5064 rootpid=5064 clicked=true"
+        },
+        "overlayKeysAfterEsc": [
+          "Alt",
+          "Escape"
+        ],
+        "uiWebContentsFocused": true
+      }
+    },
+    "resize": {
+      "sizesDip": [
+        {
+          "requestedDip": "1400x816",
+          "winBoundsDip": "1400x816",
+          "contentBoundsDip": "1400x816",
+          "frameDeltaDip": "0x0",
+          "settleMsUntilViewMatchesReport": 13.2,
+          "domViewportRect": {
+            "x": 0,
+            "y": 88,
+            "w": 1075,
+            "h": 728
+          },
+          "measuredLayoutViewBounds": {
+            "x": 0,
+            "y": 88,
+            "width": 1075,
+            "height": 728
+          },
+          "measuredErrorVsDomRectPx": {
+            "dx": 0,
+            "dy": 0,
+            "dw": 0,
+            "dh": 0
+          },
+          "hardcodedLayoutBounds": {
+            "x": 0,
+            "y": 88,
+            "width": 1080,
+            "height": 728
+          },
+          "hardcodedErrorVsDomRectPx": {
+            "dx": 0,
+            "dy": 0,
+            "dw": 5,
+            "dh": 0
+          },
+          "page": {
+            "clicks": 0,
+            "resizes": 1,
+            "keys": [
+              "Alt",
+              "Alt"
+            ],
+            "raf": 1718,
+            "iw": 1075,
+            "ih": 728
+          },
+          "nativeHwnd": {
+            "expectedScreenPx": {
+              "x": 0,
+              "y": 132,
+              "w": 1613,
+              "h": 1092
+            },
+            "matchedChild": {
+              "class": "Chrome_RenderWidgetHostHWND",
+              "visible": true,
+              "x": 0,
+              "y": 132,
+              "w": 1613,
+              "h": 1092
+            },
+            "allVisibleChildren": [
+              {
+                "class": "Chrome_RenderWidgetHostHWND",
+                "visible": true,
+                "x": 0,
+                "y": 132,
+                "w": 1613,
+                "h": 1092
+              },
+              {
+                "class": "Chrome_RenderWidgetHostHWND",
+                "visible": true,
+                "x": 0,
+                "y": 0,
+                "w": 2100,
+                "h": 1224
+              },
+              {
+                "class": "Chrome_RenderWidgetHostHWND",
+                "visible": true,
+                "x": 0,
+                "y": 0,
+                "w": 1920,
+                "h": 1020
+              },
+              {
+                "class": "Intermediate D3D Window",
+                "visible": true,
+                "x": 0,
+                "y": 0,
+                "w": 2560,
+                "h": 1536
+              }
+            ],
+            "top": {
+              "x": 0,
+              "y": 0,
+              "w": 2100,
+              "h": 1224
+            },
+            "dpi": 120
+          }
+        },
+        {
+          "requestedDip": "1000x700",
+          "winBoundsDip": "1000x700",
+          "contentBoundsDip": "1000x700",
+          "frameDeltaDip": "0x0",
+          "settleMsUntilViewMatchesReport": 8.4,
+          "domViewportRect": {
+            "x": 0,
+            "y": 88,
+            "w": 675,
+            "h": 612
+          },
+          "measuredLayoutViewBounds": {
+            "x": 0,
+            "y": 88,
+            "width": 675,
+            "height": 612
+          },
+          "measuredErrorVsDomRectPx": {
+            "dx": 0,
+            "dy": 0,
+            "dw": 0,
+            "dh": 0
+          },
+          "hardcodedLayoutBounds": {
+            "x": 0,
+            "y": 88,
+            "width": 680,
+            "height": 612
+          },
+          "hardcodedErrorVsDomRectPx": {
+            "dx": 0,
+            "dy": 0,
+            "dw": 5,
+            "dh": 0
+          },
+          "page": {
+            "clicks": 0,
+            "resizes": 2,
+            "keys": [
+              "Alt",
+              "Alt"
+            ],
+            "raf": 1823,
+            "iw": 675,
+            "ih": 612
+          }
+        },
+        {
+          "requestedDip": "800x600",
+          "winBoundsDip": "800x600",
+          "contentBoundsDip": "800x600",
+          "frameDeltaDip": "0x0",
+          "settleMsUntilViewMatchesReport": 14.9,
+          "domViewportRect": {
+            "x": 0,
+            "y": 88,
+            "w": 475,
+            "h": 512
+          },
+          "measuredLayoutViewBounds": {
+            "x": 0,
+            "y": 88,
+            "width": 475,
+            "height": 512
+          },
+          "measuredErrorVsDomRectPx": {
+            "dx": 0,
+            "dy": 0,
+            "dw": 0,
+            "dh": 0
+          },
+          "hardcodedLayoutBounds": {
+            "x": 0,
+            "y": 88,
+            "width": 480,
+            "height": 512
+          },
+          "hardcodedErrorVsDomRectPx": {
+            "dx": 0,
+            "dy": 0,
+            "dw": 5,
+            "dh": 0
+          },
+          "page": {
+            "clicks": 0,
+            "resizes": 3,
+            "keys": [
+              "Alt",
+              "Alt"
+            ],
+            "raf": 1870,
+            "iw": 475,
+            "ih": 512
+          },
+          "nativeHwnd": {
+            "expectedScreenPx": {
+              "x": 0,
+              "y": 132,
+              "w": 713,
+              "h": 768
+            },
+            "matchedChild": {
+              "class": "Chrome_RenderWidgetHostHWND",
+              "visible": true,
+              "x": 0,
+              "y": 132,
+              "w": 713,
+              "h": 768
+            },
+            "allVisibleChildren": [
+              {
+                "class": "Chrome_RenderWidgetHostHWND",
+                "visible": true,
+                "x": 0,
+                "y": 132,
+                "w": 713,
+                "h": 768
+              },
+              {
+                "class": "Chrome_RenderWidgetHostHWND",
+                "visible": true,
+                "x": 0,
+                "y": 0,
+                "w": 1200,
+                "h": 900
+              },
+              {
+                "class": "Chrome_RenderWidgetHostHWND",
+                "visible": true,
+                "x": 0,
+                "y": 0,
+                "w": 1920,
+                "h": 1020
+              },
+              {
+                "class": "Intermediate D3D Window",
+                "visible": true,
+                "x": 0,
+                "y": 0,
+                "w": 2560,
+                "h": 1536
+              }
+            ],
+            "top": {
+              "x": 0,
+              "y": 0,
+              "w": 1200,
+              "h": 900
+            },
+            "dpi": 120
+          }
+        },
+        {
+          "requestedDip": "1400x816",
+          "winBoundsDip": "1400x816",
+          "contentBoundsDip": "1400x816",
+          "frameDeltaDip": "0x0",
+          "settleMsUntilViewMatchesReport": 8.8,
+          "domViewportRect": {
+            "x": 0,
+            "y": 88,
+            "w": 1075,
+            "h": 728
+          },
+          "measuredLayoutViewBounds": {
+            "x": 0,
+            "y": 88,
+            "width": 1075,
+            "height": 728
+          },
+          "measuredErrorVsDomRectPx": {
+            "dx": 0,
+            "dy": 0,
+            "dw": 0,
+            "dh": 0
+          },
+          "hardcodedLayoutBounds": {
+            "x": 0,
+            "y": 88,
+            "width": 1080,
+            "height": 728
+          },
+          "hardcodedErrorVsDomRectPx": {
+            "dx": 0,
+            "dy": 0,
+            "dw": 5,
+            "dh": 0
+          },
+          "page": {
+            "clicks": 0,
+            "resizes": 4,
+            "keys": [
+              "Alt",
+              "Alt"
+            ],
+            "raf": 1976,
+            "iw": 1075,
+            "ih": 728
+          }
+        }
+      ],
+      "dragSimulation": {
+        "steps": 41,
+        "setSizeToReportMsP50": 14.94,
+        "p95": 16.05,
+        "max": 20.27,
+        "stepsWhereViewWidthDifferedFromDomByMoreThan1px": 0,
+        "note": "sampled right after the report arrived, so a nonzero count means the view lagged one report behind the DOM"
+      },
+      "maximised": {
+        "winBoundsDip": {
+          "x": -6,
+          "y": -6,
+          "width": 1292,
+          "height": 692
+        },
+        "viewBounds": {
+          "x": 0,
+          "y": 88,
+          "width": 955,
+          "height": 592
+        },
+        "domRect": {
+          "w": 955,
+          "h": 592
+        },
+        "errW": 0,
+        "errH": 0
+      }
+    }
+  },
+  "display": {
+    "scaleFactor": 1.5,
+    "size": {
+      "width": 853,
+      "height": 480
+    },
+    "workArea": {
+      "width": 1280,
+      "height": 680
+    }
+  },
+  "window": {
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 680
+    },
+    "content": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 680
+    },
+    "firstReport": {
+      "x": 0,
+      "y": 88,
+      "width": 955,
+      "height": 592,
+      "t": 1795178753870.8,
+      "dpr": 1.5,
+      "recvAt": 1795178753871
+    },
+    "pageViewBounds": {
+      "x": 0,
+      "y": 88,
+      "width": 955,
+      "height": 592
+    },
+    "pageDpr": 1.5
+  },
+  "extra": {
+    "btnScreenPx": {
+      "x": 569.4788647038029,
+      "y": 473.4732589263169
+    }
+  }
+}
