@@ -82,6 +82,7 @@ async function setupPlacement(cell, N) {
       switch (cell.place) {
         case 'unattached': break;
         case 'stage': case 'covered': case 'hidden': case 'detached': win.contentView.addChildView(v); v.setBounds(STAGE); break;
+        case 'sliver': win.contentView.addChildView(v); v.setBounds({ x: -(STAGE.width - 1), y: STAGE.y, width: STAGE.width, height: STAGE.height }); break; // full-size view, only a 1 DIP column inside the window
         case 'tiny': win.contentView.addChildView(v); v.setBounds({ x: 0, y: 0, width: 1, height: 1 }); break;
         case 'offscreen': win.contentView.addChildView(v); v.setBounds({ x: -6000, y: 100, width: STAGE.width, height: STAGE.height }); break;
         case 'tile': case 'tilezoom': win.contentView.addChildView(v); v.setBounds(tileRect(i, N)); break;
@@ -237,6 +238,8 @@ function buildMatrix() {
   for (const place of ['tiny', 'offscreen', 'covered', 'hidden']) for (const cap of ['none', 'capturePage10', 'screencast']) add(place, cap, [6]);
   for (const cap of ['none', 'capturePage10', 'screencast']) add('tile', cap, [1, 5, 6, 10], {});
   add('tile', 'screencast15', [1, 5, 6, 10]); add('tile', 'screencastNth10', [6]);
+  for (const cap of ['none', 'capturePage10', 'screencast15']) add('sliver', cap, [6]);
+  add('sliver', 'screencast15', [10]);
   add('tilezoom', 'none', [6, 10]); add('tilezoom', 'screencast15', [6]); add('covered', 'screencast15', [6]); add('offscreen', 'screencast15', [6]);
   add('osr', 'paint', [1, 6, 10]);
   return M;
