@@ -17,7 +17,7 @@ This directory contains legacy or un-architected modules removed from active pro
 ### 3. `synchronized_tester.ts` (Triaged in Milestone M9, Issue #192)
 - **Findings:** A prototype multi-tab QA helper script with synthetic barrier waits, never integrated into the real test harness or CI pipeline.
 - **Status:** Quarantined to attic.
-- **Restoration Criteria:** None. Superseded by the real-app Playwright e2e harness (`tests/e2e/e2e_harness.ts`, #195) and Web Arena fixtures (#194).
+- **Restoration Criteria:** None. Superseded by the real-app Playwright e2e harness (`tests/e2e/fixtures.ts`, #195, #254) and Web Arena fixtures (#194).
 
 ### 4. `rbac_policy.ts` (Triaged in Milestone M9, Issue #193)
 - **Findings:** Defined enterprise role/policy data structures (`admin`, `operator`, `restricted`) and SSO configuration stubs with no enforcement point in the browser execution pipeline, no cryptographically signed policy distribution, and no identity provider verification.
