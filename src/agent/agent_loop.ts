@@ -387,9 +387,10 @@ export class AgentLoop {
         this.toolResult(call.id, call.name, `The user denied this action (${decision.riskClass}). Choose another way or ask the user.`, true);
         return 'failed';
       }
-      if (decision.riskClass === 'navigate-out-of-scope' && args.url) this.policy.allowHost(String(args.url));
       emit.evidence(`[Policy] User approved ${call.name} (${decision.riskClass})`);
     }
+    // An allowed (approved or rule-allowed) navigation to a new host extends the mission scope.
+    if (decision.riskClass === 'navigate-out-of-scope' && args.url) this.policy.allowHost(String(args.url));
 
     if (call.name === 'type' && typeof args.text === 'string' && args.text.includes('{{secret:')) {
       const subst = new SecretVault().substitutePlaceholder(args.text, snapshot.url);
@@ -601,13 +602,13 @@ export class AgentLoop {
     ].filter(Boolean).join('\n');
   }
 
-  /** Keeps the two newest full observations; older ones are replaced by a one-line summary (bounded context). */
+  /** Keeps the newest full observation (the model then sees it plus the new one); older ones are replaced by a one-line summary (bounded context). */
   private pruneHistory(): void {
     const idx: number[] = [];
     this.history.forEach((m, i) => {
       if (m.role === 'user' && typeof m.content === 'string' && m.content.startsWith(OBS_MARK)) idx.push(i);
     });
-    for (const i of idx.slice(0, Math.max(0, idx.length - 2))) {
+    for (const i of idx.slice(0, Math.max(0, idx.length - 1))) {
       const text = this.history[i].content as string;
       const url = (text.match(/^URL:\s*(\S+)/m) || [])[1] || '';
       const title = (text.match(/^Title:\s*(.*)$/m) || [])[1] || '';

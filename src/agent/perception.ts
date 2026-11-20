@@ -96,7 +96,7 @@ const EXTRACTOR_SCRIPT = `
   const MAX_ELEMENTS = 200, MAX_TEXT = 6000;
   const SEL = 'button,input,select,textarea,a[href],summary,[role=button],[role=link],[role=tab],[role=checkbox],[role=radio],' +
     '[role=menuitem],[role=option],[role=combobox],[role=listbox],[role=switch],[role=slider],[role=textbox],[role=searchbox],' +
-    '[contenteditable="true"],[tabindex]:not([tabindex="-1"]),[draggable="true"]';
+    '[contenteditable="true"],[tabindex]:not([tabindex="-1"]),[draggable="true"],[aria-haspopup]:not([aria-haspopup="false"])';
   const elements = [], headings = [], texts = [], opaqueFrames = [];
   const vw = window.innerWidth, vh = window.innerHeight;
 

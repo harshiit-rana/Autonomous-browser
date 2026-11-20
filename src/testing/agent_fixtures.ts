@@ -49,7 +49,7 @@ lb.querySelectorAll('[role=option]').forEach(o=>o.addEventListener('click',()=>{
   report('color='+o.textContent);}));`),
 
   '/agent/hover': () => page('Hover Fixture', `<h1>Hover menu</h1>
-<div id="menu" class="box"><span id="menu-title">Account menu (hover me)</span>
+<div id="menu" class="box"><span id="menu-title" aria-haspopup="menu">Account menu (hover me)</span>
   <div id="menu-panel"><a href="/agent/nav/b" id="secret-link">Secret settings</a></div>
 </div>`, `
 const m=document.getElementById('menu');

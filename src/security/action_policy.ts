@@ -146,6 +146,10 @@ export class ActionPolicyEngine {
         if (candidateEtld === cleanAllowed || candidateEtld.endsWith('.' + cleanAllowed)) {
           return true;
         }
+        // Same registrable domain (www.example.com allows shop.example.com).
+        if (candidateEtld && candidateEtld.includes('.') && candidateEtld === ActionPolicyEngine.getETLDPlusOne(`http://${cleanAllowed}/`)) {
+          return true;
+        }
       }
       return false;
     } catch {

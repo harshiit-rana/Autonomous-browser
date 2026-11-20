@@ -205,7 +205,7 @@ scenario('hover reveals a menu that the next observation contains', async c => {
     ],
     verifier: [pass()]
   });
-  assert.equal(r.outcome.state, 'completed');
+  assert.equal(r.outcome.state, 'completed', String(r.outcome.error));
   return 'hover -> menu -> click -> page B';
 });
 
@@ -405,7 +405,7 @@ scenario('two tools in one turn: sequential, stop at first failure, every call a
     ]
   });
   const results = toolResults(r.loop.history);
-  assert.equal(results.length, 3);
+  assert.equal(results.length, 4, "three calls of the turn plus the final fail");
   assert.ok(!results[0].isError);
   assert.ok(results[1].isError && /STALE_REF/.test(results[1].output) && /no longer on the page/.test(results[1].output), results[1].output);
   assert.ok(results[2].isError && /^Skipped/.test(results[2].output), results[2].output);
