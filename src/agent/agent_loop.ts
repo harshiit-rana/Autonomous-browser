@@ -245,6 +245,9 @@ export class AgentLoop {
     let snapshot = await PerceptionEngine.captureSnapshot(this.tab.view.webContents, false);
     this.checkAbort();
 
+    // A mission that started before its tab committed a URL gets its scope from the first real page.
+    if (this.policy.getAllowedHosts().length === 0 && /^https?:/i.test(snapshot.url)) this.policy.allowHost(snapshot.url);
+
     // The page may have left the mission scope by itself (redirect, link click): re-run the policy (edge case).
     if (!this.policy.isInScope(snapshot.url)) {
       const host = ActionPolicyEngine.hostOf(snapshot.url);

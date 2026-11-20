@@ -106,7 +106,8 @@ document.getElementById('cross').src='http://localhost:'+location.port+'/agent/n
 
   '/agent/growing': () => page('Growing Fixture', `<h1>Infinite feed</h1><div id="feed"></div><button id="more">More</button>`, `
 let n=0;const feed=document.getElementById('feed');
-function add(){for(let i=0;i<20;i++){const p=document.createElement('p');p.textContent='Feed item '+(++n)+' lorem ipsum dolor sit amet consectetur';feed.appendChild(p);}}
+function add(){for(let i=0;i<20;i++){const p=document.createElement('p');p.textContent='Feed item '+(++n)+' lorem ipsum dolor sit amet consectetur';feed.appendChild(p);}
+document.querySelector('h1').textContent='Infinite feed ('+n+' items)';}
 add();document.getElementById('more').addEventListener('click',add);`)
 };
 
