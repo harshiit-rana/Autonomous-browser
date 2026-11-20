@@ -25,6 +25,10 @@ function run(command: string, label: string): void {
 export default async function globalSetup(): Promise<void> {
   const entry = path.join(ROOT, 'dist', 'main', 'e2e_entry.js');
   const stamp = path.join(ROOT, 'dist', 'renderer', 'index.html');
+  const preload = path.join(ROOT, 'dist', 'main', 'preload.js');
+  // `tsc -b` (also run by `npm test`) overwrites the bundled preload with an unbundled one that cannot load in the sandboxed
+  // chrome window, leaving `window.aegis` undefined. Treat that as a stale build.
+  const preloadBundled = (): boolean => fs.existsSync(preload) && !/require\(\s*["']\.{1,2}\//.test(fs.readFileSync(preload, 'utf8'));
 
   if (process.env.AEGIS_E2E_SKIP_BUILD === '1') {
     if (!fs.existsSync(entry) || !fs.existsSync(stamp)) throw new Error('AEGIS_E2E_SKIP_BUILD=1 but dist/ is not built. Run `npm run build`.');
@@ -39,7 +43,7 @@ export default async function globalSetup(): Promise<void> {
     newestMtime(path.join(ROOT, 'scripts', 'copy_assets.mjs')),
     newestMtime(path.join(ROOT, 'scripts', 'bundle_preload.mjs'))
   );
-  if (!fs.existsSync(entry) || !fs.existsSync(stamp) || fs.statSync(stamp).mtimeMs < sourcesNewest) {
+  if (!fs.existsSync(entry) || !fs.existsSync(stamp) || fs.statSync(stamp).mtimeMs < sourcesNewest || !preloadBundled()) {
     console.log('[e2e] dist/ is missing or stale: running `npm run build`');
     run('npm run build', 'Build');
   } else {
