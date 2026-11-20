@@ -28,5 +28,6 @@
   { "id": "worker_isolation", "cmd": "tsx tests/test_worker_isolation.ts", "area": "swarm" },
   { "id": "packaging", "cmd": "tsx tests/test_packaging.ts", "area": "packaging" },
   { "id": "provider_factory", "cmd": "tsx tests/test_provider_factory.ts", "area": "models" },
-  { "id": "agent_loop", "cmd": "tsx tests/test_agent_loop.ts", "area": "agent" }
+  { "id": "agent_loop", "cmd": "tsx tests/test_agent_loop.ts", "area": "agent" },
+  { "id": "frame_hub", "cmd": "tsx tests/test_frame_hub.ts", "area": "mission-control" }
 ]
