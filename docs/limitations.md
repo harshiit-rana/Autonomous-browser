@@ -30,7 +30,7 @@ This file records what the product does not do (yet) and why. Entries are added 
 | Popups | Denied by policy (`window.open` returns `null`); a popup is not adopted as a new agent tab of the same worker. | Revisit with #252 if a task needs OAuth popups. |
 | Crash recovery | After `render-process-gone` the worker reloads its last URL, at most twice (`MAX_CRASH_RECOVERIES`), then stays `crashed`. The call that was in flight when the renderer died fails with its own error; nothing re-queues it. A real supervisor restart policy is #231. | #231. |
 | Memory pressure with 8 workers | `ResourceGovernor` hibernation is not wired to workers; no 8-worker memory test was run (the leak test runs 4 at a time). | #231. |
-| Settle heuristic | Load finished + no request in flight for 500 ms (measured with `session.webRequest` on the worker's own session; WebSocket and EventSource requests are ignored) + DOM quiet for 150 ms with no running CSS animations, under a 10 s deadline. A page that never goes quiet returns `settled: false` (recorded in `WorkerHost.lastSettle`) and the worker continues. It uses `perception/settle_detector.ts`; the perception implementation decision belongs to #225. | #225. |
+| Settle heuristic | Load finished + no request in flight for 500 ms (measured with `session.webRequest` on the worker's own session; WebSocket and EventSource requests are ignored) + DOM quiet for 150 ms with no running CSS animations, under a 10 s deadline. A page that never goes quiet returns `settled: false` (recorded in `WorkerHost.lastSettle`) and the worker continues. It uses `perception/settle_detector.ts`. #225 chose `agent/perception.ts` for the single-agent loop; workers keep this settle heuristic. | |
 | User tabs | The guards in `swarm/agent_tab_guards.ts` apply to worker tabs only. User tabs in `ViewManager` still rely on the default session's permission handler set in `main/index.ts`. A `user-profile` worker gets the web-contents guards but never has handlers installed on the user's default session. | Browser hardening pass (#247). |
 | Worker views in the UI | Worker views are created hidden by default (`attachToWindow` is false in the runtime); the grid/stage that shows them is #232. | #232. |
 | Cancel | `AgentRuntime.cancel()` shuts the swarm down, so in-flight worker calls fail; the coordinator is not told to stop scheduling. | #226, #227. |
@@ -63,7 +63,7 @@ Measured in the real app on Windows 11 / Electron 33.4.11; details and evidence 
 | Swarm Grid | `getSwarmPreviews()` never returns with more than one tab open, so the Grid shows nothing. | #232 |
 | Overlays | Chrome-DOM overlays (agent cursor, approvals) are invisible over the page in Stage layout; modals work only because the page view is hidden. Nothing emits presence events. | #233, #237 |
 | Swarm | Workers make no model calls; evidence is the page title of a search engine. | #227, #230 |
-| Approvals | A navigation to a new origin pauses the mission with no UI to approve it. | #238 |
+| Approvals | Since #225 a policy `ask` (e.g. navigation to a new origin) is shown in the drawer's question card with Approve / Deny; there is still no approval inbox or history. | #238 |
 | Credentials | The vault is encrypted at rest, but `getSettings()` returns the decrypted key to the renderer. | #248 |
 | Window | At the declared minimum size 800x600 the chrome overflows horizontally and the Theatre button is clipped. | #237 |
 
