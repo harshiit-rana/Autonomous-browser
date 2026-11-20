@@ -239,8 +239,8 @@ export class ToolExecutor {
           }
           // ARIA combobox/listbox: open it with a real click, then click the matching role=option.
           if (r.el.role !== 'listbox') await ex.clickAt(Math.round(r.at.x), Math.round(r.at.y));
-          await sleep(150);
-          const opt = await wc.executeJavaScript(`(() => { ${RESOLVE_LOCATOR_JS}
+          // The list may open after an animation or a microtask: poll for a visible option instead of a fixed wait.
+          const findOption = () => wc.executeJavaScript(`(() => { ${RESOLVE_LOCATOR_JS}
             const el = __aegisResolve(${JSON.stringify(r.el.locator)}); if (!el) return { err: 'gone' };
             const want = ${JSON.stringify(want)}; const n = s => String(s).replace(/\\s+/g, ' ').trim().toLowerCase();
             const root = el.getRootNode();
@@ -257,6 +257,12 @@ export class ToolExecutor {
             if (!r.width || !r.height) return { err: 'option not visible after opening the list' };
             return { x: r.x + r.width / 2, y: r.y + r.height / 2, label: o.textContent.trim() };
           })()`);
+          let opt: any = { err: 'gone' };
+          for (let i = 0; i < 20; i++) {
+            await sleep(100);
+            opt = await findOption();
+            if (!opt.err || opt.err === 'gone') break;
+          }
           if (opt.err) return { ok: false, error: 'select_failed', output: `select_option failed on [${args.ref}]: ${opt.err}${opt.options ? `. Options: ${opt.options.join(' | ')}` : ''}` };
           await ex.clickAt(Math.round(opt.x), Math.round(opt.y));
           return { ok: true, effect: { selected: opt.label }, output: `Selected "${opt.label}" in listbox [${args.ref}]` };
