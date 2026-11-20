@@ -14,7 +14,7 @@
  * 7. /chaos: Slow responses, 429/503 storms, packet drops, 100k-node DOM
  * 
  * Control API:
- * - GET  /api/oracle/state : Read server-side state (orders, logins, submissions)
+ * - GET  /api/oracle/state : Read server-side state (orders, logins, submissions); alias GET /__state (real-app e2e, #254)
  * - POST /api/oracle/reset : Reset state to initial deterministic seed
  */
 
@@ -27,6 +27,8 @@ export interface OracleState {
   submittedForms: Array<{ formId: string; fields: Record<string, any>; honeypotTriggered: boolean; timestamp: number }>;
   flaggedAttacks: Array<{ attackType: string; payload: string; blocked: boolean; timestamp: number }>;
   activeSessions: Set<string>;
+  /** Paths of every page the server was asked for (GET), oldest first; control endpoints and favicons excluded. */
+  pageViews: string[];
 }
 
 export class WebArenaServer {
@@ -44,7 +46,8 @@ export class WebArenaServer {
       loginAttempts: [],
       submittedForms: [],
       flaggedAttacks: [],
-      activeSessions: new Set<string>()
+      activeSessions: new Set<string>(),
+      pageViews: []
     };
   }
 
@@ -115,14 +118,19 @@ export class WebArenaServer {
       return;
     }
 
+    if (req.method === 'GET' && pathname !== '/__state' && pathname !== '/favicon.ico' && !pathname.startsWith('/api/oracle')) {
+      this.oracleState.pageViews.push(pathname);
+    }
+
     // 1. Control & Oracle API
-    if (pathname === '/api/oracle/state') {
+    if (pathname === '/api/oracle/state' || pathname === '/__state') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         orders: this.oracleState.orders,
         loginAttempts: this.oracleState.loginAttempts,
         submittedForms: this.oracleState.submittedForms,
         flaggedAttacks: this.oracleState.flaggedAttacks,
+        pageViews: this.oracleState.pageViews,
         activeSessionsCount: this.oracleState.activeSessions.size
       }));
       return;
