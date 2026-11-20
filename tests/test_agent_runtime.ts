@@ -99,19 +99,24 @@ async function testToolExecutor() {
     formattedTree: '[e1] button "Submit Query"\n[e2] input[type="text"] "Search"'
   };
 
+  const calls: string[] = [];
   const mockTab: any = {
     id: 'test_tab',
     view: {
       webContents: {
-        loadURL: async (url: string) => {},
-        executeJavaScript: async (code: string) => {},
-        sendInputEvent: async (ev: any) => {}
+        loadURL: async (url: string) => { calls.push(`load:${url}`); },
+        executeJavaScript: async (code: string) => null,
       }
     },
     executor: {
-      moveMouseTo: async () => {}
+      // locate() resolves the element's locator in the live page; null means it is gone.
+      locate: async (_loc: any, tag: string) => tag === 'button' ? { x: 60, y: 30, width: 100, height: 40 } : { x: 150, y: 67, width: 200, height: 35 },
+      clickAt: async (x: number, y: number) => { calls.push(`click:${x},${y}`); },
+      insertText: async (t: string) => { calls.push(`text:${t}`); },
+      pressKey: async (k: string) => { calls.push(`key:${k}`); },
     }
   };
+  for (const el of mockSnapshot.elements.values()) (el as any).locator = [{ k: 'd', p: [0] }];
 
   // Test navigate
   const navResult = await ToolExecutor.execute('navigate', { url: 'https://duckduckgo.com' }, { tab: mockTab, snapshot: mockSnapshot });
@@ -131,7 +136,8 @@ async function testToolExecutor() {
   // Test type
   const typeResult = await ToolExecutor.execute('type', { ref: 'e2', text: 'Anthropic Claude' }, { tab: mockTab, snapshot: mockSnapshot });
   assert.equal(typeResult.ok, true);
-  assert.equal(typeResult.effect?.typed, 'Anthropic Claude');
+  assert.equal(typeResult.effect?.typed, 'Anthropic Claude'.length);
+  assert.deepEqual(calls, ['load:https://duckduckgo.com', 'click:60,30', 'click:150,67', 'text:Anthropic Claude']);
 
   // Test done
   const doneResult = await ToolExecutor.execute('done', { result: 'Goal achieved', evidence: ['Fact 1', 'Fact 2'] }, { tab: mockTab, snapshot: mockSnapshot });

@@ -81,3 +81,18 @@ Measured in the real app on Windows 11 / Electron 33.4.11; details and evidence 
 | Model name the provider does not serve | Ollama: checked against `/api/tags` before a mission (message tells the user to `ollama pull`). Cloud providers: the provider's own error is shown. No model list is validated for cloud providers before the first call. | Provider model lists change; revisit with #225. |
 | Provider vs model picker | The model picker decides the provider for a known cloud model prefix (`gemini`, `claude-`, `gpt-`); the saved provider only applies to unknown names, and Ollama wins when selected. Saving settings moves the picker to a model of the saved provider. | Keeps one rule; a per-provider model field is future work. |
 | Cost estimate | Rough per-step figure from `models/pricing.ts` with stated assumptions (6000 prompt + 400 completion tokens); models without a pricing entry show "no pricing data". | Estimate only; real cost is tracked by the usage ledger. |
+
+## Single-agent loop (#225 RUN-03)
+
+`tests/test_agent_loop.ts` drives `AgentLoop` in a real Electron `WebContentsView` against the `/agent/*` arena fixtures with a scripted model (25 scenarios). The rest is recorded here.
+
+| Area | Limitation | Reason / owner |
+|---|---|---|
+| Real model | No mission was run with a real model key. The verifier pass/fail/retry paths, `ask_user`, budgets and stuck detection were exercised only with the scripted provider (`AEGIS_E2E_MODEL_MODE=scripted`). Whether a real model reaches `verifier: pass` on the acceptance tasks is **not verified**. | No key on this machine; #254. |
+| PDF reading | There is no `read_pdf` tool. | No PDF fixture or viewer integration yet; Chromium's PDF viewer is a plugin frame the extractor cannot enter. |
+| JS dialogs | `alert` and `beforeunload` are accepted; `confirm` and `prompt` are always dismissed and the text is reported to the model. The agent cannot choose OK or type into a prompt. | Choosing would need a policy decision per dialog; dismissing is the safe default. |
+| Cross-origin iframes | Listed in the snapshot as opaque frames (origin + rect) but not entered; elements inside them have no refs. Same-origin frames and open shadow roots are entered. | Needs per-frame CDP sessions (OOPIF). |
+| Mission brief | `successCriteria`, `maxSteps` and `maxCostUSD` per mission exist in `MissionBrief`, but the UI has no form for them; `/do` passes only the goal. | #241. |
+| Approvals | A policy `ask` decision is shown in the drawer's question card (Approve / Deny). There is no approval inbox or history. | #238. |
+| Extraction | `extract` collects tables and lists from the scoped element itself; it does not use the structured extractor planned in #251. Every `record_extraction` value must be backed by a quote that occurs in the extracted text. | #251. |
+| Old perception modules | `perception/axtree_extractor.ts`, `som_overlay.ts`, `spatial_reasoner.ts` moved to `attic/`. Measured against the new extractor on the fixtures (`docs/audits/evidence/225/step0/`): no shadow DOM, iframe or occlusion handling, and `som_overlay` draws marks into the page DOM. | Replaced by `agent/perception.ts` and `agent/som_bitmap.ts`. |
