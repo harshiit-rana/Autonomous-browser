@@ -187,8 +187,9 @@ scenario('select_option: native <select> and ARIA listbox', async c => {
     verifier: [pass()]
   });
   const ev = await r.pageEvents();
-  assert.ok(ev.includes('size=l'), `page saw ${JSON.stringify(ev)}`);
-  assert.ok(ev.includes('color=Green'), `page saw ${JSON.stringify(ev)}`);
+  const outputs = JSON.stringify(toolResults(r.loop.history).map(t => t.output));
+  assert.ok(ev.includes('size=l'), `page saw ${JSON.stringify(ev)}; tool results ${outputs}`);
+  assert.ok(ev.includes('color=Green'), `page saw ${JSON.stringify(ev)}; tool results ${outputs}`);
   assert.equal(r.outcome.state, 'completed');
   assert.ok(/options=\[[^\]]*\*Large/.test(r.provider.seen[2].obs), 'third observation shows Large selected');
   assertPaired(r.loop.history);
