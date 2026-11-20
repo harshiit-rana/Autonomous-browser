@@ -1,0 +1,738 @@
+{
+  "host": {
+    "platform": "win32",
+    "release": "10.0.26300",
+    "cpus": "AMD Ryzen 7 7735HS with Radeon Graphics        ",
+    "threads": 16,
+    "totalMemMB": 15611,
+    "node": "20.18.3",
+    "electron": "33.4.11",
+    "chrome": "130.0.6723.191",
+    "date": "2026-11-20T12:35:51.994Z"
+  },
+  "args": [
+    "--force-device-scale-factor=2",
+    "--out",
+    "docs/audits/evidence/spikes/presence",
+    "--name",
+    "results_dpr2.json",
+    "--tag",
+    "dpr2",
+    "--anim",
+    "false"
+  ],
+  "tag": "dpr2",
+  "conditions": [
+    {
+      "option": "N",
+      "desc": "no presence layer (control)",
+      "zoom": 1,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 0,
+        "f": 0
+      },
+      "magentaPixels": 1600,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 1819.5,
+        "y": 435.5
+      },
+      "magentaPixelsInsidePageViewRect": 0,
+      "changedPixelsOutsideMarker": 0,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 1
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor"
+        ],
+        "extraNodes": 0,
+        "mutationRecords": 0,
+        "blurs": 0,
+        "focuses": 0,
+        "visEvents": 0,
+        "hasFocus": true
+      },
+      "capturePageMagenta": 0,
+      "cdpScreenshotMagenta": 0,
+      "pageFocusAfter": {
+        "b": 0,
+        "f": 0,
+        "hasFocus": true
+      },
+      "mainWindowFocusedAfter": true
+    },
+    {
+      "option": "A",
+      "desc": "chrome-renderer DOM element, z-index 2147483647",
+      "zoom": 1,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 0,
+        "f": 0
+      },
+      "magentaPixels": 1600,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 1819.5,
+        "y": 435.5
+      },
+      "magentaPixelsInsidePageViewRect": 0,
+      "changedPixelsOutsideMarker": 0,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 1
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor"
+        ],
+        "extraNodes": 0,
+        "mutationRecords": 0,
+        "blurs": 0,
+        "focuses": 0,
+        "visEvents": 0,
+        "hasFocus": true
+      },
+      "capturePageMagenta": 0,
+      "cdpScreenshotMagenta": 0,
+      "pageFocusAfter": {
+        "b": 0,
+        "f": 0,
+        "hasFocus": true
+      },
+      "mainWindowFocusedAfter": true
+    },
+    {
+      "option": "B",
+      "desc": "overlay WebContentsView, same bounds as the page view, transparent, pointer-events:none",
+      "zoom": 1,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 0,
+        "f": 0
+      },
+      "magentaPixels": 3200,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 759.5,
+        "y": 631.5
+      },
+      "magentaPixelsInsidePageViewRect": 1600,
+      "centroidErrorPx": {
+        "dx": 0.02,
+        "dy": 0.06
+      },
+      "centroidErrorDip": {
+        "dx": 0.01,
+        "dy": 0.03
+      },
+      "changedPixelsOutsideMarker": 0,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 0
+      },
+      "osClickOffsetOutsideMarker": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "pageClickDelta": 0
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor"
+        ],
+        "extraNodes": 0,
+        "mutationRecords": 0,
+        "blurs": 1,
+        "focuses": 0,
+        "visEvents": 0,
+        "hasFocus": false
+      },
+      "capturePageMagenta": 0,
+      "cdpScreenshotMagenta": 0,
+      "pageFocusAfter": {
+        "b": 1,
+        "f": 0,
+        "hasFocus": false
+      },
+      "mainWindowFocusedAfter": true,
+      "zOrder": {
+        "childrenOrderAfterReaddPage": [
+          "overlay",
+          "page"
+        ],
+        "magentaAfterPageReadded": 0,
+        "magentaAfterReassert": 1600
+      }
+    },
+    {
+      "option": "B2",
+      "desc": "cursor-sized (48x48) overlay WebContentsView moved with setBounds",
+      "zoom": 1,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 1,
+        "f": 0
+      },
+      "magentaPixels": 3200,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 759.5,
+        "y": 631.5
+      },
+      "magentaPixelsInsidePageViewRect": 1600,
+      "centroidErrorPx": {
+        "dx": 0.02,
+        "dy": 0.06
+      },
+      "centroidErrorDip": {
+        "dx": 0.01,
+        "dy": 0.03
+      },
+      "changedPixelsOutsideMarker": 0,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 0
+      },
+      "osClickOffsetOutsideMarker": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "pageClickDelta": 1
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor"
+        ],
+        "extraNodes": 0,
+        "mutationRecords": 0,
+        "blurs": 1,
+        "focuses": 1,
+        "visEvents": 0,
+        "hasFocus": true
+      },
+      "capturePageMagenta": 0,
+      "cdpScreenshotMagenta": 0,
+      "pageFocusAfter": {
+        "b": 1,
+        "f": 1,
+        "hasFocus": true
+      },
+      "mainWindowFocusedAfter": true,
+      "zOrder": {
+        "childrenOrderAfterReaddPage": [
+          "overlay",
+          "page"
+        ],
+        "magentaAfterPageReadded": 0,
+        "magentaAfterReassert": 1600
+      }
+    },
+    {
+      "option": "C",
+      "desc": "transparent frameless child BrowserWindow, focusable:false, setIgnoreMouseEvents(true,{forward:true})",
+      "zoom": 1,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 1,
+        "f": 1
+      },
+      "magentaPixels": 3200,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 759.5,
+        "y": 631.5
+      },
+      "magentaPixelsInsidePageViewRect": 1600,
+      "centroidErrorPx": {
+        "dx": 0.02,
+        "dy": 0.06
+      },
+      "centroidErrorDip": {
+        "dx": 0.01,
+        "dy": 0.03
+      },
+      "changedPixelsOutsideMarker": 0,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 1
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor"
+        ],
+        "extraNodes": 0,
+        "mutationRecords": 0,
+        "blurs": 1,
+        "focuses": 1,
+        "visEvents": 0,
+        "hasFocus": true
+      },
+      "capturePageMagenta": 0,
+      "cdpScreenshotMagenta": 0,
+      "pageFocusAfter": {
+        "b": 1,
+        "f": 1,
+        "hasFocus": true
+      },
+      "mainWindowFocusedAfter": true
+    },
+    {
+      "option": "D",
+      "desc": "element injected into the page DOM (position:fixed, pointer-events:none)",
+      "zoom": 1,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 3,
+        "f": 2
+      },
+      "magentaPixels": 3200,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 759.5,
+        "y": 631.5
+      },
+      "magentaPixelsInsidePageViewRect": 1600,
+      "centroidErrorPx": {
+        "dx": 0.02,
+        "dy": 0.06
+      },
+      "centroidErrorDip": {
+        "dx": 0.01,
+        "dy": 0.03
+      },
+      "changedPixelsOutsideMarker": 1942,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 1
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor",
+          "node:DIV#__agent_presence__"
+        ],
+        "extraNodes": 1,
+        "mutationRecords": 3,
+        "blurs": 3,
+        "focuses": 3,
+        "visEvents": 2,
+        "hasFocus": true
+      },
+      "capturePageMagenta": 1600,
+      "cdpScreenshotMagenta": 1600,
+      "pageFocusAfter": {
+        "b": 3,
+        "f": 3,
+        "hasFocus": true
+      },
+      "mainWindowFocusedAfter": true
+    },
+    {
+      "option": "E",
+      "desc": "CDP Overlay.highlightRect",
+      "zoom": 1,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 3,
+        "f": 3
+      },
+      "magentaPixels": 1600,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 1819.5,
+        "y": 435.5
+      },
+      "magentaPixelsInsidePageViewRect": 0,
+      "changedPixelsOutsideMarker": 1942,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 1
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor"
+        ],
+        "extraNodes": 0,
+        "mutationRecords": 4,
+        "blurs": 3,
+        "focuses": 3,
+        "visEvents": 2,
+        "hasFocus": true
+      },
+      "capturePageMagenta": 0,
+      "cdpScreenshotMagenta": 0,
+      "pageFocusAfter": {
+        "b": 3,
+        "f": 3,
+        "hasFocus": true
+      },
+      "mainWindowFocusedAfter": true
+    },
+    {
+      "option": "B",
+      "desc": "overlay WebContentsView, same bounds as the page view, transparent, pointer-events:none",
+      "zoom": 1.5,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 3,
+        "f": 3
+      },
+      "magentaPixels": 3200,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 1139.5,
+        "y": 859.5
+      },
+      "magentaPixelsInsidePageViewRect": 1600,
+      "centroidErrorPx": {
+        "dx": 51.43,
+        "dy": 0.12
+      },
+      "centroidErrorDip": {
+        "dx": 25.72,
+        "dy": 0.06
+      },
+      "changedPixelsOutsideMarker": 0,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 0
+      },
+      "osClickOffsetOutsideMarker": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "pageClickDelta": 0
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor"
+        ],
+        "extraNodes": 0,
+        "mutationRecords": 4,
+        "blurs": 4,
+        "focuses": 3,
+        "visEvents": 2,
+        "hasFocus": false
+      },
+      "capturePageMagenta": 0,
+      "cdpScreenshotMagenta": 0,
+      "pageFocusAfter": {
+        "b": 4,
+        "f": 3,
+        "hasFocus": false
+      },
+      "mainWindowFocusedAfter": true,
+      "zOrder": {
+        "childrenOrderAfterReaddPage": [
+          "overlay",
+          "page"
+        ],
+        "magentaAfterPageReadded": 0,
+        "magentaAfterReassert": 1600
+      }
+    },
+    {
+      "option": "B2",
+      "desc": "cursor-sized (48x48) overlay WebContentsView moved with setBounds",
+      "zoom": 1.5,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 4,
+        "f": 3
+      },
+      "magentaPixels": 3200,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 1139.5,
+        "y": 859.5
+      },
+      "magentaPixelsInsidePageViewRect": 1600,
+      "centroidErrorPx": {
+        "dx": 51.43,
+        "dy": 0.12
+      },
+      "centroidErrorDip": {
+        "dx": 25.72,
+        "dy": 0.06
+      },
+      "changedPixelsOutsideMarker": 0,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 1
+      },
+      "osClickOffsetOutsideMarker": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "pageClickDelta": 1
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor"
+        ],
+        "extraNodes": 0,
+        "mutationRecords": 4,
+        "blurs": 4,
+        "focuses": 4,
+        "visEvents": 2,
+        "hasFocus": true
+      },
+      "capturePageMagenta": 0,
+      "cdpScreenshotMagenta": 0,
+      "pageFocusAfter": {
+        "b": 4,
+        "f": 4,
+        "hasFocus": true
+      },
+      "mainWindowFocusedAfter": true,
+      "zOrder": {
+        "childrenOrderAfterReaddPage": [
+          "overlay",
+          "page"
+        ],
+        "magentaAfterPageReadded": 0,
+        "magentaAfterReassert": 1600
+      }
+    },
+    {
+      "option": "C",
+      "desc": "transparent frameless child BrowserWindow, focusable:false, setIgnoreMouseEvents(true,{forward:true})",
+      "zoom": 1.5,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 4,
+        "f": 4
+      },
+      "magentaPixels": 3200,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 1139.5,
+        "y": 859.5
+      },
+      "magentaPixelsInsidePageViewRect": 1600,
+      "centroidErrorPx": {
+        "dx": 51.43,
+        "dy": 0.12
+      },
+      "centroidErrorDip": {
+        "dx": 25.72,
+        "dy": 0.06
+      },
+      "changedPixelsOutsideMarker": 0,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 1
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor"
+        ],
+        "extraNodes": 0,
+        "mutationRecords": 4,
+        "blurs": 4,
+        "focuses": 4,
+        "visEvents": 2,
+        "hasFocus": true
+      },
+      "capturePageMagenta": 0,
+      "cdpScreenshotMagenta": 0,
+      "pageFocusAfter": {
+        "b": 4,
+        "f": 4,
+        "hasFocus": true
+      },
+      "mainWindowFocusedAfter": true
+    },
+    {
+      "option": "D",
+      "desc": "element injected into the page DOM (position:fixed, pointer-events:none)",
+      "zoom": 1.5,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 4,
+        "f": 4
+      },
+      "magentaPixels": 5200,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 1139.5,
+        "y": 859.5
+      },
+      "magentaPixelsInsidePageViewRect": 3600,
+      "centroidErrorPx": {
+        "dx": 51.43,
+        "dy": 0.12
+      },
+      "centroidErrorDip": {
+        "dx": 25.72,
+        "dy": 0.06
+      },
+      "changedPixelsOutsideMarker": 0,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 1
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor",
+          "node:DIV#__agent_presence__"
+        ],
+        "extraNodes": 1,
+        "mutationRecords": 7,
+        "blurs": 4,
+        "focuses": 4,
+        "visEvents": 2,
+        "hasFocus": true
+      },
+      "capturePageMagenta": 3600,
+      "cdpScreenshotMagenta": 3600,
+      "pageFocusAfter": {
+        "b": 4,
+        "f": 4,
+        "hasFocus": true
+      },
+      "mainWindowFocusedAfter": true
+    },
+    {
+      "option": "E",
+      "desc": "CDP Overlay.highlightRect",
+      "zoom": 1.5,
+      "dpr": 2,
+      "displayScale": 2,
+      "pageFocusBefore": {
+        "b": 4,
+        "f": 4
+      },
+      "magentaPixels": 1600,
+      "expectedMagentaPixelsIfVisible": 1600,
+      "markerCentroidPx": {
+        "x": 1819.5,
+        "y": 435.5
+      },
+      "magentaPixelsInsidePageViewRect": 0,
+      "changedPixelsOutsideMarker": 0,
+      "osClick": {
+        "output": "hit=Chrome_RenderWidgetHostHWND (root Chrome_WidgetWin_1) pid=23224 rootpid=23224 clicked=true",
+        "exit": 0,
+        "pageClickDelta": 1
+      },
+      "pageScan": {
+        "namedHits": [
+          "global:IDBCursorWithValue",
+          "global:IDBCursor"
+        ],
+        "extraNodes": 0,
+        "mutationRecords": 8,
+        "blurs": 4,
+        "focuses": 4,
+        "visEvents": 2,
+        "hasFocus": true
+      },
+      "capturePageMagenta": 0,
+      "cdpScreenshotMagenta": 0,
+      "pageFocusAfter": {
+        "b": 4,
+        "f": 4,
+        "hasFocus": true
+      },
+      "mainWindowFocusedAfter": true
+    }
+  ],
+  "anim": [],
+  "extra": {
+    "baseline_z1": {
+      "orangePixels": 35001,
+      "buttonCentroidScreenPx": {
+        "x": 759.4843575897831,
+        "y": 631.4427873489329
+      },
+      "noiseChangedPixelsBetweenIdenticalCaptures": 0,
+      "imageOrigin": {
+        "ox": 0,
+        "oy": 0
+      },
+      "pageDprReported": 2
+    },
+    "controlSquarePx": 1600,
+    "controlSquareExpectedPx": 1600,
+    "optionC": {
+      "overlayIsVisibleAfterHide": false,
+      "mainFocusedAfterOverlayShown": true,
+      "moveResizeSyncLagMs": "not within 500 ms",
+      "overlayVisibleWhileParentMinimised": false,
+      "overlayVisibleAfterRestore": true
+    },
+    "baseline_z1.5": {
+      "orangePixels": 62097,
+      "buttonCentroidScreenPx": {
+        "x": 1088.0666698874343,
+        "y": 859.3803404351257
+      },
+      "noiseChangedPixelsBetweenIdenticalCaptures": 0,
+      "imageOrigin": {
+        "ox": 0,
+        "oy": 0
+      },
+      "pageDprReported": 3
+    }
+  },
+  "display": {
+    "scaleFactor": 2,
+    "size": {
+      "width": 480,
+      "height": 270
+    },
+    "workArea": {
+      "width": 960,
+      "height": 510
+    }
+  },
+  "window": {
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 960,
+      "height": 510
+    },
+    "content": {
+      "x": 0,
+      "y": 0,
+      "width": 960,
+      "height": 510
+    },
+    "pageView": {
+      "x": 0,
+      "y": 88,
+      "width": 640,
+      "height": 422
+    }
+  }
+}

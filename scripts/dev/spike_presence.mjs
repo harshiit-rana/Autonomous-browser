@@ -195,6 +195,12 @@ async function measureCondition(optId, zoom, s0, btnPx) {
   const cl = await C.ps(['-File', path.join(C.here, 'os_click.ps1'), '-X', String(Math.round(btnPx.x)), '-Y', String(Math.round(btnPx.y)), '-ExpectPid', String(process.pid)]);
   await C.sleep(300);
   row.osClick = { output: cl.out || cl.err, exit: cl.code, pageClickDelta: (await pageClicks()) - before };
+  if (optId === 'B' || optId === 'B2') {
+    // second click 60 DIP to the right of the marker centre, still inside the 160 DIP wide page button: only a full-size overlay should swallow it
+    const sfx = results.display.scaleFactor; const b2 = await pageClicks();
+    const c2 = await C.ps(['-File', path.join(C.here, 'os_click.ps1'), '-X', String(Math.round(btnPx.x + 60 * sfx)), '-Y', String(Math.round(btnPx.y)), '-ExpectPid', String(process.pid)]);
+    await C.sleep(300); row.osClickOffsetOutsideMarker = { output: c2.out || c2.err, pageClickDelta: (await pageClicks()) - b2 };
+  }
   // what page JS / model screenshots can see
   row.pageScan = await pageWc.executeJavaScript('window.__scan()');
   const img = await pageWc.capturePage();
@@ -229,14 +235,16 @@ async function measureCondition(optId, zoom, s0, btnPx) {
     x.mainFocusedAfterOverlayShown = win.isFocused();
     const b0 = win.getBounds();
     const target = { x: b0.x + 40, y: b0.y + 20, width: b0.width - 200, height: b0.height - 120 };
-    const t = C.now(); win.setBounds(target);
+    const t = C.now();
     let lag = null; const want = () => { const cb = win.getContentBounds(); return { x: cb.x + pv.x, y: cb.y + pv.y }; };
     // the product must re-place the overlay on move/resize; here we do it from the events and measure how long until the bounds match
     const handler = () => { const w = want(); const pvNew = { x: 0, y: 88, width: win.getContentBounds().width - 320, height: win.getContentBounds().height - 88 }; pv = pvNew; pageView.setBounds(pv); ow.setBounds({ x: w.x, y: w.y, width: pv.width, height: pv.height }); };
-    win.on('resize', handler); win.on('move', handler);
-    for (let i = 0; i < 100; i++) { await C.sleep(5); const ob = ow.getBounds(); const w = want(); if (ob.x === w.x && ob.y === w.y && ob.width === pv.width && ob.height === pv.height) { lag = C.now() - t; break; } }
+    let evCount = 0; const counted = () => { evCount++; handler(); };
+    win.on('resize', counted); win.on('move', counted); win.on('moved', counted); win.on('resized', counted); x.eventHandlerCalls = () => evCount; win.setBounds(target);
+    for (let i = 0; i < 100; i++) { await C.sleep(5); const ob = ow.getBounds(); const w = want(); if (Math.abs(ob.x - w.x) <= 2 && Math.abs(ob.y - w.y) <= 2 && Math.abs(ob.width - pv.width) <= 2 && Math.abs(ob.height - pv.height) <= 2) { lag = C.now() - t; break; } }
     x.moveResizeSyncLagMs = lag == null ? 'not within 500 ms' : C.round(lag, 1);
-    win.removeListener('resize', handler); win.removeListener('move', handler);
+    x.syncDebug = { winBoundsRequested: target, winBoundsActual: win.getBounds(), contentBounds: win.getContentBounds(), overlayBounds: ow.getBounds(), expectedOverlay: { ...want(), width: pv.width, height: pv.height } };
+    x.eventHandlerCalls = evCount; win.removeListener('resize', counted); win.removeListener('move', counted); win.removeListener('moved', counted); win.removeListener('resized', counted);
     win.minimize(); await C.sleep(900); x.overlayVisibleWhileParentMinimised = ow.isVisible();
     win.restore(); win.setAlwaysOnTop(true, 'floating'); await C.sleep(900); x.overlayVisibleAfterRestore = ow.isVisible();
     win.setBounds(b0); await C.sleep(500); handler(); await opt.hide();
