@@ -455,27 +455,22 @@
           "reachable": true
         },
         {
+          "path": "src/agent/som_bitmap.ts",
+          "type": "module",
+          "reachable": true
+        },
+        {
           "path": "src/core/dom_indexer.ts",
           "type": "module",
           "reachable": true
         },
         {
-          "path": "src/perception/axtree_extractor.ts",
-          "type": "module",
-          "reachable": false
-        },
-        {
-          "path": "src/perception/som_overlay.ts",
-          "type": "module",
-          "reachable": false
-        },
-        {
-          "path": "tests/test_perception.ts",
+          "path": "tests/test_agent_loop.ts",
           "type": "test",
-          "inSuite": false
+          "inSuite": true
         }
       ],
-      "gap": "axtree_extractor and som_overlay are orphaned; the running path is agent/perception.ts only.",
+      "gap": "Covered in a real Electron view by test_agent_loop.ts (shadow DOM, same-origin frames, occlusion, bitmap Set-of-Marks). Cross-origin iframes are listed but not entered. Old axtree_extractor/som_overlay moved to attic/.",
       "owningIssues": [
         225
       ]
@@ -487,17 +482,22 @@
       "result": "partial",
       "evidence": [
         {
+          "path": "src/agent/perception.ts",
+          "type": "module",
+          "reachable": true
+        },
+        {
           "path": "src/core/dom_indexer.ts",
           "type": "module",
           "reachable": true
         },
         {
-          "path": "src/agent/perception.ts",
-          "type": "module",
-          "reachable": true
+          "path": "tests/test_agent_loop.ts",
+          "type": "test",
+          "inSuite": true
         }
       ],
-      "gap": "Staleness handling not exercised in the app.",
+      "gap": "Ref stability and stale-ref errors tested in Electron (test_agent_loop.ts); not exercised with a real model.",
       "owningIssues": [
         225
       ]
@@ -514,12 +514,17 @@
           "reachable": true
         },
         {
-          "path": "src/perception/spatial_reasoner.ts",
+          "path": "src/agent/tools.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
+        },
+        {
+          "path": "tests/test_agent_loop.ts",
+          "type": "test",
+          "inSuite": true
         }
       ],
-      "gap": "spatial_reasoner is orphaned.",
+      "gap": "CDP input, occlusion re-check, select, hover, drag, upload and dialogs tested in Electron (test_agent_loop.ts). spatial_reasoner moved to attic/.",
       "owningIssues": [
         225
       ]
