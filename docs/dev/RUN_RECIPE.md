@@ -2,7 +2,7 @@
 
 Written for issue #223 (RUN-01). Every command below was run on the machine named in `docs/audits/RUNNING_APP_BASELINE.md`
 (Windows 11, Node 22, Electron 33.4.11). Use it to reproduce a defect or to demonstrate a fix in the running app
-until the Playwright `_electron` harness (#254) replaces it.
+until the Playwright `_electron` harness (#254, see `docs/dev/E2E.md`) replaces it. Prefer `npm run test:e2e`; this recipe stays for manual looks and OS-level screenshots.
 
 ## 1. Environment
 

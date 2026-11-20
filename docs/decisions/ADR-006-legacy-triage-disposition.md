@@ -21,7 +21,7 @@ Issues #192 (`[ORP-01]`) and #193 (`[ORP-02]`) mandate recording explicit dispos
 
 ### 2. Multi-tab Synchronized Tester (`src/testing/synchronized_tester.ts`) -> Attic
 - **Decision:** Moved to `attic/synchronized_tester.ts`.
-- **Rationale:** Superseded by the Playwright Electron E2E harness (`tests/e2e/e2e_harness.ts`, #195) and the deterministic Web Arena server (`fixtures/arena_server.ts`, #194).
+- **Rationale:** Superseded by the Playwright Electron E2E harness (`tests/e2e/fixtures.ts`, #195, #254) and the deterministic Web Arena server (`fixtures/arena_server.ts`, #194).
 
 ### 3. Enterprise RBAC & SSO Stubs (`src/enterprise/rbac_policy.ts`) -> Attic
 - **Decision:** Moved to `attic/rbac_policy.ts`.

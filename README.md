@@ -86,7 +86,7 @@ npm run dist         # Package standalone portable executable via electron-build
 In accordance with our honesty-first engineering principles ([Issue #218 - Completion Program Index](https://github.com/harshiit-rana/Autonomous-browser/issues/218)), the following areas are currently in development or limited:
 
 1. **Module Reachability:** 52 of 129 modules are reachable from active application entry points; 77 orphaned or test-only modules are being systematically wired, tested, or quarantined (#221). See [docs/STATUS.md](docs/STATUS.md).
-2. **Real-App E2E Testing:** Automated Playwright `_electron` end-to-end testing against the running desktop app is being established in #254/#255.
+2. **Real-App E2E Testing:** Playwright `_electron` end-to-end tests launch the built desktop app: `npm run test:e2e` (see `docs/dev/E2E.md`).
 3. **Model Integration:** Model selection is currently configured via local and remote providers; silent mock fallbacks are being replaced with explicit, visibly labelled demo mode (#224).
 4. **Swarm Execution:** Swarm workers are being migrated to model-driven agent loops operating on independent tab views (#227).
 5. **Memory & Persistence:** The memory vector store currently uses hashed n-gram bucket projections (placeholder) pending learned embeddings (#240) and persistent database migration (#239).
