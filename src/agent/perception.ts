@@ -268,6 +268,12 @@ function formatElement(el: DiscoveredElement): string {
   return parts.join(' ');
 }
 
+function withTimeout<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const t = new Promise<never>((_, rej) => { timer = setTimeout(() => rej(new Error(what + ' timed out after ' + ms + ' ms')), ms); });
+  return Promise.race([p, t]).finally(() => clearTimeout(timer));
+}
+
 export class PerceptionEngine {
   public static async captureSnapshot(webContents: WebContents, captureScreenshot: boolean = false): Promise<PageSnapshot> {
     try {
@@ -275,7 +281,12 @@ export class PerceptionEngine {
         throw new Error('WebContents is destroyed');
       }
 
-      const raw = await webContents.executeJavaScript(EXTRACTOR_SCRIPT) as {
+      // A page in the middle of a navigation can leave executeJavaScript pending forever (seen on headless macOS):
+      // bound it and retry once after the navigation has had time to commit.
+      let rawAny: any;
+      try { rawAny = await withTimeout(webContents.executeJavaScript(EXTRACTOR_SCRIPT), 8000, 'page extraction'); }
+      catch { await new Promise(r => setTimeout(r, 500)); rawAny = await withTimeout(webContents.executeJavaScript(EXTRACTOR_SCRIPT), 8000, 'page extraction'); }
+      const raw = rawAny as {
         url: string;
         title: string;
         elements: Array<Omit<DiscoveredElement, 'ref' | 'locator'> & { locator: Array<{ k: string; p: number[] }>; id?: string }>;
@@ -307,7 +318,7 @@ export class PerceptionEngine {
       let screenshotBase64: string | undefined;
       if (captureScreenshot) {
         try {
-          const image = await webContents.capturePage();
+          const image = await withTimeout(webContents.capturePage(), 5000, 'screenshot');
           screenshotBase64 = image.toJPEG(75).toString('base64');
         } catch (err: any) {
           logger.warn('Screenshot capture failed', { error: err.message });
