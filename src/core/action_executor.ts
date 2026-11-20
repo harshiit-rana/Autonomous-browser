@@ -282,7 +282,13 @@ export class ActionExecutor {
   }
 
   private async cdp(method: string, params: Record<string, any> = {}): Promise<any> {
-    return this.webContents.debugger.sendCommand(method, params);
+    const call = this.webContents.debugger.sendCommand(method, params);
+    if (!method.startsWith('Input.')) return call;
+    // Input events are acknowledged only once the renderer produces a frame; a page that stops painting (hidden or
+    // occluded window) must fail the action instead of hanging the agent loop.
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<never>((_, rej) => { timer = setTimeout(() => rej(new Error(`${method} was not acknowledged within 10s (page not rendering?)`)), 10_000); });
+    try { return await Promise.race([call, timeout]); } finally { clearTimeout(timer); }
   }
 
   /**

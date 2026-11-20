@@ -16,6 +16,11 @@ const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'aegis-agentloop-'));
 app.setPath('userData', profile);
 process.env.AEGIS_USER_DATA = process.env.AEGIS_USER_DATA || profile;
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+// Headless CI (macOS runners in particular) treats the window as occluded and stops producing frames, so CDP input
+// events are never acknowledged. Keep the renderer painting.
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.on('window-all-closed', () => { /* the suite decides when to quit */ });
 
 function emit(obj) {
