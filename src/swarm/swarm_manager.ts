@@ -13,6 +13,7 @@
 import { BrowserWindow } from 'electron';
 import { WorkerHost, IWorkerHost, WorkerHostOptions, IsolationLevel, WorkerProfile, WorkerEvent } from './worker_host.js';
 import { logger } from '../infrastructure/logger.js';
+import { WorkerViewRegistry, workerViews } from './worker_view_registry.js';
 
 export const MAX_CRASH_RECOVERIES = 2;
 
@@ -27,6 +28,8 @@ export interface SwarmOptions {
   attachToWindow?: boolean;
   /** Test seam: build workers without Electron (tests/helpers/fake_worker_host.ts). Product code never sets it. */
   workerFactory?: (options: WorkerHostOptions) => IWorkerHost;
+  /** Where active workers with a real view are announced for the live Grid (#232). Default: the process registry. */
+  viewRegistry?: WorkerViewRegistry;
 }
 
 export class SwarmManager {
@@ -46,6 +49,7 @@ export class SwarmManager {
     void this.shutdown();
   };
   private isShutDown = false;
+  private viewRegistry: WorkerViewRegistry;
 
   constructor(options: SwarmOptions = {}) {
     this.maxWorkers = options.maxWorkers || 8;
@@ -53,6 +57,7 @@ export class SwarmManager {
     this.missionId = options.missionId || 'adhoc';
     this.attachToWindow = options.attachToWindow === true;
     this.workerFactory = options.workerFactory || (o => new WorkerHost(o));
+    this.viewRegistry = options.viewRegistry || workerViews;
     this.setParentWindow(options.parentWindow || null);
 
     if (options.prewarmCount && options.prewarmCount > 0) {
@@ -134,6 +139,7 @@ export class SwarmManager {
       const recycled = this.idlePool.pop()!;
       await recycled.resetStorage();
       this.workers.set(recycled.id, recycled);
+      this.viewRegistry.add(recycled);
       logger.info('Recycled pooled worker', { workerId: recycled.id, role });
       return recycled;
     }
@@ -145,6 +151,7 @@ export class SwarmManager {
     const workerId = `${role}_${this.workerCounter++}`;
     const worker = this.create(workerId, isolation || this.defaultIsolation, profile);
     this.workers.set(workerId, worker);
+    this.viewRegistry.add(worker);
     logger.info('Spawned active swarm worker', { workerId, role, activeCount: this.workers.size });
     return worker;
   }
@@ -169,6 +176,8 @@ export class SwarmManager {
     if (!worker) return;
 
     this.workers.delete(workerId);
+    // Off the Grid first: the view must be detached before the worker is pooled or its contents closed.
+    this.viewRegistry.remove(workerId);
 
     if (recycle && !this.isShutDown && this.idlePool.length < 3) {
       await worker.resetStorage();
@@ -223,7 +232,7 @@ export class SwarmManager {
     const everyone = [...this.workers.values(), ...this.idlePool];
     this.workers.clear();
     this.idlePool = [];
-    for (const w of everyone) this.untrack(w);
+    for (const w of everyone) { this.viewRegistry.remove(w.id); this.untrack(w); }
     await Promise.all(everyone.map(w => w.teardown()));
     logger.info('SwarmManager completely shut down', { missionId: this.missionId, workers: everyone.length });
   }

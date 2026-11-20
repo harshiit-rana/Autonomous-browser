@@ -676,7 +676,8 @@ body.dark-theme {
   background: var(--accent);
 }
 
-/* Swarm Grid Container (Issue #135) */
+/* Live Swarm Grid (#232). Each .tile-frame is covered by that source's native view while it is fully on screen,
+   so nothing here may move or transform the frame box (the native view would not follow). */
 .swarm-grid-container {
   position: absolute;
   top: 0;
@@ -684,10 +685,7 @@ body.dark-theme {
   width: 100%;
   height: 100%;
   background: var(--bg-main);
-  padding: 24px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  padding: 16px;
   overflow-y: auto;
   z-index: 50;
 }
@@ -696,54 +694,171 @@ body.dark-theme {
   display: none;
 }
 
-.swarm-grid-card {
+.live-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.live-tile {
+  --tile-color: #64748b;
   background: var(--bg-surface);
   border: 1px solid var(--border);
+  border-top: 3px solid var(--tile-color);
   border-radius: 8px;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+.live-tile.is-active {
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tile-head,
+.tile-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.tile-head {
   cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s;
 }
 
-.swarm-grid-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
-}
-
-.swarm-grid-card.active-tab {
-  border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
-}
-
-.swarm-card-thumb {
-  width: 100%;
-  height: 160px;
-  background: #000;
-  object-fit: cover;
-}
-
-.swarm-card-body {
-  padding: 12px;
+.tile-ring {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--text-muted);
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  background: var(--tile-color);
 }
 
-.swarm-card-title {
-  font-size: 13px;
+.tile-ring[data-status="running"] { border-color: var(--accent); }
+.tile-ring[data-status="idle"] { border-color: var(--text-muted); }
+.tile-ring[data-status="done"] { border-color: var(--success); }
+.tile-ring[data-status="failed"] { border-color: var(--danger); }
+
+.tile-glyph {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.tile-name {
+  flex: 1;
+  min-width: 0;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.swarm-card-meta {
-  font-size: 11px;
+.tile-chip {
+  flex: none;
+  max-width: 45%;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-muted);
-  display: flex;
-  justify-content: space-between;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tile-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #000;
+  overflow: hidden;
+}
+
+.tile-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.tile-badge {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.85);
+  color: var(--warning);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.live-tile[data-presentation="crashed"] .tile-badge {
+  color: var(--danger);
+}
+
+.tile-badge.hidden {
+  display: none;
+}
+
+.tile-age {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.tile-host {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tile-task {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.tile-progress {
+  flex: none;
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.tile-progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--tile-color);
+}
+
+.tile-promote {
+  flex: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.tile-promote:hover {
+  border-color: var(--accent);
 }
 
 /* Steering Bar (Issue #211) */

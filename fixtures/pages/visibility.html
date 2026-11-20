@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>visibility fixture</title>
+<!--
+  Animated fixture for the live Grid (#232, ADR 0010): a rAF counter, a 100 ms timer counter, a CSS animation,
+  a canvas redrawn every rAF, a click target and document.visibilityState. Same page as VISIBILITY_HTML in
+  scripts/dev/spike_common.mjs (the spike that chose the capture strategy), served by scripts/dev/drive_live_grid.mjs.
+-->
+<style>
+  html, body { margin: 0; background: #101418; color: #dfe; font: 14px monospace; height: 100%; overflow: hidden }
+  #anim { position: absolute; left: 0; top: 200px; width: 80px; height: 80px; background: #4af; animation: mv 1s linear infinite alternate }
+  @keyframes mv { from { transform: translateX(0) } to { transform: translateX(300px) } }
+  #btn { position: absolute; left: 100px; top: 100px; width: 120px; height: 40px }
+  #c { position: absolute; right: 0; top: 0; width: 120px; height: 120px }
+  #hud { padding: 6px; white-space: pre }
+  #big { position: absolute; left: 40px; top: 320px; font-size: 96px; font-weight: bold; color: #fc4 }
+</style>
+<div id="hud"></div><button id="btn">target</button><div id="anim"></div><canvas id="c" width="120" height="120"></canvas>
+<div id="big"></div>
+<script>
+  window.__raf = 0; window.__tmr = 0; window.__clicks = 0; window.__moves = 0; window.__visEvents = 0;
+  const label = new URLSearchParams(location.search).get('w') || '';
+  const ctx = document.getElementById('c').getContext('2d');
+  (function f() { window.__raf++; ctx.fillStyle = 'hsl(' + (window.__raf * 7 % 360) + ',80%,50%)'; ctx.fillRect(0, 0, 120, 120); requestAnimationFrame(f); })();
+  setInterval(() => { window.__tmr++; document.getElementById('big').textContent = label + ' ' + window.__tmr; }, 100);
+  document.getElementById('btn').addEventListener('click', () => { window.__clicks++; });
+  document.addEventListener('mousemove', () => { window.__moves++; });
+  document.addEventListener('visibilitychange', () => { window.__visEvents++; });
+  setInterval(() => { document.getElementById('hud').textContent = 'raf=' + window.__raf + ' tmr=' + window.__tmr + ' vis=' + document.visibilityState + ' iw=' + innerWidth + ' clicks=' + window.__clicks; }, 250);
+</script>
