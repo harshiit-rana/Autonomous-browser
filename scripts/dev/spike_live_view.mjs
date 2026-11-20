@@ -78,7 +78,7 @@ async function setupPlacement(cell, N) {
       v = new WebContentsView({ webPreferences: { ...WEB_PREFS, ...prefs } });
       switch (cell.place) {
         case 'unattached': break;
-        case 'stage': case 'covered': case 'hidden': win.contentView.addChildView(v); v.setBounds(STAGE); break;
+        case 'stage': case 'covered': case 'hidden': case 'detached': win.contentView.addChildView(v); v.setBounds(STAGE); break;
         case 'tiny': win.contentView.addChildView(v); v.setBounds({ x: 0, y: 0, width: 1, height: 1 }); break;
         case 'offscreen': win.contentView.addChildView(v); v.setBounds({ x: -6000, y: 100, width: STAGE.width, height: STAGE.height }); break;
         case 'tile': case 'tilezoom': win.contentView.addChildView(v); v.setBounds(tileRect(i, N)); break;
@@ -90,6 +90,7 @@ async function setupPlacement(cell, N) {
       v.__load = await C.withTimeout(loaded, 15000, 'load-timeout').then(() => ({ ok: true, ms: C.round(C.now() - t0, 0) })).catch((e) => ({ ok: false, err: e.message }));
       if (cell.place === 'tilezoom') v.webContents.setZoomFactor(TILE_W / STAGE.width);
       if (cell.place === 'hidden') v.setVisible(false);
+      if (cell.place === 'detached') win.contentView.removeChildView(v); // what setActiveTab() does to the previous tab: was attached, now is not
     }
     views.push(v);
   }
@@ -226,6 +227,7 @@ function buildMatrix() {
   M.push({ id: 'idle', place: 'none', cap: 'none', ns: [0] });
   for (const cap of ['none', 'capturePage10', 'screencast']) add('stage', cap, [1]);
   for (const cap of ['none', 'capturePage10', 'screencast']) add('unattached', cap, [1, 6]);
+  for (const cap of ['none', 'capturePage10', 'screencast']) add('detached', cap, [1, 6]);
   add('unattached', 'none', [6], { webPrefs: { backgroundThrottling: false } });
   add('unattached', 'screencast', [6], { webPrefs: { backgroundThrottling: false } });
   for (const place of ['tiny', 'offscreen', 'covered', 'hidden']) for (const cap of ['none', 'capturePage10', 'screencast']) add(place, cap, [6]);
