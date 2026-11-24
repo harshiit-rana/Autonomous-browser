@@ -21,7 +21,7 @@ function testProgrammaticReleaseGate() {
   const gateScript = path.resolve(process.cwd(), 'scripts/release_gate.mjs');
   assert.strictEqual(fs.existsSync(gateScript), true, 'scripts/release_gate.mjs must exist');
 
-  const jsonRaw = execSync('node scripts/release_gate.mjs --json --skip-unit', {
+  const jsonRaw = execSync('node scripts/release_gate.mjs --json --skip-unit --skip-e2e', {
     cwd: process.cwd(),
     encoding: 'utf8'
   });

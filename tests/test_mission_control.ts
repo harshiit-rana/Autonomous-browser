@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { OmnibarParser } from '../src/ui/omnibar_parser.js';
-import { PresenceEventPayload, SwarmPreviewItem, PlanPreviewResponse } from '../ipc/contract.js';
+import { PresenceEventPayload, PlanPreviewResponse } from '../ipc/contract.js';
 
 console.log('--- Testing Milestone M3: Mission Control & Swarm Chrome UX ---');
 
@@ -52,32 +52,6 @@ async function runTests() {
   assert.strictEqual(clickEvent.type, 'click');
   assert.strictEqual(moveEvent.x, clickEvent.x);
   console.log('✓ Agent Presence Layer payload contract verified');
-
-  // 3. Issue #135: Swarm Grid Previews
-  console.log('Testing Swarm Grid Previews...');
-  const mockPreviews: SwarmPreviewItem[] = [
-    {
-      tabId: 'tab_1',
-      title: 'Hacker News',
-      url: 'https://news.ycombinator.com',
-      owner: 'agent:worker-1',
-      thumbnailBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-      isActive: true
-    },
-    {
-      tabId: 'tab_2',
-      title: 'GitHub Trending',
-      url: 'https://github.com/trending',
-      owner: 'agent:worker-2',
-      thumbnailBase64: undefined,
-      isActive: false
-    }
-  ];
-
-  assert.strictEqual(mockPreviews.length, 2);
-  assert.strictEqual(mockPreviews[0].isActive, true);
-  assert.strictEqual(mockPreviews[1].isActive, false);
-  console.log('✓ Swarm Grid preview representations verified');
 
   console.log('✓ All Mission Control & Swarm Chrome UX tests passed!\n');
 }

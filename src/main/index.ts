@@ -1,4 +1,5 @@
-import { app, BrowserWindow, Tray, Menu, Notification, powerSaveBlocker, nativeImage } from 'electron';
+import { app, BrowserWindow, Tray, Menu, Notification, powerSaveBlocker, nativeImage, MessageChannelMain } from 'electron';
+import { isTestMode, registerTestHooks } from './test_hooks.js';
 import path from 'node:path';
 import { ViewManager } from './view_manager.js';
 import { initializeAppPaths, getAppPaths } from '../infrastructure/paths.js';
@@ -28,7 +29,10 @@ import {
   ModelStatusResponse,
   DemoStartResponse,
   MissionAnswerRequest,
-  MODEL_NOT_CONFIGURED
+  MODEL_NOT_CONFIGURED,
+  LayoutReport,
+  GridSourcesPayload,
+  RuntimeFlags
 } from '../ipc/contract.js';
 
 /** Model used for the cost estimate shown after a successful "Test Key" for each provider. */
@@ -230,6 +234,13 @@ class MainApp {
 
     this.window.webContents.on('did-finish-load', () => {
       logger.info('Chrome renderer loaded successfully');
+      // A fresh frames port for every chrome load (also after a renderer reload), ADR 0010.
+      if (this.window && this.viewManager) {
+        this.viewManager.resetRendererState();
+        const { port1, port2 } = new MessageChannelMain();
+        this.viewManager.frameHub.attachPort(port1);
+        this.window.webContents.postMessage(IPC_CHANNELS.FRAMES_PORT, null, [port2]);
+      }
       // Create initial active tab and sync snapshot
       if (this.viewManager && this.viewManager.listTabs().length === 0) {
         this.viewManager.createTab('https://duckduckgo.com', false);
@@ -240,6 +251,10 @@ class MainApp {
     this.window.on('resize', () => {
       this.viewManager?.relayout();
     });
+    // Minimised: nothing is painted, so nothing is captured; streams resume on restore (ADR 0010).
+    this.window.on('minimize', () => this.viewManager?.setWindowMinimised(true));
+    this.window.on('restore', () => this.viewManager?.setWindowMinimised(false));
+    this.window.on('show', () => this.viewManager?.setWindowMinimised(false));
   }
 
   private registerIPC(): void {
@@ -283,13 +298,24 @@ class MainApp {
       }
     );
 
-    registerTypedHandler(
-      IPC_CHANNELS.SWARM_PREVIEWS_GET,
-      getChrome,
-      async () => {
-        return this.viewManager?.getSwarmPreviews() || [];
-      }
-    );
+    // Live Swarm Grid (#232): tile rects in, source list out; pixels travel on the frames MessagePort.
+    registerTypedHandler<LayoutReport, boolean>(IPC_CHANNELS.LAYOUT_REPORT, getChrome, (req) => {
+      return this.viewManager?.applyLayoutReport(req) ?? false;
+    });
+
+    registerTypedHandler<void, GridSourcesPayload>(IPC_CHANNELS.GRID_SOURCES_GET, getChrome, () => {
+      return { sources: this.viewManager?.getGridSources() || [] };
+    });
+
+    registerTypedHandler<{ id: string }, boolean>(IPC_CHANNELS.GRID_PROMOTE, getChrome, (req) => {
+      return this.viewManager?.promote(String(req?.id || '')) ?? false;
+    });
+
+    registerTypedHandler<void, RuntimeFlags>(IPC_CHANNELS.RUNTIME_FLAGS_GET, getChrome, () => {
+      return { testMode: isTestMode() };
+    });
+
+    if (isTestMode() && this.viewManager) registerTestHooks(getChrome, this.viewManager, this.window);
 
     // Drawer control
     registerTypedHandler<DrawerToggleRequest, boolean>(

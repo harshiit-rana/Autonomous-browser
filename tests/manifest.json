@@ -30,5 +30,6 @@
   { "id": "provider_factory", "cmd": "tsx tests/test_provider_factory.ts", "area": "models" },
   { "id": "e2e_model_modes", "cmd": "tsx tests/test_e2e_model_modes.ts", "area": "e2e" },
   { "id": "e2e_harness_guard", "cmd": "tsx tests/test_e2e_harness_guard.ts", "area": "e2e" },
-  { "id": "agent_loop", "cmd": "tsx tests/test_agent_loop.ts", "area": "agent" }
+  { "id": "agent_loop", "cmd": "tsx tests/test_agent_loop.ts", "area": "agent" },
+  { "id": "frame_hub", "cmd": "tsx tests/test_frame_hub.ts", "area": "mission-control" }
 ]

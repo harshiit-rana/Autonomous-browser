@@ -162,14 +162,63 @@ export interface PresenceEventPayload {
   label?: string;
 }
 
-export interface SwarmPreviewItem {
-  tabId: string;
+// ---------------------------------------------------------------------------------------------------------
+// Live Swarm Grid (#232, ADR 0010 frames, ADR 0012 layout)
+// ---------------------------------------------------------------------------------------------------------
+
+/** DIP, relative to the window content area (ADR 0012). */
+export interface LayoutRect { x: number; y: number; width: number; height: number }
+
+/** `layout:report` renderer -> main. In Grid, `tiles` carries the rect of every tile frame that is fully on screen. */
+export interface LayoutReport {
+  seq: number;
+  dpr: number;
+  mode: 'stage' | 'grid' | 'theatre' | 'compact';
+  viewport: LayoutRect;
+  tiles?: { workerId: string; rect: LayoutRect }[];
+}
+
+/** How a grid source is shown right now (ADR 0010): visible = live native view at its tile, parked = hidden and frozen. */
+export type WorkerPresentation = 'visible' | 'parked' | 'minimised';
+
+/** One entry of the Grid: a user/agent tab or a swarm worker. `id` is the key used on the frames port. */
+export interface GridSource {
+  id: string;
+  kind: 'tab' | 'worker';
   title: string;
   url: string;
-  owner: string;
-  thumbnailBase64?: string;
+  owner?: string;
+  /** Worker identity (#229). */
+  name?: string;
+  color?: string;
+  glyph?: string;
+  presentation: WorkerPresentation;
+  crashed: boolean;
+  loading: boolean;
   isActive: boolean;
+  /** Stage currently shows this source. */
+  staged: boolean;
 }
+
+export interface GridSourcesPayload { sources: GridSource[] }
+
+/** Messages on the dedicated frames MessagePort (posted once per chrome load as `frames:port`). */
+export interface FramePortFrame {
+  type: 'frame';
+  workerId: string;
+  seq: number;
+  ts: number;
+  width: number;
+  height: number;
+  jpeg: ArrayBuffer;
+  source: 'screencast' | 'capturePage' | 'cached';
+}
+export type FramePortToMain =
+  | { type: 'ack'; workerId: string; seq: number }
+  | { type: 'subscribe'; workerId: string; maxFps: number; maxWidth?: number; quality?: number }
+  | { type: 'unsubscribe'; workerId: string };
+
+export interface RuntimeFlags { testMode: boolean }
 
 export interface PlanPreviewRequest {
   prompt: string;
@@ -241,7 +290,14 @@ export const IPC_CHANNELS = {
   TAB_DUPLICATE: 'tab:duplicate',
   TAB_PIN: 'tab:pin',
   TAB_MUTE: 'tab:mute',
-  SWARM_PREVIEWS_GET: 'swarm:previews_get',
+  // Live Swarm Grid (#232): frames travel on the `frames:port` MessagePort, not on IPC
+  FRAMES_PORT: 'frames:port',
+  LAYOUT_REPORT: 'layout:report',
+  GRID_SOURCES_GET: 'grid:sources_get',
+  GRID_PROMOTE: 'grid:promote',
+  RUNTIME_FLAGS_GET: 'runtime:flags_get',
+  TEST_SPAWN_WORKERS: 'test:spawn_workers',
+  TEST_WORKER_ACTION: 'test:worker_action',
 
   // Standard Browser UX & Fundamentals (Issues #169, #174, #175)
   ZOOM_SET: 'zoom:set',
@@ -303,6 +359,7 @@ export const IPC_CHANNELS = {
   EVENT_MISSION_STATUS: 'mission:status',
   EVENT_TELEMETRY: 'telemetry:event',
   EVENT_PRESENCE: 'presence:event',
+  EVENT_GRID_SOURCES: 'grid:sources',
   EVENT_MISSION_QUESTION: 'mission:question'
 } as const;
 
