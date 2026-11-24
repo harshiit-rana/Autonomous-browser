@@ -1,0 +1,156 @@
+[
+  {
+    "toolCalls": [
+      {
+        "id": "c_6bqmrd",
+        "name": "navigate",
+        "arguments": {
+          "url": "http://127.0.0.1:55067/shop"
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_93289t",
+        "name": "click",
+        "arguments": {
+          "ref": "{{ref:Place order}}"
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_ffkvpi",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_i0tgbx",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_4uszh9",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_fpgybp",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_fk8bj7",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_ru4c6j",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_rmrjyo",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_sic1s4",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_8nd6km",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_ldwqvv",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_0pzg3w",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_i1x184",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  }
+]

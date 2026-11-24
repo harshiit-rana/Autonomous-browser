@@ -1,0 +1,60 @@
+[
+  {
+    "toolCalls": [
+      {
+        "id": "c_heyan4",
+        "name": "navigate",
+        "arguments": {
+          "url": "http://127.0.0.1:55067/shop"
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_sr0kkf",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_spk42t",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_6r4sfk",
+        "name": "wait",
+        "arguments": {
+          "ms": 5000
+        }
+      }
+    ]
+  },
+  {
+    "toolCalls": [
+      {
+        "id": "c_b3xtqr",
+        "name": "done",
+        "arguments": {
+          "result": "Fixture shop reached; mission survived the crash",
+          "evidence": [
+            "Fixture shop"
+          ]
+        }
+      }
+    ]
+  }
+]

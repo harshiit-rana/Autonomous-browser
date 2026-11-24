@@ -1,0 +1,66 @@
+[
+  {
+    "missionId": "m_1795499012980_tx4x",
+    "status": "planning",
+    "message": "Planning goal: \"Buy Widget Pro at http://127.0.0.1:55067/shop and ...\"",
+    "reason": "mission_started",
+    "ts": 1795499012981,
+    "seq": 1
+  },
+  {
+    "missionId": "m_1795499012980_tx4x",
+    "status": "running",
+    "message": "Mission running",
+    "reason": "loop_started",
+    "ts": 1795499012985,
+    "seq": 2
+  },
+  {
+    "missionId": "m_1795499012980_tx4x",
+    "status": "waiting_approval",
+    "message": "Waiting for you: Allow click on \"Place order\"? Financial action detected: \"Place order\". Human confirmation required before purchase or payment.",
+    "reason": "question_asked",
+    "ts": 1795499014056,
+    "seq": 3
+  },
+  {
+    "missionId": "m_1795499012980_tx4x",
+    "status": "running",
+    "message": "Mission resumed after your answer",
+    "reason": "question_answered",
+    "ts": 1795499015978,
+    "seq": 4
+  },
+  {
+    "missionId": "m_1795499012980_tx4x",
+    "status": "paused",
+    "message": "Mission paused by user",
+    "reason": "user_pause",
+    "ts": 1795499016173,
+    "seq": 5
+  },
+  {
+    "missionId": "m_1795499012980_tx4x",
+    "status": "running",
+    "message": "Mission resumed",
+    "reason": "user_resume",
+    "ts": 1795499017980,
+    "seq": 6
+  },
+  {
+    "missionId": "m_1795499012980_tx4x",
+    "status": "takeover",
+    "message": "Manual human takeover active",
+    "reason": "user_takeover",
+    "ts": 1795499018014,
+    "seq": 7
+  },
+  {
+    "missionId": "m_1795499012980_tx4x",
+    "status": "running",
+    "message": "Control handed back to the agent",
+    "reason": "user_handback",
+    "ts": 1795499019816,
+    "seq": 8
+  }
+]
