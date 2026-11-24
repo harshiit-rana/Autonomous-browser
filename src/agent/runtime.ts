@@ -557,6 +557,9 @@ export class AgentRuntime {
 
   private async runLoop(mission: Mission, resume?: MissionCheckpoint): Promise<void> {
     if (this.activeMission !== mission) return;
+    // Captured before any await: a cancel during setup followed by a new mission replaces this.abortController, and this
+    // (cancelled) run must keep seeing ITS OWN aborted signal, not the new mission's live one.
+    const signal = this.abortController!.signal;
     this.transition('running', 'loop_started', 'Mission running');
 
     if (mission.prompt.startsWith('/swarm') || mission.prompt.startsWith('/research') || /compare.*across/i.test(mission.prompt)) {
@@ -575,7 +578,7 @@ export class AgentRuntime {
     const settings = getSettings();
     const provider = governed(await (this.deps.createProvider ?? ((m: string) => ModelProviderFactory.createProvider(m)))(mission.model));
     const verifier = governed(await (this.deps.createVerifierProvider ?? ((m: string, v?: string) => ModelProviderFactory.createVerifierProvider(m, v)))(mission.model, settings.verifierModel));
-    const signal = this.abortController!.signal;
+    if (signal.aborted || this.activeMission !== mission) return; // cancelled while the provider was being created
     const live = () => this.activeMission === mission && !isTerminal(mission.state);
 
     const loop = new AgentLoop({
