@@ -178,7 +178,9 @@ export class SwarmCoordinator extends EventEmitter {
                 role: 'verifier',
                 instruction: 'Inspect evidence blackboard, resolve conflicting claims by comparing their quotes',
                 effectClass: 'read',
-                dependencies: sources.map((_, i) => t(i))
+                // Stages already run in order. No task dependency here: a source that failed must not cancel the verifier and the
+                // report of the sources that worked.
+                dependencies: []
               }
             ]
           },
@@ -192,7 +194,7 @@ export class SwarmCoordinator extends EventEmitter {
                 role: 'summariser',
                 instruction: 'Compile structured markdown comparison table with citations',
                 effectClass: 'read',
-                dependencies: [`${missionId}_t_verify`]
+                dependencies: []
               }
             ]
           }
@@ -415,7 +417,7 @@ export class SwarmCoordinator extends EventEmitter {
       lines.push('| Entity | Attribute | Value | Quote (verified on the page) | Source URL |');
       lines.push('|---|---|---|---|---|');
       for (const item of rows) {
-        const safeVal = cell(item.normalized.text || item.value, 60);
+        const safeVal = cell(item.value, 60); // as the worker read it (the normalised form is for conflict matching only)
         const quote = item.source.quote ? `"${cell(item.source.quote, 160)}"` : '-';
         const safeUrl = item.source.url.replace(/[|\n\r\s]/g, ' ').trim();
         lines.push(`| ${cell(item.entity, 60)} | ${cell(item.attribute, 30)} | ${safeVal} | ${quote} | [${item.source.domain || 'link'}](${safeUrl}) |`);
