@@ -120,6 +120,7 @@ export class CircuitBreaker {
 }
 
 interface QueuedTask<T> {
+  providerName: string;
   fn: () => Promise<T>;
   resolve: (value: T) => void;
   reject: (err: any) => void;
@@ -167,46 +168,53 @@ export class ConcurrencyGovernor {
     }
 
     return new Promise<T>((resolve, reject) => {
-      this.queue.push({ fn, resolve, reject, priority });
+      this.queue.push({ providerName, fn, resolve, reject, priority });
       // Sort priority descending (foreground higher than background)
       this.queue.sort((a, b) => b.priority - a.priority);
     });
   }
 
+  /**
+   * Runs `fn` in a slot the caller already holds, retrying inside that same slot (a request waiting for its backoff keeps
+   * counting against the provider's concurrency cap), and frees the slot exactly once at the end (#227: three workers
+   * hitting a 429 used to free the slot before the retry finished and exceed the cap).
+   */
   private async executeWithRetry<T>(
     providerName: string,
-    fn: () => Promise<T>,
-    attempt: number = 1
+    fn: () => Promise<T>
   ): Promise<T> {
     const cb = this.getCircuitBreaker(providerName);
-
     try {
-      const result = await fn();
-      cb.recordSuccess();
-      return result;
-    } catch (err: any) {
-      cb.recordFailure();
+      for (let attempt = 1; ; attempt++) {
+        try {
+          const result = await fn();
+          cb.recordSuccess();
+          return result;
+        } catch (err: any) {
+          cb.recordFailure();
 
-      const { policy, retryAfterMs, reason } = ErrorClassifier.classify(err);
+          const { policy, retryAfterMs, reason } = ErrorClassifier.classify(err);
 
-      if (policy === 'fail_fast') {
-        logger.error(`Fail-fast on model error: ${reason}`, err);
-        throw err;
+          if (policy === 'fail_fast') {
+            logger.error(`Fail-fast on model error: ${reason}`, err);
+            throw err;
+          }
+
+          if (policy === 'retry' && attempt <= this.maxRetries) {
+            const jitter = Math.random() * 500;
+            const delay = Math.min(
+              this.maxBackoffMs,
+              (retryAfterMs || this.baseBackoffMs * Math.pow(2, attempt - 1)) + jitter
+            );
+
+            logger.warn(`Model request failed (${reason}), retrying in ${Math.round(delay)}ms (attempt ${attempt}/${this.maxRetries})`);
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
+
+          throw err;
+        }
       }
-
-      if (policy === 'retry' && attempt <= this.maxRetries) {
-        const jitter = Math.random() * 500;
-        const delay = Math.min(
-          this.maxBackoffMs,
-          (retryAfterMs || this.baseBackoffMs * Math.pow(2, attempt - 1)) + jitter
-        );
-
-        logger.warn(`Model request failed (${reason}), retrying in ${Math.round(delay)}ms (attempt ${attempt}/${this.maxRetries})`);
-        await new Promise(r => setTimeout(r, delay));
-        return this.executeWithRetry(providerName, fn, attempt + 1);
-      }
-
-      throw err;
     } finally {
       this.activeCount--;
       this.processNext();
@@ -218,13 +226,8 @@ export class ConcurrencyGovernor {
       const nextTask = this.queue.shift();
       if (nextTask) {
         this.activeCount++;
-        nextTask.fn()
-          .then(res => nextTask.resolve(res))
-          .catch(err => nextTask.reject(err))
-          .finally(() => {
-            this.activeCount--;
-            this.processNext();
-          });
+        // A queued request gets the same retry and circuit-breaker handling as one that did not have to wait.
+        this.executeWithRetry(nextTask.providerName, nextTask.fn).then(nextTask.resolve, nextTask.reject);
       }
     }
   }

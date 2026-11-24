@@ -176,6 +176,23 @@ export class WorkerSupervisor extends EventEmitter {
     }
   }
 
+  /**
+   * A task attempt ended in failure (budget exhausted, timeout, crash, stall). The second failure of the same task
+   * quarantines it as poison so it is not restarted again (#227). Returns true when the task is now quarantined.
+   */
+  public recordTaskFailure(taskId: string, error: string): boolean {
+    const count = (this.taskFailureCounts.get(taskId) || 0) + 1;
+    this.taskFailureCounts.set(taskId, count);
+    if (count < this.maxPoisonFailures) return false;
+    if (!this.poisonTasks.has(taskId)) {
+      const record: PoisonTaskRecord = { taskId, failureCount: count, lastError: error, quarantinedAt: Date.now() };
+      this.poisonTasks.set(taskId, record);
+      logger.error('Task quarantined as POISON TASK', undefined, { taskId, error });
+      this.emit('poisonTask', record);
+    }
+    return true;
+  }
+
   public isTaskQuarantined(taskId: string): boolean {
     return this.poisonTasks.has(taskId);
   }

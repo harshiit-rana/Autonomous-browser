@@ -30,6 +30,12 @@ export interface E2EScriptStep {
   /** Substrings that must appear in the last user message (the verifier's single prompt, for instance). */
   expectPromptContains?: string[];
   respond: { tool: string; args?: Record<string, any>; text?: string } | { text: string };
+  /**
+   * Swarm scripts (#227): several workers share one provider and call it at the same time, so a step can be tied to one
+   * of them. The step is only offered to a request whose first user message (the worker's goal) contains `goalContains`.
+   * Steps without a route behave exactly as before: they are handed out in script order.
+   */
+  route?: { goalContains: string };
 }
 
 export interface E2EScriptProgress {
@@ -80,6 +86,7 @@ interface NormalizedStep {
   expectTools: string[];
   expectPageContains: string[];
   expectPromptContains: string[];
+  routeGoal?: string;
   response: ScriptedStepResponse;
 }
 
@@ -107,7 +114,8 @@ export function normalizeScript(raw: unknown): NormalizedStep[] {
     } else {
       throw new Error(`E2E script step ${i + 1} has neither "respond" nor "text"/"toolCalls"`);
     }
-    return { expectTools, expectPageContains, expectPromptContains, response };
+    const routeGoal = typeof s.route?.goalContains === 'string' && s.route.goalContains ? s.route.goalContains : undefined;
+    return { expectTools, expectPageContains, expectPromptContains, routeGoal, response };
   });
 }
 
@@ -124,12 +132,14 @@ export class E2EScriptedProvider implements IModelProvider {
   public readonly providerName = 'scripted';
   public readonly modelName = 'scripted-model';
   private index = 0;
+  private readonly used: boolean[];
   private failure: E2EDeviationError | null = null;
   private readonly queue = new ScriptedModelProvider();
   private readonly progress: E2EScriptProgress;
 
   constructor(private readonly steps: NormalizedStep[], private readonly state: E2EModelState, private readonly role = 'actor') {
     this.progress = { scriptSteps: steps.length, consumed: 0 };
+    this.used = steps.map(() => false);
     state.roles[role] = this.progress;
   }
 
@@ -144,8 +154,11 @@ export class E2EScriptedProvider implements IModelProvider {
   public async generate(request: ModelRequest): Promise<ModelResponse> {
     this.state.requests += 1;
     if (this.failure) throw this.failure; // sticky: a retry after a deviation must not "recover" the script
-    const step = this.steps[this.index];
-    if (!step) this.deviate(`no more scripted responses (the script has ${this.steps.length} steps) but the loop asked for another model call`);
+    const firstUser = request.messages.find(m => m.role === 'user');
+    const goalText = typeof firstUser?.content === 'string' ? firstUser.content : '';
+    const at = this.steps.findIndex((st, i) => !this.used[i] && (!st.routeGoal || goalText.includes(st.routeGoal)));
+    const step = at >= 0 ? this.steps[at] : undefined;
+    if (!step) this.deviate(`no more scripted responses (the script has ${this.steps.length} steps${this.steps.some(st => st.routeGoal) ? ', some routed to one worker' : ''}) but the loop asked for another model call`);
 
     const offered = (request.tools ?? []).map(t => t.name);
     for (const tool of step.expectTools) {
@@ -166,6 +179,7 @@ export class E2EScriptedProvider implements IModelProvider {
       }
     }
 
+    this.used[at] = true;
     this.index += 1;
     this.progress.consumed = this.index;
     this.queue.enqueueResponse(step.response);

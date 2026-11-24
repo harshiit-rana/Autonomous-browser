@@ -133,3 +133,25 @@ Run and documented in `docs/dev/E2E.md`. Verified on Windows 11 x64, Node 22, El
 | Port collisions | The arena binds an ephemeral port; the app itself opens no fixed port. | n/a |
 | Parallelism | One worker: one real window, GPU and Chromium profile at a time. | Deliberate. |
 | Leftover processes | Teardown kills the process tree after 15 s; a crash of the test runner itself can still leave an Electron process behind. | Windows/CI cleanup is the runner's job. |
+
+## Real swarm workers (#227 SWX-01)
+
+Workers are the single-agent `AgentLoop` on their own `WorkerHost` view (own in-memory session partition, shown in the Grid), with `report_finding` / `finish_task` instead of `done`/`fail`. Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| Real model behaviour | **Not verified.** Every test and the e2e use a scripted model; no real key was available. How well a real model picks sources, quotes and entities is untested. | Live evals belong to #256 / #257. |
+| Tab per worker via `ViewManager.createTab` | Not used. Workers keep the #229 `WorkerHost` view (separate partition) that #232 already shows in the Grid; they never touch the user's tabs (checked in the e2e). | Same isolation, one mechanism instead of two. |
+| `settings.maxWorkers` UI | The setting exists (default 3, clamped 1..8, wired into the planner, coordinator and `SwarmManager`) but there is no control for it in the settings panel yet. | UI work is outside #227. |
+| Resource governor | `recommendedConcurrency` is still the memory/CPU heuristic in `resource_governor.ts` read at each stage; #231 (real metrics) is not part of this change. | Width = min(stage parallelism, recommended, maxWorkers). |
+| Pause and stop within 1 s | Workers stop within 1 s of the abort while inside a model call or a tool (tested: 3 workers, abort -> all ended < 1000 ms). Pause holds a worker before its **next** model call; a step already in flight (a model call, or a page settle of up to 8 s) finishes first. | Cannot preempt a provider request. |
+| Mid-run progress after a crash | A retry restarts the sub-goal with a fresh conversation. It is told what the earlier attempt already reported (from the blackboard) but not what it had read. | No conversation checkpoint exists. |
+| Duplicate-page detection | Refused at `navigate` and at task start (canonical URL via `URLFrontier.normalize`). A link click that lands on a page another worker holds is not detected. | Would need a check on every observation. |
+| In-task politeness | The frontier's pacing and per-origin cap govern when a task starts; pages a worker opens by itself during its task are not paced. | Out of scope. |
+| Finding confidence | Findings carry the blackboard's default confidence; it is not shown in the report. The guard is the verified quote, not a score. | A calibrated score needs real-model data. |
+| Unsupported-claim check (`data/verified_report.ts`) | Not wired. The report contains only blackboard evidence rows (each with its verified quote and source) and no free text written by a model. | Wiring belongs to #251. |
+| Conflicts | The verifier stage makes one model call per unresolved conflict and reads the quotes. With no valid verdict the conflict stays open and is listed in the report ("not settled"); nothing guesses by confidence. Auto-adjudication in the blackboard (official source, weighted majority of 2+) still runs when claims are posted. | By design. |
+| Worker-level completion check | Workers have no independent verifier call; their guard is the quote check against the page text. | A second model call per worker was out of scope. |
+| Telemetry | Per-worker spend is tracked for each worker's cost budget (max cost / maxWorkers) but the mission-control token/cost tiles are not summed across workers. | Follow-up. |
+| Governor fix | `ConcurrencyGovernor` freed a slot before a retry finished and ran queued requests without retry; fixed here so three workers on a 429 stay within the provider cap (tested). | Found while writing the rate-limit test. |
+| Loopback politeness origin | `URLFrontier.getOrigin` turned every IPv4 address into the origin "0.1"; IPs and localhost are now `host:port` origins. | Found by the e2e (three local shops were throttled as one site). |
