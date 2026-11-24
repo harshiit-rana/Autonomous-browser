@@ -10,6 +10,8 @@
  */
 
 import { EvidenceItem } from '../swarm/blackboard.js';
+import { URLFrontier } from '../swarm/url_frontier.js';
+import type { VerificationResult } from '../swarm/evidence_truth.js';
 import { rootLogger } from '../infrastructure/logger.js';
 
 const logger = rootLogger.child('report-synthesizer');
@@ -28,6 +30,14 @@ export interface VerifiedReport {
   citations: Array<{ claimId: string; url: string; title: string; quote: string; verified: boolean }>;
   chartMermaid?: string;
   generatedAt: number;
+}
+
+/** A report cited something it must not: a claim without an evidence id or a URL no worker visited. */
+export class ReportGroundingError extends Error {
+  constructor(public readonly problems: string[]) {
+    super(`Report refused: ${problems.length} ungrounded citation(s). ${problems.slice(0, 5).join("; ")}`);
+    this.name = "ReportGroundingError";
+  }
 }
 
 export class VerifiedReportSynthesizer {
@@ -61,7 +71,7 @@ export class VerifiedReportSynthesizer {
               url: evidence.source.url,
               title: evidence.source.domain || evidence.entity,
               quote: evidence.source.quote || `${evidence.entity} ${evidence.attribute}: ${evidence.value}`,
-              verified: evidence.confidence >= 0.7
+              verified: Boolean(evidence.source.pageTextHash && evidence.source.snapshotRef)
             });
           }
         } else {
@@ -84,6 +94,66 @@ export class VerifiedReportSynthesizer {
       citations: verifiedCitations,
       generatedAt: Date.now()
     };
+  }
+
+  /**
+   * Grounding assertion for a report (#230): every row cites an evidence id, and every cited URL (the page and each
+   * corroborating page) is in the mission's visited-URL log. Throws `ReportGroundingError` listing every violation; a report
+   * that cites a page nobody visited is not produced.
+   */
+  public static assertGrounded(items: EvidenceItem[], visitedUrls: string[]): void {
+    const norm = (u: string): string => { try { return URLFrontier.normalize(u); } catch { return u; } };
+    const visited = new Set(visitedUrls.map(norm));
+    const problems: string[] = [];
+    for (const item of items) {
+      if (item.source.url.startsWith('consensus://')) continue;
+      if (!item.id) problems.push(`a claim about "${item.entity} / ${item.attribute}" has no evidence id`);
+      const urls = [item.source.url, ...(item.source.corroboratedBy ?? []).map(c => c.url)];
+      for (const u of urls) {
+        if (!visited.has(norm(u))) problems.push(`${item.id}: cites ${u}, which no worker visited in this mission`);
+      }
+    }
+    if (problems.length) throw new ReportGroundingError(problems);
+  }
+
+  /**
+   * The findings table of a swarm report. Only findings whose quote re-verifies against the stored page snapshot are listed,
+   * unless `includeUnverifiable`; the strength column shows the computed score and the signals it came from.
+   */
+  public static renderFindings(
+    evidence: EvidenceItem[],
+    opts: { verify: (item: EvidenceItem) => VerificationResult; includeUnverifiable?: boolean }
+  ): { lines: string[]; listed: EvidenceItem[]; excluded: EvidenceItem[] } {
+    const cell = (v: unknown, max: number) => String(v ?? '').replace(/[|\n\r]/g, ' ').slice(0, max);
+    const rows = evidence.filter(e => !e.source.url.startsWith('consensus://'));
+    const listed: EvidenceItem[] = [];
+    const excluded: EvidenceItem[] = [];
+    const checks = new Map<string, VerificationResult>();
+    for (const item of rows) {
+      const v = opts.verify(item);
+      checks.set(item.id, v);
+      (v.ok || opts.includeUnverifiable ? listed : excluded).push(item);
+    }
+    const lines: string[] = [];
+    if (listed.length > 0) {
+      lines.push('| Evidence id | Entity | Attribute | Value | Quote (verified on the page) | Source URL | Strength |');
+      lines.push('|---|---|---|---|---|---|---|');
+      for (const item of listed) {
+        const v = checks.get(item.id)!;
+        const b = item.source.confidenceBasis;
+        const quote = item.source.quote ? `"${cell(item.source.quote, 160)}"` : '-';
+        const safeUrl = item.source.url.replace(/[|\n\r\s]/g, ' ').trim();
+        const flags = [
+          v.ok ? '' : `UNVERIFIED (${v.status})`,
+          v.stale ? 'stale' : '',
+          item.source.language ? `page language ${cell(item.source.language, 16)}${item.source.translation ? `, translation: ${cell(item.source.translation, 120)}` : ''}` : ''
+        ].filter(Boolean);
+        const strength = `${item.confidence.toFixed(2)} (${b ? `${b.sourceType}; ${b.independentSources} independent source${b.independentSources === 1 ? '' : 's'}${b.disagreeingSources ? `; ${b.disagreeingSources} disagreeing` : ''}` : 'no basis'}${flags.length ? `; ${flags.join('; ')}` : ''})`;
+        lines.push(`| ${cell(item.id, 40)} | ${cell(item.entity, 60)} | ${cell(item.attribute, 30)} | ${cell(item.value, 60)} | ${quote} | [${item.source.domain || 'link'}](${safeUrl}) | ${cell(strength, 260)} |`);
+      }
+      lines.push('', '_Strength is a score from the source type, the verified quote, and how many independent sites agree or disagree. It is not a probability. Formula: docs/swarm/evidence.md._');
+    }
+    return { lines, listed, excluded };
   }
 
   /**
