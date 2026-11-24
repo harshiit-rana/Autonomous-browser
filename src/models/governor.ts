@@ -126,10 +126,12 @@ export class CircuitBreaker {
 }
 
 interface QueuedTask<T> {
+  providerName: string;
   fn: () => Promise<T>;
   resolve: (value: T) => void;
   reject: (err: any) => void;
   priority: number; // Higher number = higher priority
+  signal?: AbortSignal;
 }
 
 export class ConcurrencyGovernor {
@@ -163,19 +165,19 @@ export class ConcurrencyGovernor {
     priority: number = 10,
     signal?: AbortSignal
   ): Promise<T> {
-    const cb = this.getCircuitBreaker(providerName);
     if (signal?.aborted) throw abortError();
+    const cb = this.getCircuitBreaker(providerName);
     if (!cb.isAvailable()) {
       throw new Error(`Circuit breaker is OPEN for provider '${providerName}'. Model is temporarily unavailable.`);
     }
 
     if (this.activeCount < this.maxConcurrency) {
       this.activeCount++;
-      return this.executeWithRetry(providerName, fn, 1, signal);
+      return this.executeWithRetry(providerName, fn, signal);
     }
 
     return new Promise<T>((resolve, reject) => {
-      const task: QueuedTask<T> = { fn, resolve, reject, priority };
+      const task: QueuedTask<T> = { providerName, fn, resolve, reject, priority, signal };
       // A cancelled mission must not wait for a slot (or start a request) after it was cancelled.
       const onAbort = () => {
         const i = this.queue.indexOf(task);
@@ -193,49 +195,54 @@ export class ConcurrencyGovernor {
     });
   }
 
+  /**
+   * Runs `fn` in a slot the caller already holds, retrying inside that same slot (a request waiting for its backoff keeps
+   * counting against the provider's concurrency cap), and frees the slot exactly once at the end (#227: three workers
+   * hitting a 429 used to free the slot before the retry finished and exceed the cap).
+   */
   private async executeWithRetry<T>(
     providerName: string,
     fn: () => Promise<T>,
-    attempt: number = 1,
     signal?: AbortSignal
   ): Promise<T> {
     const cb = this.getCircuitBreaker(providerName);
-
     try {
-      const result = await fn();
-      cb.recordSuccess();
-      return result;
-    } catch (err: any) {
-      // The caller gave up (mission cancelled): never retry, never count it against the provider.
-      if (signal?.aborted) throw err;
-      cb.recordFailure();
+      for (let attempt = 1; ; attempt++) {
+        try {
+          const result = await fn();
+          cb.recordSuccess();
+          return result;
+        } catch (err: any) {
+          // The caller gave up (mission cancelled): never retry, never count it against the provider.
+          if (signal?.aborted) throw err;
+          cb.recordFailure();
 
-      const { policy, retryAfterMs, reason } = ErrorClassifier.classify(err);
+          const { policy, retryAfterMs, reason } = ErrorClassifier.classify(err);
 
-      if (policy === 'fail_fast') {
-        logger.error(`Fail-fast on model error: ${reason}`, err);
-        throw err;
+          if (policy === 'fail_fast') {
+            logger.error(`Fail-fast on model error: ${reason}`, err);
+            throw err;
+          }
+
+          if (policy === 'retry' && attempt <= this.maxRetries) {
+            const jitter = Math.random() * 500;
+            const delay = Math.min(
+              this.maxBackoffMs,
+              (retryAfterMs || this.baseBackoffMs * Math.pow(2, attempt - 1)) + jitter
+            );
+
+            logger.warn(`Model request failed (${reason}), retrying in ${Math.round(delay)}ms (attempt ${attempt}/${this.maxRetries})`);
+            await new Promise<void>((resolve, reject) => {
+              const t = setTimeout(() => { signal?.removeEventListener('abort', onAbort); resolve(); }, delay);
+              const onAbort = () => { clearTimeout(t); reject(abortError()); };
+              signal?.addEventListener('abort', onAbort, { once: true });
+            });
+            continue;
+          }
+
+          throw err;
+        }
       }
-
-      if (policy === 'retry' && attempt <= this.maxRetries) {
-        const jitter = Math.random() * 500;
-        const delay = Math.min(
-          this.maxBackoffMs,
-          (retryAfterMs || this.baseBackoffMs * Math.pow(2, attempt - 1)) + jitter
-        );
-
-        logger.warn(`Model request failed (${reason}), retrying in ${Math.round(delay)}ms (attempt ${attempt}/${this.maxRetries})`);
-        await new Promise<void>((resolve, reject) => {
-          const t = setTimeout(() => { signal?.removeEventListener('abort', onAbort); resolve(); }, delay);
-          const onAbort = () => { clearTimeout(t); reject(abortError()); };
-          signal?.addEventListener('abort', onAbort, { once: true });
-        });
-        // The retry runs under its own finally (which releases a slot), so it takes one; this attempt's finally releases ours.
-        this.activeCount++;
-        return this.executeWithRetry(providerName, fn, attempt + 1, signal);
-      }
-
-      throw err;
     } finally {
       this.activeCount--;
       this.processNext();
@@ -247,13 +254,8 @@ export class ConcurrencyGovernor {
       const nextTask = this.queue.shift();
       if (nextTask) {
         this.activeCount++;
-        nextTask.fn()
-          .then(res => nextTask.resolve(res))
-          .catch(err => nextTask.reject(err))
-          .finally(() => {
-            this.activeCount--;
-            this.processNext();
-          });
+        // A queued request gets the same retry and circuit-breaker handling as one that did not have to wait.
+        this.executeWithRetry(nextTask.providerName, nextTask.fn, nextTask.signal).then(nextTask.resolve, nextTask.reject);
       }
     }
   }
@@ -268,7 +270,6 @@ export class ConcurrencyGovernor {
     priority: number = 10
   ): Promise<ModelResponse> {
     return this.schedule(provider.providerName, async () => {
-      if (request.abortSignal?.aborted) throw abortError();
       const response = await provider.generate(request);
 
       // Check for max_tokens truncation (length finish reason)

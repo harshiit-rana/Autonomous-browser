@@ -26,6 +26,17 @@ export interface AppSettings {
   maxCostUSD: number;
   /** Model used by the completion verifier; empty = the mission's own model (#225). */
   verifierModel: string;
+  /** Swarm workers that run at the same time (#227). Default 3; consumers clamp to 1..8 with `clampMaxWorkers`. */
+  maxWorkers: number;
+}
+
+export const MAX_WORKERS_HARD_LIMIT = 8;
+export const DEFAULT_MAX_WORKERS = 3;
+
+/** Whatever is stored, a swarm never runs fewer than 1 or more than 8 workers at once. */
+export function clampMaxWorkers(v: unknown): number {
+  const n = typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : DEFAULT_MAX_WORKERS;
+  return Math.max(1, Math.min(MAX_WORKERS_HARD_LIMIT, n));
 }
 
 export const CURRENT_SETTINGS_VERSION = 2;
@@ -76,7 +87,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   policyRules: [],
   maxSteps: 25,
   maxCostUSD: 1,
-  verifierModel: ''
+  verifierModel: '',
+  maxWorkers: DEFAULT_MAX_WORKERS
 };
 
 const logger = rootLogger.child('settings');

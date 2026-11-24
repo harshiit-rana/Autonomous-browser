@@ -70,12 +70,20 @@ export interface AgentLoopEmitter {
   evidence(text: string): void;
   status(state: 'running' | 'waiting_user' | 'waiting_approval' | 'paused', message: string): void;
   /** A tool is about to run (phase 'start': it may or may not complete if the app dies) or has finished ('end'). Feeds the resume checkpoint. */
-  action?(a: { step: number; tool: string; args: Record<string, any>; phase: 'start' | 'end'; ok?: boolean; label?: string }): void;
+  toolPhase?(a: { step: number; tool: string; args: Record<string, any>; phase: 'start' | 'end'; ok?: boolean; label?: string }): void;
   telemetry?(p: { tokensTotal: number; costTotal: number; stepTokens: number; stepCost: number }): void;
-  worker?(p: { task: string; progress: number }): void;
+  worker?(p: { task: string; progress: number; step?: number }): void;
+  /** The tool call about to run (#227: swarm workers report their last action). */
+  action?(step: number, name: string, summary: string): void;
   /** Structured event for the mission log (verification, budget, stuck...). */
   event?(kind: string, data: unknown): void;
   checkpoint?(): void;
+}
+
+/** A tool handled by the caller instead of `ToolExecutor` (#227: report_finding / finish_task of swarm workers). */
+export interface ExtraTool {
+  def: ToolDefinition;
+  handle(args: Record<string, any>, ctx: { snapshot: PageSnapshot; tab: TabView; step: number }): Promise<{ output: string; isError?: boolean; end?: { state: LoopEndState; result?: string; error?: string } }>;
 }
 
 export interface AgentLoopDeps {
@@ -87,6 +95,13 @@ export interface AgentLoopDeps {
   /** Separate provider for the completion check (may be a cheaper model). Defaults to `provider`. */
   verifier?: IModelProvider;
   tools?: ToolDefinition[];
+  /** Prompt registry role (default `actor`); swarm workers use `worker` (#227). */
+  systemPromptRole?: string;
+  /** Appended to the role's system prompt (the worker's identity and sub-goal scope). */
+  systemPromptSuffix?: string;
+  extraTools?: ExtraTool[];
+  /** Returns a refusal text to stop a tool call before it runs (swarm: another worker already covers that URL). */
+  guardTool?: (name: string, args: Record<string, any>) => string | null;
   settings: AgentLoopSettings;
   brief?: MissionBrief;
   emit: AgentLoopEmitter;
@@ -250,7 +265,7 @@ export class AgentLoop {
 
     this.stepCount++;
     const step = this.stepCount;
-    emit.worker?.({ task: `Executing step ${step} of ${this.maxSteps}`, progress: Math.min(90, Math.round((step / this.maxSteps) * 100)) });
+    emit.worker?.({ task: `Executing step ${step} of ${this.maxSteps}`, progress: Math.min(90, Math.round((step / this.maxSteps) * 100)), step });
 
     for (const s of this.deps.drainSteering?.() || []) {
       emit.evidence(`[User Steering] ${s}`);
@@ -312,7 +327,7 @@ export class AgentLoop {
       response = await this.deps.provider.generate({
         messages: this.history,
         tools: this.tools,
-        systemPrompt: PromptRegistry.getInstance().getEffectivePrompt('actor').systemPrompt,
+        systemPrompt: PromptRegistry.getInstance().getEffectivePrompt(this.deps.systemPromptRole ?? 'actor').systemPrompt + (this.deps.systemPromptSuffix ? `\n\n${this.deps.systemPromptSuffix}` : ''),
         abortSignal: this.deps.signal,
         missionId: this.deps.missionId,
         stepId: `step_${step}`
@@ -379,6 +394,27 @@ export class AgentLoop {
   private async runToolCall(call: { id: string; name: string; arguments: Record<string, any> }, snapshot: PageSnapshot, step: number): Promise<'ok' | 'failed' | LoopOutcome> {
     const { emit } = this.deps;
     const args = call.arguments ?? {};
+    const extra = this.deps.extraTools?.find(t => t.def.name === call.name);
+    if (extra) {
+      const missing = (extra.def.parameters.required || []).find(k => args[k] === undefined || args[k] === null || args[k] === '');
+      if (missing || args._parseError) {
+        const why = args._parseError ? 'Arguments were not valid JSON.' : `Missing required argument "${missing}".`;
+        emit.evidence(`[Invalid Tool Call] ${call.name}: ${why}`);
+        this.toolResult(call.id, call.name, `Invalid call to ${call.name}: ${why}`, true);
+        return 'failed';
+      }
+      emit.action?.(step, call.name, JSON.stringify(args).slice(0, 100));
+      emit.evidence(`[Action] ${call.name}(${JSON.stringify(args).slice(0, 100)})`);
+      const r = await extra.handle(args, { snapshot, tab: this.tab, step });
+      this.toolResult(call.id, call.name, r.output, !!r.isError);
+      if (r.end) return this.end(r.end.state, { result: r.end.result, error: r.end.error });
+      return r.isError ? 'failed' : 'ok';
+    }
+    if (this.deps.tools && !this.deps.tools.some(t => t.name === call.name)) {
+      emit.evidence(`[Invalid Tool Call] ${call.name}: not offered`);
+      this.toolResult(call.id, call.name, `Unknown tool "${call.name}". Available: ${this.deps.tools.map(t => t.name).join(', ')}`, true);
+      return 'failed';
+    }
     const invalid = validateToolArgs(call.name, args);
     if (invalid) {
       emit.evidence(`[Invalid Tool Call] ${call.name}: ${invalid}`);
@@ -435,11 +471,20 @@ export class AgentLoop {
     const recent = this.actionSignatures.slice(-STUCK_REPEATS);
     const stuck = recent.length === STUCK_REPEATS && recent.every(s => s === sig) && !['done', 'fail', 'ask_user'].includes(call.name);
 
-    emit.evidence(`[Action] ${call.name}(${JSON.stringify(call.name === 'type' ? { ref: args.ref } : args).slice(0, 100)})`);
+    const actionText = JSON.stringify(call.name === 'type' ? { ref: args.ref } : args).slice(0, 100);
+    emit.evidence(`[Action] ${call.name}(${actionText})`);
+    emit.action?.(step, call.name, actionText);
+
+    const refusal = this.deps.guardTool?.(call.name, args);
+    if (refusal) {
+      emit.evidence(`[Tool Refused] ${call.name}: ${refusal}`);
+      this.toolResult(call.id, call.name, refusal, true);
+      return 'failed';
+    }
 
     if (call.name === 'done') return this.finishWithVerification(call, args);
 
-    emit.action?.({ step, tool: call.name, args, phase: 'start', label: target?.name });
+    emit.toolPhase?.({ step, tool: call.name, args, phase: 'start', label: target?.name });
     const exec: ToolExecutionResult = await raceAbort(ToolExecutor.execute(call.name, args, {
       tab: this.tab,
       snapshot,
@@ -449,7 +494,7 @@ export class AgentLoop {
       missionDir: this.deps.missionDir,
       extractions: this.extractions
     }), this.deps.signal);
-    emit.action?.({ step, tool: call.name, args, phase: 'end', ok: exec.ok });
+    emit.toolPhase?.({ step, tool: call.name, args, phase: 'end', ok: exec.ok });
     this.deps.actionLedger?.record(step, call.name, args, this.tab.id);
 
     let output = exec.output;

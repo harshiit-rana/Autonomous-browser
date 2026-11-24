@@ -117,6 +117,11 @@ export class URLFrontier {
   public static getOrigin(urlStr: string): string {
     try {
       const parsed = new URL(urlStr);
+      // An IP address or localhost is its own politeness origin (host:port). Splitting 127.0.0.1 into "0.1" would make every
+      // loopback server one origin (#227: three local shops were throttled as one site).
+      if (/^\[.*\]$/.test(parsed.hostname) || /^\d{1,3}(\.\d{1,3}){3}$/.test(parsed.hostname) || parsed.hostname.toLowerCase() === 'localhost') {
+        return parsed.host.toLowerCase();
+      }
       const hostParts = parsed.hostname.toLowerCase().split('.');
       if (hostParts.length > 2) {
         // e.g. shop.example.com -> example.com (basic eTLD+1 heuristic)

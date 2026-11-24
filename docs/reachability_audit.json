@@ -564,11 +564,23 @@
     "isReachable": true
   },
   {
+    "path": "swarm/worker_coordination.ts",
+    "isReachable": true
+  },
+  {
+    "path": "swarm/worker_findings.ts",
+    "isReachable": true
+  },
+  {
     "path": "swarm/worker_host.ts",
     "isReachable": true
   },
   {
     "path": "swarm/worker_identity.ts",
+    "isReachable": true
+  },
+  {
+    "path": "swarm/worker_task_runner.ts",
     "isReachable": true
   },
   {

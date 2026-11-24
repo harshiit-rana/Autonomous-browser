@@ -8,7 +8,7 @@ import { IModelProvider, CanonicalMessage, ModelRequest } from '../models/types.
 import { PerceptionEngine } from './perception.js';
 import { IPC_CHANNELS, ModelProviderId, WorkerEventPayload, EvidenceEventPayload, MissionStatusPayload, TelemetryEventPayload, MissionQuestionPayload, InterruptedMission } from '../ipc/contract.js';
 import { rootLogger } from '../infrastructure/logger.js';
-import { getSettings } from '../infrastructure/settings.js';
+import { getSettings, clampMaxWorkers } from '../infrastructure/settings.js';
 import { getAppPaths } from '../infrastructure/paths.js';
 import { UsageLedger } from '../models/pricing.js';
 import { globalGovernor } from '../models/governor.js';
@@ -20,6 +20,10 @@ import {
 import { SwarmCoordinator } from '../swarm/coordinator.js';
 import { SwarmManager } from '../swarm/swarm_manager.js';
 import { SharedBlackboard } from '../swarm/blackboard.js';
+import { WorkerSupervisor } from '../swarm/supervisor.js';
+import { runWorkerTask, runNonBrowserTask, WorkerRunDeps, DEFAULT_WORKER_MAX_STEPS } from '../swarm/worker_task_runner.js';
+import { UrlClaims } from '../swarm/worker_findings.js';
+import { PauseGate, QuestionQueue } from '../swarm/worker_coordination.js';
 import { MissionRecorder } from '../infrastructure/mission_recorder.js';
 import { AgentLoop, MissionBrief, UserQuestion, VerificationOutcome, LoopOutcome } from './agent_loop.js';
 import { AgentTabHost } from './tools.js';
@@ -101,6 +105,9 @@ export class AgentRuntime {
   public lastCheckpointError: string | null = null;
   /** Emits `status` (MissionStatusPayload), `question` (MissionQuestionPayload) and `evidence` (EvidenceEventPayload). */
   public readonly events = new EventEmitter();
+  /** Swarm missions: every worker waits on this gate and shares this question queue (#227). */
+  private swarmGate = new PauseGate();
+  private swarmQuestions = new QuestionQueue();
 
   private viewManager: ViewManager;
   private window: BrowserWindow;
@@ -264,6 +271,7 @@ export class AgentRuntime {
   public pause(reason = 'user_pause'): void {
     if (this.activeMission && this.activeMission.state === 'running') {
       this.isPaused = true;
+      this.swarmGate.pause();
       this.transition('paused', reason, 'Mission paused by user');
       this.emitEvidence('[Agent] Execution paused');
       logger.info('Mission paused', { missionId: this.activeMission.id });
@@ -430,55 +438,44 @@ export class AgentRuntime {
 
   // ------------------------------------------------------------------------------------------- swarm
   private async runSwarmLoop(mission: Mission): Promise<void> {
-    // One manager per mission: its workers get `agent-<missionId>-<workerId>` in-memory partitions and are all
-    // torn down in the finally below (also when the window closes or the mission is cancelled).
-    const swarm = new SwarmManager({ maxWorkers: 6, missionId: mission.id, parentWindow: this.window });
+    const settings = getSettings();
+    const maxWorkers = clampMaxWorkers(settings.maxWorkers);
+    const signal = this.abortController!.signal;
+    // One manager per mission: its workers get `agent-<missionId>-<workerId>` in-memory partitions and their own
+    // views (shown in the Grid by ViewManager, #232); they are all torn down in the finally below (also when the
+    // window closes or the mission is cancelled). The user's tabs are never used.
+    const swarm = new SwarmManager({ maxWorkers, missionId: mission.id, parentWindow: this.window });
     this.activeSwarm = swarm;
+    const supervisor = new WorkerSupervisor({ stallThresholdMs: 90_000 });
     const coordinator = new SwarmCoordinator({
       swarm,
-      blackboard: new SharedBlackboard({ missionId: mission.id })
+      blackboard: new SharedBlackboard({ missionId: mission.id }),
+      supervisor,
+      maxWorkers
     });
-    const signal = this.abortController!.signal;
+    const abortHandles = new Map<string, (reason: string) => void>();
+    this.swarmGate = new PauseGate();
+    this.swarmQuestions = new QuestionQueue();
 
     coordinator.on('stageStarted', (ev: any) => {
       this.emitEvidence(`[Swarm Stage Started] ${ev.stageName} (${ev.taskCount} tasks)`);
     });
 
-    coordinator.on('taskStarted', (ev: any) => {
-      this.emitWorkerEvent({
-        id: ev.workerId,
-        name: `${ev.identity.name} [${ev.role}]`,
-        color: ev.identity.color,
-        glyph: ev.identity.glyph,
-        task: `Executing task ${ev.taskId}`,
-        progress: 30,
-        status: 'running'
-      });
+    // The coordinator's own verifier/summariser tasks have no view: they are log lines, not a worker in the Grid.
+    const workerEvent = (ev: any, task: string, status: WorkerEventPayload['status'], progress: number) => ev.workerId === 'coordinator' ? this.emitEvidence(`[Swarm] ${task}`) : this.emitWorkerEvent({
+      id: ev.workerId, workerId: ev.workerId, name: ev.identity?.name, color: ev.identity?.color, glyph: ev.identity?.glyph,
+      task, progress, status, at: Date.now()
     });
-
-    coordinator.on('taskCompleted', (ev: any) => {
-      this.emitWorkerEvent({
-        id: ev.workerId,
-        name: ev.identity.name,
-        color: ev.identity.color,
-        glyph: ev.identity.glyph,
-        task: `Completed task ${ev.taskId}`,
-        progress: 100,
-        status: 'idle'
-      });
-    });
-
+    coordinator.on('taskStarted', (ev: any) => workerEvent(ev, `Starting: ${ev.name ?? ev.taskId}`, 'running', 5));
+    coordinator.on('taskRetry', (ev: any) => workerEvent(ev, `Retrying after: ${String(ev.error).slice(0, 80)}`, 'running', 5));
     coordinator.on('taskFailed', (ev: any) => {
       if (signal.aborted) return; // cancelled: the shutdown rejects in-flight tasks; that is not a task failure
-      this.emitWorkerEvent({
-        id: ev.workerId,
-        name: ev.identity.name,
-        color: ev.identity.color,
-        glyph: ev.identity.glyph,
-        task: `Failed task ${ev.taskId}: ${String(ev.error).slice(0, 80)}`,
-        progress: 100,
-        status: 'failed'
-      });
+      workerEvent(ev, `Failed: ${String(ev.error).slice(0, 80)}`, 'failed', 100);
+    });
+    coordinator.on('taskNeedsHuman', (ev: any) => this.emitEvidence(`[Needs You] ${ev.identity?.name ?? ev.workerId}: ${String(ev.reason).slice(0, 160)}`));
+    coordinator.on('workerStalled', (ev: any) => {
+      this.emitEvidence(`[Supervisor] ${ev.workerId} stalled (${ev.stallClass}); stopping that attempt`);
+      abortHandles.get(ev.workerId)?.('stalled');
     });
 
     coordinator.getBlackboard().on('evidence', (evItem: any) => {
@@ -497,7 +494,33 @@ export class AgentRuntime {
 
     let result;
     try {
-      result = await coordinator.executeMission(mission.id, mission.prompt);
+      const provider = governed(await (this.deps.createProvider ?? ((m: string) => ModelProviderFactory.createProvider(m)))(mission.model));
+      const claims = new UrlClaims();
+      const questions = this.swarmQuestions;
+      const runDeps: WorkerRunDeps = {
+        missionId: mission.id,
+        provider,
+        blackboard: coordinator.getBlackboard(),
+        claims,
+        settings: { privacyMode: settings.privacyMode, policyRules: settings.policyRules, maxSteps: settings.maxSteps, maxCostUSD: settings.maxCostUSD },
+        signal,
+        startUrl: /^https?:/i.test(settings.defaultSearchEngine) ? new URL(settings.defaultSearchEngine).origin : undefined,
+        workerMaxSteps: Math.min(settings.maxSteps, DEFAULT_WORKER_MAX_STEPS),
+        workerMaxCostUSD: settings.maxCostUSD / maxWorkers,
+        supervisor,
+        abortHandles,
+        waitWhilePaused: () => this.swarmGate.wait(signal),
+        askUser: q => questions.ask(() => this.askUser(mission, q), signal),
+        emitWorker: p => this.emitWorkerEvent(p),
+        emitEvidence: t => this.emitEvidence(t),
+        recordEvent: (kind, data) => MissionRecorder.event(mission.id, kind, data)
+      };
+      result = await coordinator.executeMission(
+        mission.id,
+        mission.prompt,
+        (worker, task) => runWorkerTask(worker, task, runDeps),
+        { inlineExecutorFn: task => runNonBrowserTask(task, runDeps), signal }
+      );
     } catch (err) {
       // Cancelling shuts the swarm down underneath the coordinator ("Swarm is shut down"): expected, not a failure.
       if (signal.aborted) {
@@ -509,11 +532,11 @@ export class AgentRuntime {
       this.activeSwarm = null;
       await swarm.shutdown();
     }
-    if (signal.aborted || this.activeMission !== mission) return;
+    if (signal.aborted || this.activeMission !== mission || isTerminal(mission.state)) return; // cancelled while the swarm was unwinding
     if (result.success) {
       this.finishMission('completed', result.deliverableMarkdown, undefined, 'swarm_done');
     } else {
-      this.finishMission('failed', undefined, result.errors.join('; '), 'swarm_failed');
+      this.finishMission('failed', undefined, result.errors.join('; ') || 'No worker finished its task', 'swarm_failed');
     }
   }
 
@@ -620,7 +643,7 @@ export class AgentRuntime {
         telemetry: p => { if (live()) this.emitTelemetry(p); },
         worker: p => { if (live()) this.emitWorkerEvent({ id: 'worker-agent-1', name: 'Agent [Operator]', task: p.task, progress: p.progress, status: 'running' }); },
         event: (kind, data) => MissionRecorder.event(mission.id, kind, data),
-        action: a => {
+        toolPhase: a => {
           if (!live()) return;
           const url = (() => { try { return loop.tab.view.webContents.getURL(); } catch { return undefined; } })();
           if (a.phase === 'start') {

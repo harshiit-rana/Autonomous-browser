@@ -117,6 +117,12 @@ export interface WorkerEventPayload {
   task: string;
   progress: number;
   status: 'running' | 'done' | 'idle' | 'failed';
+  /** Swarm workers (#227): same value as `id`, the loop step number and the tool call the worker ran last. */
+  workerId?: string;
+  step?: number;
+  lastAction?: string;
+  /** Time of the event (ms since epoch); the e2e uses it to prove workers ran at the same time. */
+  at?: number;
 }
 
 export interface EvidenceEventPayload {
