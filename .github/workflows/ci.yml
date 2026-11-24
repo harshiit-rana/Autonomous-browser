@@ -8,6 +8,7 @@ on:
 
 jobs:
   test-and-build:
+    timeout-minutes: 30
     name: Build & Test Matrix (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -63,6 +64,36 @@ jobs:
 
       - name: Run UI Omnibar Tests
         run: npx tsx tests/test_ui.ts
+
+  e2e:
+    name: Real-App E2E (Playwright Electron, Linux xvfb)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run real-app e2e suite
+        run: xvfb-run -a npm run test:e2e
+
+      - name: Upload Playwright report and failure traces
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-e2e-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
 
   gate:
     name: Release Gate Audit

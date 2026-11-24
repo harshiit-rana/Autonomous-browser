@@ -130,3 +130,24 @@ Real-app evidence: `docs/audits/evidence/232/` (`scripts/dev/drive_live_grid.mjs
 | Real model | Every lifecycle run used a scripted model (or the real OpenAI client against a local server that never answers). Behaviour with a live model is not verified. | No key; #254. |
 | E2E harness | The acceptance items marked "E2E (#255)" are demonstrated with `drive_run04.mjs` and the real-Electron suite; they are not part of the Playwright `_electron` harness (#254/#255). | Harness lands separately. |
 | Anthropic/Gemini errors | `AnthropicModelProvider` still turns a non-abort API error into an `Anthropic Error: ...` response instead of throwing, so the governor does not retry it; only an abort now rejects. | Out of scope for #226; error taxonomy is #131 follow-up. |
+## Real-app e2e harness (#254 TST-01)
+
+Run and documented in `docs/dev/E2E.md`. Verified on Windows 11 x64, Node 22, Electron 33.4.11. Non-goals and gaps:
+
+| Area | Limitation | Reason / owner |
+|---|---|---|
+| macOS and Linux | The harness is written for all three (xvfb on Linux, `--no-sandbox` on Linux CI, `taskkill` vs process-group kill) but only Windows was run. | The 3-OS CI job with `xvfb-run -a` is #256; do not duplicate it here. |
+| CI wiring | `npm run test:e2e` is not in `npm test` and no workflow step runs it yet. | #256 (and the `e2e` check in #219). `npm test` keeps the unit suites; the two harness unit suites are in it. |
+| IPC hooks | The issue names IPC channels `e2e:state`, `e2e:frames`, `e2e:notifications`, `e2e:presence`, `e2e:approvals`. They are not IPC: the hooks publish a snapshot on `globalThis` read through `electronApp.evaluate()`, so no channel exists that a renderer could call. | Smaller attack surface, same information. Hooks live in a separate entry (`dist/main/e2e_entry.js`) excluded from the packaged app, instead of a build-time define. |
+| Tile frame stats (`e2e:frames`) | Not implemented: no live frame tiles exist yet. | #232. |
+| Presence coordinates (`e2e:presence`) | The snapshot records the last `presence:event`, but the product emits none yet, so it is always null. | #233. |
+| Approvals | `approve`/`deny` click the question card's Approve / Deny, and `approvals` lists policy questions. No approval inbox, screenshot or policy reasoning to assert on. | #238. |
+| Notifications | The spy records `Notification.show` calls; no spec asserts on one because no UI path triggers a notification deterministically. | #246. |
+| Video | Opt-in (`AEGIS_E2E_VIDEO=on`), because Playwright needs the ffmpeg download (`npx playwright install ffmpeg`). Traces and screenshots are always on for failures. | Avoids a hidden download in every run. |
+| Native tab pixels | Playwright screenshots each page (chrome renderer, each tab view) separately, not the composited window; the native view is not in the chrome image. | Use `scripts/dev/os_screenshot.ps1` (docs/dev/RUN_RECIPE.md) for what the user sees. |
+| Replay and live modes | Covered by unit tests with fake providers (`tests/test_e2e_model_modes.ts`). No replay recording or live spec was run in the real app, and live was never run (no key, cost). | Live evals belong to the nightly job in #256 / #257. |
+| Hermetic network | Chromium resolves only loopback, so the product's first tab (`https://duckduckgo.com`) always shows its error page in tests. A failure to load a real site is not testable here. | Intended; real-web behaviour is out of scope for deterministic e2e. |
+| First tab swap | The product replaces a failed initial load with its error page asynchronously, and the omnibar text is overwritten by tab patches. A user (or test) that navigates in that window can be overwritten, so the fixture waits for it to settle. | Product race, not fixed here; fixture works around it. |
+| Port collisions | The arena binds an ephemeral port; the app itself opens no fixed port. | n/a |
+| Parallelism | One worker: one real window, GPU and Chromium profile at a time. | Deliberate. |
+| Leftover processes | Teardown kills the process tree after 15 s; a crash of the test runner itself can still leave an Electron process behind. | Windows/CI cleanup is the runner's job. |
