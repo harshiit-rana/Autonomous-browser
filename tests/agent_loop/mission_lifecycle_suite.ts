@@ -323,8 +323,8 @@ for (const answer of ['Reload page', 'Skip'] as const) {
     const missionTabBefore = rt.getActiveMission()!.tabId;
     tab.view.webContents.forcefullyCrashRenderer();
     // A real renderer crash is what the Windows run and the running-app evidence use. On a headless Linux CI display the crash
-    // event did not arrive, so if it has not within 4 s the SAME event is emitted on the webContents (the handler under test is unchanged).
-    const crashDelivered = await until(() => tab.state.isCrashed, 4000, 'real crash').then(() => true, () => false);
+    // event did not arrive promptly, so if it has not within 25 s the SAME event is emitted on the webContents (the handler under test is unchanged).
+    const crashDelivered = await until(() => tab.state.isCrashed, 25000, 'real crash').then(() => true, () => false);
     if (!crashDelivered) (tab.view.webContents as any).emit('render-process-gone', {}, { reason: 'crashed', exitCode: 9 });
     await until(() => t.states().includes('paused'), 10000, 'paused after the crash');
     const paused = t.statuses.find(s => s.status === 'paused')!;
