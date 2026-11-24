@@ -29,5 +29,9 @@
   { "id": "packaging", "cmd": "tsx tests/test_packaging.ts", "area": "packaging" },
   { "id": "provider_factory", "cmd": "tsx tests/test_provider_factory.ts", "area": "models" },
   { "id": "agent_loop", "cmd": "tsx tests/test_agent_loop.ts", "area": "agent" },
+  { "id": "mission_state", "cmd": "tsx tests/test_mission_state.ts", "area": "agent" },
+  { "id": "mission_abort", "cmd": "tsx tests/test_mission_abort.ts", "area": "agent" },
+  { "id": "mission_resume", "cmd": "tsx tests/test_mission_resume.ts", "area": "agent" },
+  { "id": "mission_lifecycle", "cmd": "tsx tests/test_mission_lifecycle.ts", "area": "agent" },
   { "id": "frame_hub", "cmd": "tsx tests/test_frame_hub.ts", "area": "mission-control" }
 ]

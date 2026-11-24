@@ -109,6 +109,8 @@ export class AnthropicModelProvider implements IModelProvider {
 
       return this.parseResponse(response);
     } catch (err: any) {
+      // A cancelled mission is not a provider error: reject so the caller (governor, loop) sees the abort, not an "Anthropic Error" reply.
+      if (request.abortSignal?.aborted) throw err;
       return this.handleError(err);
     }
   }

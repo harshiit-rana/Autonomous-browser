@@ -70,7 +70,7 @@ export interface AgentLoopEmitter {
   evidence(text: string): void;
   status(state: 'running' | 'waiting_user' | 'waiting_approval' | 'paused', message: string): void;
   /** A tool is about to run (phase 'start': it may or may not complete if the app dies) or has finished ('end'). Feeds the resume checkpoint. */
-  action?(a: { step: number; tool: string; args: Record<string, any>; phase: 'start' | 'end'; ok?: boolean }): void;
+  action?(a: { step: number; tool: string; args: Record<string, any>; phase: 'start' | 'end'; ok?: boolean; label?: string }): void;
   telemetry?(p: { tokensTotal: number; costTotal: number; stepTokens: number; stepCost: number }): void;
   worker?(p: { task: string; progress: number }): void;
   /** Structured event for the mission log (verification, budget, stuck...). */
@@ -304,6 +304,7 @@ export class AgentLoop {
     if (this.recentObservations.length > 3) this.recentObservations.shift();
     this.history.push({ role: 'user', content: observation });
     emit.evidence(`[Step ${step}] Observing: "${snapshot.title}" (${snapshot.elements.size} elements)`);
+    emit.checkpoint?.(); // the page the model is about to be asked about is what a resume re-opens
 
     // Decide
     let response: ModelResponse;
@@ -436,7 +437,7 @@ export class AgentLoop {
 
     if (call.name === 'done') return this.finishWithVerification(call, args);
 
-    emit.action?.({ step, tool: call.name, args, phase: 'start' });
+    emit.action?.({ step, tool: call.name, args, phase: 'start', label: target?.name });
     const exec: ToolExecutionResult = await raceAbort(ToolExecutor.execute(call.name, args, {
       tab: this.tab,
       snapshot,

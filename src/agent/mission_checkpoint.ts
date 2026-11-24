@@ -50,8 +50,9 @@ export interface MissionCheckpoint {
   resumedFrom?: string;
 }
 
-export function summarizeAction(tool: string, args: Record<string, any>): string {
+export function summarizeAction(tool: string, args: Record<string, any>, label?: string): string {
   const parts: string[] = [];
+  if (label) parts.push(`target=${JSON.stringify(label.length > 60 ? label.slice(0, 60) + '...' : label)}`);
   for (const [k, v] of Object.entries(args || {})) {
     if (tool === 'type' && k === 'text') parts.push(`text=<${String(v).length} chars>`);
     else if (typeof v === 'string') parts.push(`${k}=${JSON.stringify(v.length > 80 ? v.slice(0, 80) + '...' : v)}`);

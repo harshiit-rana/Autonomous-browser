@@ -409,8 +409,18 @@ export class AgentRuntime {
       }
       mission.history.push({ role: 'user', content: '[System Notice] The page crashed and the user had it reloaded. Re-read the page before acting; earlier element references are stale.' });
     } else {
-      this.emitEvidence('[Tab Crashed] User chose to skip the crashed page');
-      mission.history.push({ role: 'user', content: '[System Notice] The page crashed and the user chose to skip it. The tab may be blank: navigate again or open a new tab, and do not rely on earlier element references.' });
+      // Skip = abandon the dead page: the mission continues in a fresh blank agent tab (the crashed tab stays for the user to close).
+      this.emitEvidence('[Tab Crashed] User chose to skip the crashed page; continuing in a new blank tab');
+      const lastUrl = (() => { try { return readCheckpoint(this.userData(), mission.id)?.url; } catch { return undefined; } })();
+      try {
+        const fresh = this.viewManager.createTab('about:blank', false, `agent:${mission.id}`);
+        try { await fresh.executor.ensureReady(); } catch { /* tools report their own errors */ }
+        if (this.activeLoop) this.activeLoop.tab = fresh;
+        mission.tabId = fresh.id;
+      } catch (err: any) {
+        logger.error('Could not open a replacement tab after the crash', err);
+      }
+      mission.history.push({ role: 'user', content: `[System Notice] The page crashed and the user chose to skip it. The mission continues in a new blank tab${lastUrl ? ` (the crashed page was ${lastUrl})` : ''}. Navigate again if you still need that page; earlier element references are stale.` });
     }
     if (this.activeMission !== mission || mission.state !== 'paused') return; // cancelled meanwhile
     this.isPaused = false;
@@ -611,7 +621,7 @@ export class AgentRuntime {
           if (!live()) return;
           const url = (() => { try { return loop.tab.view.webContents.getURL(); } catch { return undefined; } })();
           if (a.phase === 'start') {
-            this.ckptActions.push({ step: a.step, tool: a.tool, summary: summarizeAction(a.tool, a.args), sideEffect: SIDE_EFFECT_TOOLS.has(a.tool), phase: 'in_flight', url });
+            this.ckptActions.push({ step: a.step, tool: a.tool, summary: summarizeAction(a.tool, a.args, a.label), sideEffect: SIDE_EFFECT_TOOLS.has(a.tool), phase: 'in_flight', url });
           } else {
             const open = [...this.ckptActions].reverse().find(x => x.step === a.step && x.tool === a.tool && x.phase === 'in_flight');
             if (open) { open.phase = 'done'; open.ok = a.ok; }
