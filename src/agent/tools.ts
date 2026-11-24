@@ -210,6 +210,7 @@ export class ToolExecutor {
           const dir = args.direction === 'up' ? -1 : 1;
           const px = Math.min(Math.max(Number(args.amount) || 350, 20), 5000);
           await wc.executeJavaScript(`window.scrollBy({ top: ${dir * px}, behavior: 'instant' })`);
+          ex.announceScroll(dir < 0 ? 'up' : 'down');
           return { ok: true, output: `Scrolled ${args.direction} by ${px}px` };
         }
 

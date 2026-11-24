@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>Presence</title>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; background: transparent; overflow: hidden; pointer-events: none; user-select: none; }
+    /* One clipped box per visible page view: nothing is ever drawn outside the view it belongs to (toolbar, drawer). */
+    .view { position: absolute; overflow: hidden; pointer-events: none; }
+    .cursor { position: absolute; left: 0; top: 0; width: 0; height: 0; opacity: 1; transition: opacity .3s ease; will-change: transform; }
+    .cursor.idle { opacity: .35; }
+    /* The hotspot dot is centred exactly on the dispatched point; everything else hangs off it. */
+    .dot { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; box-sizing: border-box; border-radius: 50%; border: 2px solid #fff; background: var(--c, #7c5cff); box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 0 10px var(--c, #7c5cff); }
+    .arrow { position: absolute; left: 4px; top: 4px; font: 700 13px/1 system-ui, sans-serif; color: var(--c, #7c5cff); text-shadow: 0 0 2px #fff, 0 0 2px #fff; }
+    .chip { position: absolute; left: 14px; top: 12px; white-space: nowrap; font: 600 11px/1 system-ui, sans-serif; color: #fff; background: var(--c, #7c5cff); padding: 3px 7px; border-radius: 9px; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+    .chip.think { animation: pulse 1.2s ease-in-out infinite; }
+    .bubble { position: absolute; left: 14px; top: -26px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px/1 ui-monospace, Consolas, monospace; color: #0f1117; background: #fff; border: 2px solid var(--c, #7c5cff); padding: 3px 6px; border-radius: 6px; }
+    .bubble::after { content: ''; display: inline-block; width: 1px; height: 12px; margin-left: 1px; vertical-align: -2px; background: #0f1117; animation: blink 1s steps(2) infinite; }
+    .ripple { position: absolute; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; border: 3px solid var(--c, #7c5cff); animation: ripple .5s ease-out forwards; }
+    .target { position: absolute; box-sizing: border-box; border: 2px solid var(--c, #7c5cff); background: color-mix(in srgb, var(--c, #7c5cff) 14%, transparent); border-radius: 4px; box-shadow: 0 0 12px var(--c, #7c5cff); animation: fade 1.6s ease-out forwards; }
+    .beacon { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; border: 3px solid #ffb020; animation: beacon 1.1s ease-out infinite; }
+    .scroll { position: absolute; left: 18px; top: -4px; font: 700 18px/1 system-ui, sans-serif; color: var(--c, #7c5cff); text-shadow: 0 0 3px #fff; animation: fade 1s ease-out forwards; }
+    @keyframes ripple { from { transform: scale(.2); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+    @keyframes fade { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes pulse { 50% { opacity: .55; } }
+    @keyframes blink { 50% { opacity: 0; } }
+    @keyframes beacon { from { transform: scale(.5); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      .cursor { transition: none; }
+      .ripple, .chip.think, .beacon, .bubble::after { animation: none; }
+      .ripple { opacity: .6; transform: none; }
+      .target, .scroll { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="./presence.ts"></script>
+</body>
+</html>

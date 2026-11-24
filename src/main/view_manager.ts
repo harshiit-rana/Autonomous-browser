@@ -1,7 +1,7 @@
 import { WebContentsView, BrowserWindow } from 'electron';
 import { ActionExecutor } from '../core/action_executor.js';
 import {
-  TabState, TabsSnapshot, TabPatch, IPC_CHANNELS, PresenceEventPayload,
+  TabState, TabsSnapshot, TabPatch, IPC_CHANNELS, PresenceEvent,
   GridSource, GridSourcesPayload, LayoutRect, LayoutReport, WorkerPresentation
 } from '../ipc/contract.js';
 import { rootLogger } from '../infrastructure/logger.js';
@@ -12,6 +12,9 @@ import { FrameHub, electronFrameSource } from './frame_hub.js';
 import { parseLayoutReport, tilesById, tileZoomFactor } from './grid_layout.js';
 import { workerViews, WorkerViewRegistry, LiveWorkerView } from '../swarm/worker_view_registry.js';
 import type { WorkerEvent } from '../swarm/worker_host.js';
+import type { ExecutorPresence } from '../core/action_executor.js';
+import { PresenceLayer } from './presence_layer.js';
+import { electronDisplays, electronOverlayFactory } from './presence_window.js';
 
 export interface TabView {
   id: string;
@@ -56,10 +59,14 @@ export class ViewManager {
   private lastReportSeq = 0;
   private gridBroadcastTimer: NodeJS.Timeout | null = null;
   private registry: WorkerViewRegistry;
+  /** Click-through window that draws the agents' cursors above the native views (#233, ADR 0011). Not part of the view stack. */
+  public readonly presence: PresenceLayer;
+  private presenceSeq = 0;
 
   constructor(window: BrowserWindow, registry: WorkerViewRegistry = workerViews) {
     this.window = window;
     this.registry = registry;
+    this.presence = new PresenceLayer(window, { createOverlay: electronOverlayFactory(window), displays: electronDisplays() });
     const onAdded = (w: LiveWorkerView) => this.addWorker(w);
     const onRemoved = (w: LiveWorkerView) => this.removeWorker(w.id);
     registry.on('added', onAdded);
@@ -149,6 +156,7 @@ export class ViewManager {
     this.tabOrder.push(id);
     this.frameHub.addSource(electronFrameSource(id, view.webContents, executor));
     this.presentation.set(id, 'parked');
+    executor.setPresenceSink((e) => this.stampPresence(id, view.webContents, e, { name: tab.state.owner.startsWith('agent:') ? 'Agent' : 'Agent', color: '#7C5CFF' }));
 
     this.wireWebContentsEvents(tab);
 
@@ -341,6 +349,8 @@ export class ViewManager {
     // Frames first: the hub must stop using the page's debugger session before the executor detaches it.
     this.frameHub.removeSource(id);
     this.presentation.delete(id);
+    tab.executor.setPresenceSink(null);
+    this.presence.removeWorker(id);
     this.detachView(tab.view);
     if (wasActive) this.activeTabId = null;
 
@@ -392,6 +402,7 @@ export class ViewManager {
     this.workers.set(worker.id, entry);
     this.frameHub.addSource(electronFrameSource(worker.id, wc, worker.executor));
     this.presentation.set(worker.id, 'parked');
+    worker.executor.setPresenceSink((e) => this.stampPresence(worker.id, wc, e, { name: worker.identity.name, color: worker.identity.color, glyph: worker.identity.glyph }));
     // Attached from the start (ADR 0010 decision 1); hidden until the Grid or the Stage shows it.
     this.setViewVisible(worker.view, false);
     this.ensureAttached(worker.view);
@@ -420,6 +431,8 @@ export class ViewManager {
     if (!entry) return;
     this.frameHub.removeSource(id);
     this.presentation.delete(id);
+    entry.worker.executor.setPresenceSink(null);
+    this.presence.removeWorker(id);
     for (const c of entry.cleanups.splice(0)) c();
     this.setViewVisible(entry.worker.view, false);
     this.detachView(entry.worker.view);
@@ -515,7 +528,33 @@ export class ViewManager {
     this.scheduleGridBroadcast();
   }
 
+  /** Adds identity, sequence, time and the page's live zoom factor to what an executor reported, and hands it to the layer. */
+  private stampPresence(workerId: string, wc: Electron.WebContents, e: ExecutorPresence, who: { name?: string; color?: string; glyph?: string }): void {
+    let zoom = 1;
+    try { zoom = wc.isDestroyed() ? 1 : wc.getZoomFactor(); } catch {}
+    this.presence.emit({ workerId, seq: ++this.presenceSeq, ts: Date.now(), zoom, ...who, ...e });
+  }
+
+  /** Tell the presence layer where every page view is, and that parked/hidden ones are not (nothing may be drawn over them). */
+  private syncPresenceRects(): void {
+    const views: Array<[string, WebContentsView]> = [
+      ...[...this.tabs.values()].map(t => [t.id, t.view] as [string, WebContentsView]),
+      ...[...this.workers.values()].map(e => [e.worker.id, e.worker.view] as [string, WebContentsView])
+    ];
+    for (const [id, view] of views) {
+      const shown = this.presentation.get(id) === 'visible' && !this.isOverlayActive;
+      let rect: LayoutRect | null = null;
+      if (shown) { try { const b = view.getBounds(); rect = { x: b.x, y: b.y, width: b.width, height: b.height }; } catch {} }
+      this.presence.setViewRect(id, rect);
+    }
+  }
+
   public relayout(): void {
+    this.doRelayout();
+    this.syncPresenceRects();
+  }
+
+  private doRelayout(): void {
     if (this.window.isDestroyed()) return;
 
     // Issue #138 / ADR 0012: while a DOM modal is open no native view may cover it; hide them all (setVisible).
@@ -642,12 +681,9 @@ export class ViewManager {
   }
 
   // ------------------------------------------------------------------------------------------- broadcast
-  public broadcastPresence(payload: PresenceEventPayload): void {
-    try {
-      if (!this.window.isDestroyed()) {
-        this.window.webContents.send(IPC_CHANNELS.EVENT_PRESENCE, payload);
-      }
-    } catch {}
+  /** A presence event from any other source (e.g. 'think' / 'needs_you' from the mission). Drawn by the overlay window. */
+  public broadcastPresence(event: PresenceEvent): void {
+    this.presence.emit(event);
   }
 
   public getSnapshot(): TabsSnapshot {
