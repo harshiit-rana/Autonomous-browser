@@ -1,8 +1,8 @@
 {
   "total": 117,
   "verified": 1,
-  "partial": 72,
-  "notInApp": 44,
+  "partial": 71,
+  "notInApp": 45,
   "issues": [
     {
       "number": 101,
@@ -176,16 +176,11 @@
           "reachable": false
         },
         {
-          "path": "src/stealth/cursor_overlay.ts",
-          "type": "module",
-          "reachable": true
-        },
-        {
           "path": "src/renderer/index.html",
           "type": "file"
         }
       ],
-      "gap": "stealth/cursor_overlay.ts still uses innerHTML; electron_hardening.ts is orphaned; CSP unverified at runtime.",
+      "gap": "the page-injected cursor (stealth/cursor_overlay.ts) was deleted by #233; electron_hardening.ts is orphaned; CSP unverified at runtime.",
       "owningIssues": [
         247
       ]
@@ -905,11 +900,6 @@
       "kind": "code",
       "result": "partial",
       "evidence": [
-        {
-          "path": "src/stealth/cursor_overlay.ts",
-          "type": "module",
-          "reachable": true
-        },
         {
           "path": "src/renderer/app.ts",
           "type": "module",
@@ -2689,17 +2679,12 @@
       "number": 213,
       "title": "[ANI-01] Motion & choreography: implement the live \"agents at work\" animation with an early prototype, truthful event-to-motion mapping and measurable performance",
       "kind": "code",
-      "result": "partial",
+      "result": "not-in-app",
       "evidence": [
         {
           "path": "src/ui/motion_engine.ts",
           "type": "module",
           "reachable": false
-        },
-        {
-          "path": "src/stealth/cursor_overlay.ts",
-          "type": "module",
-          "reachable": true
         },
         {
           "path": "tests/test_workspace_and_motion.ts",

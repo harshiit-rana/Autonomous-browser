@@ -1,0 +1,9 @@
+{
+  "overlayVisible": true,
+  "focusable": false,
+  "alignedAtStart": 0,
+  "alignedAfterResize": 0,
+  "visibleWhileMinimised": false,
+  "visibleAfterRestore": true,
+  "alignedAfterRestore": 0
+}
