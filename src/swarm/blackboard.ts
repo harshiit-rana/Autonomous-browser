@@ -269,8 +269,9 @@ export class SharedBlackboard extends EventEmitter {
     return url.startsWith('consensus://');
   }
 
+  /** The site a page belongs to: host:port, so two local shops on one machine are two sites. */
   private static key(url: string): string {
-    try { return new URL(url).hostname.toLowerCase(); } catch { return url; }
+    try { return new URL(url).host.toLowerCase(); } catch { return url; }
   }
 
   /** Records that a worker was on this page. The report refuses to cite a URL that is not in this log. */
@@ -366,15 +367,16 @@ export class SharedBlackboard extends EventEmitter {
 
     // Deduplication: the same claim already recorded. A second page from ANOTHER domain that states it too is
     // corroboration (counted once per domain); the same domain again is a duplicated source and adds nothing.
+    const siteKey = SharedBlackboard.key(sourceUrl);
     const existingId = this.contentHashes.get(contentHash);
     if (existingId) {
       const existing = this.evidence.get(existingId);
       if (existing && !verdictRow && source.snapshotRef && source.pageTextHash) {
-        const sameDomain = SharedBlackboard.key(existing.source.url) === domain
-          || (existing.source.corroboratedBy ?? []).some(c => c.domain === domain);
+        const sameDomain = SharedBlackboard.key(existing.source.url) === siteKey
+          || (existing.source.corroboratedBy ?? []).some(c => c.domain === siteKey);
         if (!sameDomain) {
           (existing.source.corroboratedBy ??= []).push({
-            url: sourceUrl, domain, quote: source.quote!, pageTextHash: source.pageTextHash, snapshotRef: source.snapshotRef,
+            url: sourceUrl, domain: siteKey, quote: source.quote!, pageTextHash: source.pageTextHash, snapshotRef: source.snapshotRef,
             retrievedAt: source.retrievedAt, sourceType: source.sourceType
           });
           this.recomputeCluster(`${entity.toLowerCase()}::${attribute.toLowerCase()}`);

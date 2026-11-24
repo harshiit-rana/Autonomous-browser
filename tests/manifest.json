@@ -32,5 +32,6 @@
   { "id": "e2e_harness_guard", "cmd": "tsx tests/test_e2e_harness_guard.ts", "area": "e2e" },
   { "id": "agent_loop", "cmd": "tsx tests/test_agent_loop.ts", "area": "agent" },
   { "id": "frame_hub", "cmd": "tsx tests/test_frame_hub.ts", "area": "mission-control" },
-  { "id": "swarm_workers", "cmd": "tsx tests/test_swarm_workers.ts", "area": "swarm" }
+  { "id": "swarm_workers", "cmd": "tsx tests/test_swarm_workers.ts", "area": "swarm" },
+  { "id": "evidence_truth", "cmd": "tsx tests/test_evidence_truth.ts", "area": "swarm" }
 ]

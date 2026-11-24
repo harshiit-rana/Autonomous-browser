@@ -137,7 +137,7 @@ export function parseMoney(input: string, opts: { locale?: string } = {}): Money
   const amt = parseAmount(m[2], opts.locale);
   if (!amt) return null;
   const currency = marker ? (CURRENCY_SYMBOLS[marker] ?? marker) : undefined;
-  return { amount: amt.amount, currency, ...(amt.ambiguous ? { ambiguous: true } : {}) };
+  return { amount: amt.amount, ...(currency ? { currency } : {}), ...(amt.ambiguous ? { ambiguous: true } : {}) };
 }
 
 // ------------------------------------------------------------------------------------------------ confidence
