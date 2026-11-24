@@ -83,7 +83,10 @@ export interface WorkerHostOptions {
   profileId?: string;
   profile?: WorkerProfile;
   parentWindow?: BrowserWindow | null;
-  /** Add the view to `parentWindow` (default false: workers are hidden until a grid/stage shows them). */
+  /**
+   * Add the view to `parentWindow` here (default false). In the app, ViewManager attaches and places worker views
+   * (announced through worker_view_registry, #232); a view that is never shown is frozen with a 0x0 viewport (ADR 0010).
+   */
   attachToWindow?: boolean;
   runtime?: WorkerRuntime;
 }
@@ -113,7 +116,9 @@ export const electronWorkerRuntime: WorkerRuntime = {
         sandbox: true,
         webSecurity: true,
         allowRunningInsecureContent: false,
-        javascript: true
+        javascript: true,
+        // ADR 0010: a parked (hidden) worker keeps its timers at 10/s instead of 1/s; rAF still needs a visible view.
+        backgroundThrottling: false
       }
     });
   },
@@ -163,6 +168,8 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
   /** Captured at construction: Electron's `view.webContents` is undefined once the contents are destroyed. */
   private readonly wc: WebContents;
   public readonly executor: ActionExecutor;
+  /** The layout viewport the agent works in (CSS px); the Grid zooms the tile so the page keeps it (ADR 0010). */
+  public readonly viewport: { width: number; height: number };
   public status: WorkerStatus = 'idle';
   public lastError?: string;
   /** Outcome of the most recent settle wait (honest: includes deadline hits). */
@@ -232,6 +239,7 @@ export class WorkerHost extends EventEmitter implements IWorkerHost {
 
       const width = options.profile?.viewportWidth || 1280;
       const height = options.profile?.viewportHeight || 800;
+      this.viewport = { width, height };
       this.view.setBounds({ x: 0, y: 0, width, height });
 
       if (options.attachToWindow && this.parentWindow && !this.parentWindow.isDestroyed()) {

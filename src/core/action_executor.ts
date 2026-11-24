@@ -59,6 +59,19 @@ export class ActionExecutor {
     }
   }
 
+  /**
+   * The one CDP session of this page, attached by this executor (a second `debugger.attach` throws, and a detach by
+   * any consumer ends everyone's session, ADR 0010). Other consumers such as FrameHub borrow it through here and
+   * must never attach or detach themselves. Returns null when the page is gone or the attach failed.
+   */
+  public async borrowDebugger(): Promise<Electron.Debugger | null> {
+    if (this.webContents.isDestroyed()) return null;
+    // A crash or an external detach ends the session without telling us; re-attach in that case.
+    if (this.isAttached && !this.webContents.debugger.isAttached()) this.isAttached = false;
+    await this.attachCDP();
+    return this.webContents.debugger.isAttached() ? this.webContents.debugger : null;
+  }
+
   public async detachCDP(): Promise<void> {
     if (this.isAttached && !this.webContents.isDestroyed()) {
       try {

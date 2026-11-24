@@ -1,0 +1,942 @@
+{
+  "at": "2026-11-20T18:41:58.896Z",
+  "machine": "Windows_NT 10.0.26300 AMD Ryzen 7 7735HS with Radeon Graphics        ",
+  "workers": 6,
+  "results": [
+    {
+      "name": "test mode is on and logged as test-only",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "renderer sees test mode (exposes window.__tileStats)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "D1 repro: Grid with 3 tabs renders 3 tiles",
+      "ok": true,
+      "detail": "visibility fixture:visible | visibility fixture:visible | visibility fixture:visible"
+    },
+    {
+      "name": "D1 repro: every tab tile received >= 5 live frames in its first 2 s",
+      "ok": true,
+      "detail": "{\"tab_1795200041066_r8bpd\":{\"frames\":35,\"distinct\":35,\"source\":\"screencast\",\"size\":\"414x260\",\"first2s\":23},\"tab_1795200043658_dgsl4\":{\"frames\":35,\"distinct\":35,\"source\":\"screencast\",\"size\":\"414x260\",\"first2s\":23},\"tab_1795200043683_piqcy\":{\"frames\":36,\"distinct\":36,\"source\":\"screencast\",\"size\":\"414x260\",\"first2s\":24}}"
+    },
+    {
+      "name": "D1 repro: every tab tile shows >= 3 distinct frame hashes",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "6 real WorkerHosts spawned through SwarmManager",
+      "ok": true,
+      "detail": "fixture_1,fixture_2,fixture_3,fixture_4,fixture_5,fixture_6"
+    },
+    {
+      "name": "Grid shows 6 worker tiles + 3 tab tiles",
+      "ok": true,
+      "detail": "9 tiles"
+    },
+    {
+      "name": "worker tiles fully on screen are live native views (presentation visible)",
+      "ok": true,
+      "detail": "fixture_1,fixture_2,fixture_3,fixture_4,fixture_5,fixture_6"
+    },
+    {
+      "name": "every visible worker tile received >= 5 frames in its first 2 s of frames",
+      "ok": true,
+      "detail": "{\"fixture_1\":26,\"fixture_2\":26,\"fixture_3\":27,\"fixture_4\":27,\"fixture_5\":27,\"fixture_6\":27}"
+    },
+    {
+      "name": "every visible worker tile has >= 3 distinct frame hashes",
+      "ok": true,
+      "detail": "{\"fixture_1\":{\"frames\":47,\"distinct\":47,\"source\":\"screencast\",\"size\":\"409x257\",\"subscribedAt\":11044.70000000298,\"firstFrameAt\":11394.60000000149},\"fixture_2\":{\"frames\":47,\"distinct\":47,\"source\":\"screencast\",\"size\":\"409x257\",\"subscribedAt\":11044.70000000298,\"firstFrameAt\":11407.5},\"fixture_3\":{\"frames\":47,\"distinct\":47,\"source\":\"screencast\",\"size\":\"409x256\",\"subscribedAt\":11044.70000000298,\"firstFrameAt\":11458.800000000745},\"fixture_4\":{\"frames\":47,\"distinct\":47,\"source\":\"screencast\",\"size\":\"409x257\",\"subscribedAt\":11044.800000000745,\"firstFrameAt\":11477},\"fixture_5\":{\"frames\":46,\"distinct\":46,\"source\":\"screencast\",\"size\":\"409x255\",\"subscribedAt\":11044.800000000745,\"firstFrameAt\":11521.800000000745},\"fixture_6\":{\"frames\":46,\"distinct\":46,\"source\":\"screencast\",\"size\":\"409x255\",\"subscribedAt\":11044.800000000745,\"firstFrameAt\":11521.20000000298}}"
+    },
+    {
+      "name": "frames come from the CDP screencast (not capturePage)",
+      "ok": true,
+      "detail": "screencast,screencast,screencast,screencast,screencast,screencast"
+    },
+    {
+      "name": "OS screenshot: every visible tile region changed between two samples 1 s apart",
+      "ok": true,
+      "detail": "{\"fixture_1\":{\"changed\":3220,\"total\":104704},\"fixture_2\":{\"changed\":3286,\"total\":104704},\"fixture_3\":{\"changed\":3337,\"total\":104704},\"fixture_4\":{\"changed\":3237,\"total\":104704},\"fixture_5\":{\"changed\":3175,\"total\":104704},\"fixture_6\":{\"changed\":3140,\"total\":104704},\"tab_1795200041066_r8bpd\":{\"changed\":23520,\"total\":104704},\"tab_1795200043658_dgsl4\":{\"changed\":23783,\"total\":104704}}"
+    },
+    {
+      "name": "visible worker pages run (rAF >= 30/s)",
+      "ok": true,
+      "detail": "{\"fixture_1\":148,\"fixture_2\":152,\"fixture_3\":151,\"fixture_4\":152,\"fixture_5\":151,\"fixture_6\":151}"
+    },
+    {
+      "name": "tile zoom keeps the worker layout viewport near 1280 CSS px wide",
+      "ok": true,
+      "detail": "fixture_1: 1280x804 zoom 0.255 dpr 0.3193359375 | fixture_2: 1280x804 zoom 0.255 dpr 0.3193359375 | fixture_3: 1280x802 zoom 0.256 dpr 0.3203125 | fixture_4: 1280x804 zoom 0.255 dpr 0.3193359375 | fixture_5: 1280x798 zoom 0.255 dpr 0.3193359375 | fixture_6: 1280x798 zoom 0.255 dpr 0.3193359375"
+    },
+    {
+      "name": "under tile zoom an ActionExecutor click at the button centre lands (+1)",
+      "ok": true,
+      "detail": "clicks 0 -> 1"
+    },
+    {
+      "name": "main-process CPU with 8 streaming tiles <= 25 % of one core",
+      "ok": true,
+      "detail": "24.1 %"
+    },
+    {
+      "name": "tiles not fully on screen are parked with the \"Paused\" badge",
+      "ok": true,
+      "detail": "tab_1795200043683_piqcy:Paused (not on screen)"
+    },
+    {
+      "name": "parked tiles show a still (capturePage), not an empty box",
+      "ok": true,
+      "detail": "tab_1795200043683_piqcy:true"
+    },
+    {
+      "name": "after resize to 1000x700 every visible tile has a native view at its DOM rect (within 2 px)",
+      "ok": true,
+      "detail": "6/6 matched"
+    },
+    {
+      "name": "minimised: no frames are streamed",
+      "ok": true,
+      "detail": "464 -> 464"
+    },
+    {
+      "name": "restored: frames resume",
+      "ok": true,
+      "detail": "464 -> 496"
+    },
+    {
+      "name": "restored without reload (page timer counter kept counting)",
+      "ok": true,
+      "detail": "tmr 384 -> 440"
+    },
+    {
+      "name": "the first two crashes were auto-recovered by SwarmManager (tile went crashed, then visible)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "crashed worker tile keeps its last frame with a \"Crashed\" badge",
+      "ok": true,
+      "detail": "{\"id\":\"fixture_1\",\"presentation\":\"crashed\",\"hasFrame\":true,\"badge\":\"Crashed - last frame\",\"chip\":\"crashed\",\"name\":\"Ada - visibility fixture\",\"rect\":{\"x\":16.80000114440918,\"y\":140.40000915527344,\"w\":327.20001220703125,\"h\":204.5}}"
+    },
+    {
+      "name": "OS screenshot: the crashed tile region shows the last frame, not an empty box",
+      "ok": true,
+      "detail": "10880 non-dark samples"
+    },
+    {
+      "name": "recovered worker is live again (visible, frames flowing)",
+      "ok": true,
+      "detail": "visible 550 -> 563"
+    },
+    {
+      "name": "a retired worker tile disappears; the others keep streaming",
+      "ok": true,
+      "detail": "8 tiles"
+    },
+    {
+      "name": "after a chrome renderer reload the Grid streams again (new frames port)",
+      "ok": true,
+      "detail": "fixture_1:38 | fixture_2:38 | fixture_3:38 | fixture_4:38 | fixture_5:38 | tab_1795200041066_r8bpd:38 | tab_1795200043658_dgsl4:39 | tab_1795200043683_piqcy:39"
+    },
+    {
+      "name": "clicking a worker tile header shows that worker on the Stage without reload",
+      "ok": true,
+      "detail": "staged=true 1080x812 zoom 1 tmr 113->128"
+    },
+    {
+      "name": "log has no unhandled error",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "observations": {
+    "dpr": 1.25,
+    "d1_tiles": [
+      {
+        "id": "tab_1795200041066_r8bpd",
+        "presentation": "visible",
+        "hasFrame": true,
+        "badge": "",
+        "chip": "user tab",
+        "name": "visibility fixture",
+        "rect": {
+          "x": 16.80000114440918,
+          "y": 140.40000915527344,
+          "w": 331.3999938964844,
+          "h": 207.125
+        }
+      },
+      {
+        "id": "tab_1795200043658_dgsl4",
+        "presentation": "visible",
+        "hasFrame": true,
+        "badge": "",
+        "chip": "user tab",
+        "name": "visibility fixture",
+        "rect": {
+          "x": 361.8000183105469,
+          "y": 140.40000915527344,
+          "w": 331.3999938964844,
+          "h": 207.125
+        }
+      },
+      {
+        "id": "tab_1795200043683_piqcy",
+        "presentation": "visible",
+        "hasFrame": true,
+        "badge": "",
+        "chip": "user tab",
+        "name": "visibility fixture",
+        "rect": {
+          "x": 706.7999877929688,
+          "y": 140.40000915527344,
+          "w": 331.3999938964844,
+          "h": 207.125
+        }
+      }
+    ],
+    "d1_stats": {
+      "tab_1795200041066_r8bpd": {
+        "frames": 35,
+        "distinct": 35,
+        "source": "screencast",
+        "size": "414x260",
+        "first2s": 23
+      },
+      "tab_1795200043658_dgsl4": {
+        "frames": 35,
+        "distinct": 35,
+        "source": "screencast",
+        "size": "414x260",
+        "first2s": 23
+      },
+      "tab_1795200043683_piqcy": {
+        "frames": 36,
+        "distinct": 36,
+        "source": "screencast",
+        "size": "414x260",
+        "first2s": 24
+      }
+    },
+    "worker_tiles": [
+      {
+        "id": "fixture_1",
+        "presentation": "visible",
+        "hasFrame": true,
+        "badge": "",
+        "chip": "idle",
+        "name": "Ada - visibility fixture",
+        "rect": {
+          "x": 16.80000114440918,
+          "y": 140.40000915527344,
+          "w": 327.20001220703125,
+          "h": 204.5
+        }
+      },
+      {
+        "id": "fixture_2",
+        "presentation": "visible",
+        "hasFrame": true,
+        "badge": "",
+        "chip": "idle",
+        "name": "Bram - visibility fixture",
+        "rect": {
+          "x": 357.6000061035156,
+          "y": 140.40000915527344,
+          "w": 327.20001220703125,
+          "h": 204.5
+        }
+      },
+      {
+        "id": "fixture_3",
+        "presentation": "visible",
+        "hasFrame": true,
+        "badge": "",
+        "chip": "idle",
+        "name": "Cleo - visibility fixture",
+        "rect": {
+          "x": 698.4000244140625,
+          "y": 140.40000915527344,
+          "w": 327.20001220703125,
+          "h": 204.5
+        }
+      },
+      {
+        "id": "fixture_4",
+        "presentation": "visible",
+        "hasFrame": true,
+        "badge": "",
+        "chip": "idle",
+        "name": "Dax - visibility fixture",
+        "rect": {
+          "x": 1039.2000732421875,
+          "y": 140.40000915527344,
+          "w": 327.20001220703125,
+          "h": 204.5
+        }
+      },
+      {
+        "id": "fixture_5",
+        "presentation": "visible",
+        "hasFrame": true,
+        "badge": "",
+        "chip": "idle",
+        "name": "Eve - visibility fixture",
+        "rect": {
+          "x": 16.80000114440918,
+          "y": 423.70001220703125,
+          "w": 327.20001220703125,
+          "h": 204.5
+        }
+      },
+      {
+        "id": "fixture_6",
+        "presentation": "visible",
+        "hasFrame": true,
+        "badge": "",
+        "chip": "idle",
+        "name": "Finn - visibility fixture",
+        "rect": {
+          "x": 357.6000061035156,
+          "y": 423.70001220703125,
+          "w": 327.20001220703125,
+          "h": 204.5
+        }
+      }
+    ],
+    "worker_stats": {
+      "fixture_1": {
+        "frames": 47,
+        "distinct": 47,
+        "source": "screencast",
+        "size": "409x257",
+        "subscribedAt": 11044.70000000298,
+        "firstFrameAt": 11394.60000000149
+      },
+      "fixture_2": {
+        "frames": 47,
+        "distinct": 47,
+        "source": "screencast",
+        "size": "409x257",
+        "subscribedAt": 11044.70000000298,
+        "firstFrameAt": 11407.5
+      },
+      "fixture_3": {
+        "frames": 47,
+        "distinct": 47,
+        "source": "screencast",
+        "size": "409x256",
+        "subscribedAt": 11044.70000000298,
+        "firstFrameAt": 11458.800000000745
+      },
+      "fixture_4": {
+        "frames": 47,
+        "distinct": 47,
+        "source": "screencast",
+        "size": "409x257",
+        "subscribedAt": 11044.800000000745,
+        "firstFrameAt": 11477
+      },
+      "fixture_5": {
+        "frames": 46,
+        "distinct": 46,
+        "source": "screencast",
+        "size": "409x255",
+        "subscribedAt": 11044.800000000745,
+        "firstFrameAt": 11521.800000000745
+      },
+      "fixture_6": {
+        "frames": 46,
+        "distinct": 46,
+        "source": "screencast",
+        "size": "409x255",
+        "subscribedAt": 11044.800000000745,
+        "firstFrameAt": 11521.20000000298
+      }
+    },
+    "worker_frames_first_2s": {
+      "fixture_1": 26,
+      "fixture_2": 26,
+      "fixture_3": 27,
+      "fixture_4": 27,
+      "fixture_5": 27,
+      "fixture_6": 27
+    },
+    "os_tile_pixel_change": {
+      "fixture_1": {
+        "changed": 3220,
+        "total": 104704
+      },
+      "fixture_2": {
+        "changed": 3286,
+        "total": 104704
+      },
+      "fixture_3": {
+        "changed": 3337,
+        "total": 104704
+      },
+      "fixture_4": {
+        "changed": 3237,
+        "total": 104704
+      },
+      "fixture_5": {
+        "changed": 3175,
+        "total": 104704
+      },
+      "fixture_6": {
+        "changed": 3140,
+        "total": 104704
+      },
+      "tab_1795200041066_r8bpd": {
+        "changed": 23520,
+        "total": 104704
+      },
+      "tab_1795200043658_dgsl4": {
+        "changed": 23783,
+        "total": 104704
+      }
+    },
+    "worker_raf_per_s": {
+      "fixture_1": 148,
+      "fixture_2": 152,
+      "fixture_3": 151,
+      "fixture_4": 152,
+      "fixture_5": 151,
+      "fixture_6": 151
+    },
+    "worker_viewport": {
+      "fixture_1": {
+        "zoom": 0.25546875,
+        "page": {
+          "innerWidth": 1280,
+          "innerHeight": 804,
+          "dpr": 0.3193359375,
+          "visibility": "visible",
+          "clicks": 0,
+          "raf": 2694,
+          "tmr": 189
+        }
+      },
+      "fixture_2": {
+        "zoom": 0.25546875,
+        "page": {
+          "innerWidth": 1280,
+          "innerHeight": 804,
+          "dpr": 0.3193359375,
+          "visibility": "visible",
+          "clicks": 0,
+          "raf": 2697,
+          "tmr": 190
+        }
+      },
+      "fixture_3": {
+        "zoom": 0.25625,
+        "page": {
+          "innerWidth": 1280,
+          "innerHeight": 802,
+          "dpr": 0.3203125,
+          "visibility": "visible",
+          "clicks": 0,
+          "raf": 2695,
+          "tmr": 190
+        }
+      },
+      "fixture_4": {
+        "zoom": 0.25546875,
+        "page": {
+          "innerWidth": 1280,
+          "innerHeight": 804,
+          "dpr": 0.3193359375,
+          "visibility": "visible",
+          "clicks": 0,
+          "raf": 2695,
+          "tmr": 189
+        }
+      },
+      "fixture_5": {
+        "zoom": 0.25546875,
+        "page": {
+          "innerWidth": 1280,
+          "innerHeight": 798,
+          "dpr": 0.3193359375,
+          "visibility": "visible",
+          "clicks": 0,
+          "raf": 2693,
+          "tmr": 189
+        }
+      },
+      "fixture_6": {
+        "zoom": 0.25546875,
+        "page": {
+          "innerWidth": 1280,
+          "innerHeight": 798,
+          "dpr": 0.3193359375,
+          "visibility": "visible",
+          "clicks": 0,
+          "raf": 2694,
+          "tmr": 189
+        }
+      }
+    },
+    "main_cpu_pct_one_core": 24.1,
+    "visible_tiles_during_cpu": 8,
+    "parked_tiles": [
+      {
+        "id": "tab_1795200043683_piqcy",
+        "presentation": "parked",
+        "hasFrame": true,
+        "badge": "Paused (not on screen)",
+        "chip": "user tab",
+        "name": "visibility fixture",
+        "rect": {
+          "x": 16.80000114440918,
+          "y": 707,
+          "w": 327.20001220703125,
+          "h": 204.5
+        }
+      }
+    ],
+    "resize": {
+      "window": [
+        85,
+        0
+      ],
+      "visibleTiles": [
+        {
+          "id": "fixture_1",
+          "rect": {
+            "x": 16.80000114440918,
+            "y": 140.40000915527344,
+            "w": 307.4624938964844,
+            "h": 192.16250610351562
+          }
+        },
+        {
+          "id": "fixture_2",
+          "rect": {
+            "x": 337.8625183105469,
+            "y": 140.40000915527344,
+            "w": 307.4624938964844,
+            "h": 192.16250610351562
+          }
+        },
+        {
+          "id": "fixture_3",
+          "rect": {
+            "x": 658.9249877929688,
+            "y": 140.40000915527344,
+            "w": 307.4750061035156,
+            "h": 192.16250610351562
+          }
+        },
+        {
+          "id": "fixture_4",
+          "rect": {
+            "x": 16.80000114440918,
+            "y": 411.3625183105469,
+            "w": 307.4624938964844,
+            "h": 192.16250610351562
+          }
+        },
+        {
+          "id": "fixture_5",
+          "rect": {
+            "x": 337.8625183105469,
+            "y": 411.3625183105469,
+            "w": 307.4624938964844,
+            "h": 192.16250610351562
+          }
+        },
+        {
+          "id": "fixture_6",
+          "rect": {
+            "x": 658.9249877929688,
+            "y": 411.3625183105469,
+            "w": 307.4750061035156,
+            "h": 192.16250610351562
+          }
+        }
+      ],
+      "hwndRects": [
+        [
+          908,
+          513,
+          385,
+          242
+        ],
+        [
+          507,
+          513,
+          385,
+          242
+        ],
+        [
+          106,
+          513,
+          384,
+          242
+        ],
+        [
+          908,
+          175,
+          385,
+          242
+        ],
+        [
+          507,
+          175,
+          385,
+          242
+        ],
+        [
+          106,
+          175,
+          384,
+          242
+        ],
+        [
+          85,
+          0,
+          1250,
+          875
+        ],
+        [
+          1383,
+          530,
+          410,
+          255
+        ],
+        [
+          957,
+          530,
+          411,
+          255
+        ],
+        [
+          968,
+          175,
+          415,
+          260
+        ]
+      ]
+    },
+    "minimise": {
+      "liveId": "fixture_1",
+      "framesWhileMinimised": [
+        464,
+        464
+      ],
+      "framesAfterRestore": 496,
+      "tmrBefore": 384,
+      "tmrAfter": 440
+    },
+    "crash_trail": [
+      {
+        "crash": 1,
+        "ms": 0,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 1,
+        "ms": 100,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 1,
+        "ms": 200,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 1,
+        "ms": 300,
+        "presentation": "visible",
+        "badge": ""
+      },
+      {
+        "crash": 1,
+        "ms": 400,
+        "presentation": "visible",
+        "badge": ""
+      },
+      {
+        "crash": 2,
+        "ms": 0,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 2,
+        "ms": 100,
+        "presentation": "visible",
+        "badge": ""
+      },
+      {
+        "crash": 2,
+        "ms": 200,
+        "presentation": "visible",
+        "badge": ""
+      },
+      {
+        "crash": 2,
+        "ms": 300,
+        "presentation": "visible",
+        "badge": ""
+      },
+      {
+        "crash": 2,
+        "ms": 400,
+        "presentation": "visible",
+        "badge": ""
+      },
+      {
+        "crash": 3,
+        "ms": 0,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 100,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 200,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 300,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 400,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 500,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 600,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 700,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 800,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 900,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 1000,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 1100,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 1200,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 1300,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 1400,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 1500,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 1600,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 1700,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 1800,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 1900,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 2000,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 2100,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 2200,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 2300,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 2400,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 2500,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 2600,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 2700,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 2800,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 2900,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 3000,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 3100,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 3200,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 3300,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 3400,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 3500,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 3600,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 3700,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 3800,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      },
+      {
+        "crash": 3,
+        "ms": 3900,
+        "presentation": "crashed",
+        "badge": "Crashed - last frame"
+      }
+    ],
+    "crashed_tile_lit_samples": 10880
+  }
+}

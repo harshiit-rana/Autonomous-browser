@@ -12,7 +12,9 @@ import {
   EvidenceEventPayload,
   MissionStatusPayload,
   MissionStartRequest,
-  MissionQuestionPayload
+  MissionQuestionPayload,
+  LayoutReport,
+  GridSourcesPayload
 } from '../ipc/contract.js';
 
 contextBridge.exposeInMainWorld('aegis', {
@@ -43,8 +45,24 @@ contextBridge.exposeInMainWorld('aegis', {
     ipcRenderer.invoke(IPC_CHANNELS.LAYOUT_SET, { mode }),
   setOverlayActive: (active: boolean) =>
     ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_SET_ACTIVE, { active }),
-  getSwarmPreviews: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.SWARM_PREVIEWS_GET),
+  // Live Swarm Grid (#232). Frames arrive on a MessagePort that is handed to the page with window.postMessage
+  // (contextBridge cannot carry a MessagePort); see the 'frames:port' listener at the bottom of this file.
+  reportLayout: (report: LayoutReport) =>
+    ipcRenderer.invoke(IPC_CHANNELS.LAYOUT_REPORT, report),
+  getGridSources: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.GRID_SOURCES_GET),
+  promoteToStage: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GRID_PROMOTE, { id }),
+  getRuntimeFlags: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.RUNTIME_FLAGS_GET),
+  onGridSources: (callback: (data: GridSourcesPayload) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.EVENT_GRID_SOURCES, (_, data) => callback(data));
+  },
+  // TEST-ONLY (AEGIS_TEST_MODE=1); main rejects these channels in a normal run because no handler is registered.
+  testSpawnWorkers: (count: number, url: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.TEST_SPAWN_WORKERS, { count, url }),
+  testWorkerAction: (action: string, id?: string, x?: number, y?: number) =>
+    ipcRenderer.invoke(IPC_CHANNELS.TEST_WORKER_ACTION, { action, id, x, y }),
 
   // Mission execution & steering (Issues #140, #211, #214)
   startMission: (prompt: string, model?: string) =>
@@ -123,4 +141,10 @@ contextBridge.exposeInMainWorld('aegis', {
   onPresence: (callback: (data: any) => void) => {
     ipcRenderer.on(IPC_CHANNELS.EVENT_PRESENCE, (_, data) => callback(data));
   }
+});
+
+// Frames port (#232, ADR 0010): forward the MessagePort from main to the page's main world. Only this window's own
+// origin receives it (the chrome is a file:// page, whose origin serialises as "null", so '*' is used with a tag).
+ipcRenderer.on(IPC_CHANNELS.FRAMES_PORT, (event) => {
+  window.postMessage({ type: 'aegis:frames-port' }, '*', event.ports);
 });

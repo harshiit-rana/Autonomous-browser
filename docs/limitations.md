@@ -60,12 +60,27 @@ Measured in the real app on Windows 11 / Electron 33.4.11; details and evidence 
 | Area | Limitation | Owner |
 |---|---|---|
 | Model | No real-key mission has been run in the real app; the single-agent loop was exercised only against a scripted stub. | #225, #254 |
-| Swarm Grid | `getSwarmPreviews()` never returns with more than one tab open, so the Grid shows nothing. | #232 |
+| Swarm Grid | Fixed by #232: `getSwarmPreviews()` is deleted; the live Grid is described below. | #232 |
 | Overlays | Chrome-DOM overlays (agent cursor, approvals) are invisible over the page in Stage layout; modals work only because the page view is hidden. Nothing emits presence events. | #233, #237 |
 | Swarm | Workers make no model calls; evidence is the page title of a search engine. | #227, #230 |
 | Approvals | Since #225 a policy `ask` (e.g. navigation to a new origin) is shown in the drawer's question card with Approve / Deny; there is still no approval inbox or history. | #238 |
 | Credentials | The vault is encrypted at rest, but `getSettings()` returns the decrypted key to the renderer. | #248 |
 | Window | At the declared minimum size 800x600 the chrome overflows horizontally and the Theatre button is clipped. | #237 |
+
+## Live Swarm Grid (#232 LIV-01)
+
+Real-app evidence: `docs/audits/evidence/232/` (`scripts/dev/drive_live_grid.mjs`, Windows 11, 125 %, Electron 33.4.11). Unit tests: `tests/test_frame_hub.ts`. Edge cases not covered there are recorded here.
+
+| Area | Limitation | Reason / owner |
+|---|---|---|
+| Platforms / DPI | Measured on Windows 11 at 125 % only. macOS, Linux, real 100 % / 150 % settings, moving the window between monitors were not run. | Only machine available; #254/#255 e2e on other OSes. |
+| Many workers | Tiles are DOM cards in a scrolling grid; only tiles whose frame is fully on screen get a live native view (a native view cannot be clipped by the DOM). Others are parked (frozen) and show a still refreshed at most every 10 s. Measured up to 6 workers + 3 tabs (9 tiles); 20+ was not run. | Virtualising the DOM cards is not needed below ~100 tiles; not measured. |
+| Parked workers | A worker that is not on screen (Stage mode, scrolled out, overlay open) is frozen by Chromium (rAF 0, ADR 0010). There is no Theatre strip to keep workers running while the Stage shows something else. | Theatre strip / scheduler policy: #237 and later. |
+| Tile zoom | Worker tiles use `setZoomFactor(tileWidth / 1280)`; the run confirmed the page keeps a 1280 px layout viewport and an executor CDP click lands under zoom, but the page sees `devicePixelRatio` ~0.32 (a detectable tell, #250) and model screenshots under zoom were not checked. User tabs are never zoomed (shared default session, zoom persists per host), so they lay out at tile size in the Grid. | `Emulation.setDeviceMetricsOverride` not evaluated. |
+| Clicks in tiles | A tile's page area is the live page: clicking it interacts with the worker page. Promote uses the tile header / Stage button. | Native view above the DOM (ADR 0012). |
+| Pop-out, blur | "Pop-out to own window" and the "blur sensitive" toggle are not implemented: CSS `filter` cannot affect native views, and blurring the canvas would require hiding (freezing) the view. | Follow-up; frames are never persisted or sent to a model. |
+| Tile metadata | Tiles show identity, status ring, current task and progress from `worker:event`. Per-worker step count, cost and last evidence line are not shown because the runtime does not emit them per worker. | #230 / #241. |
+| Not exercised | GPU-process crash, sleep/wake, video/WebGL pages, fullscreen requests, other windows occluding the app (driver passes `--disable-features=CalculateNativeWinOcclusion`), glass-to-glass latency. Window minimise/restore, renderer crash with auto-recovery, worker retire, renderer reload and resize were exercised. | Not measured; do not infer. |
 
 ## Model setup and replay demo (#224 RUN-02)
 
