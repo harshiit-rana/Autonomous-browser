@@ -22,6 +22,8 @@ export interface AnthropicModelConfig {
   thinkingBudget?: number;
   enableThinking?: boolean;
   enablePromptCaching?: boolean;
+  /** API root override (a proxy, or a local server in tests). */
+  baseURL?: string;
 }
 
 export class AnthropicModelProvider implements IModelProvider {
@@ -40,7 +42,8 @@ export class AnthropicModelProvider implements IModelProvider {
 
     const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
     this.client = new Anthropic({
-      apiKey: apiKey || 'dummy-key-for-init'
+      apiKey: apiKey || 'dummy-key-for-init',
+      baseURL: config.baseURL || undefined
     });
   }
 

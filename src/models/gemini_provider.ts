@@ -13,6 +13,8 @@ const logger = rootLogger.child('gemini-provider');
 export interface GeminiProviderOptions {
   apiKey?: string;
   modelName?: string;
+  /** API root override (a proxy, or a local server in tests). */
+  baseUrl?: string;
 }
 
 export class GeminiModelProvider implements IModelProvider {
@@ -23,7 +25,7 @@ export class GeminiModelProvider implements IModelProvider {
   constructor(options: GeminiProviderOptions = {}) {
     this.modelName = options.modelName || 'gemini-2.0-flash';
     const apiKey = options.apiKey || process.env.GEMINI_API_KEY || '';
-    this.ai = new GoogleGenAI({ apiKey });
+    this.ai = new GoogleGenAI({ apiKey, ...(options.baseUrl ? { httpOptions: { baseUrl: options.baseUrl } } : {}) });
   }
 
   public async generate(request: ModelRequest): Promise<ModelResponse> {
