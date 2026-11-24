@@ -23,7 +23,7 @@ export interface PromptSection {
 }
 
 export interface RolePromptDefinition {
-  role: 'planner' | 'actor' | 'verifier' | 'summariser';
+  role: 'planner' | 'actor' | 'verifier' | 'summariser' | 'worker';
   version: string;
   sections: PromptSection[];
 }
@@ -70,6 +70,26 @@ export class PromptRegistry {
       role: 'actor',
       version: '1.0.0',
       sections: defaultActorSections
+    });
+
+    // Swarm worker (#227): one scoped sub-goal on its own tab; results leave only through report_finding.
+    this.rolePrompts.set('worker', {
+      role: 'worker',
+      version: '1.0.0',
+      sections: [
+        defaultActorSections[0],
+        defaultActorSections[1],
+        {
+          id: 'worker_role',
+          title: 'Swarm Worker',
+          content: `You are one worker of a swarm. You have your own browser tab and ONE sub-goal; other workers cover the other sources, so stay on your sub-goal. ` +
+            `Return findings only by calling report_finding with the entity (name the shop or site the fact is about), the attribute, the value, the url of the page and an EXACT quote copied from the page text that contains the value. ` +
+            `A finding whose quote is not on the current page is rejected and nothing is recorded. Never invent or estimate a value. ` +
+            `When you have reported everything your sub-goal asks for, call finish_task with status "completed". If the page cannot give you the facts, call finish_task with status "failed" and say why. ` +
+            `You cannot ask the user questions, and you must not try to get past login walls or bot checks.`,
+          isLocked: true
+        }
+      ]
     });
 
     // Independent completion check (#225): sees only the goal, criteria, recent observations and the proposed answer.

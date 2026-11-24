@@ -14,7 +14,8 @@ import { logger } from '../infrastructure/logger.js';
 
 export type TaskEffectClass = 'read' | 'write-idempotent' | 'write-non-idempotent' | 'financial';
 export type TaskRole = 'researcher' | 'extractor' | 'actor' | 'verifier' | 'summariser';
-export type TaskStatus = 'pending' | 'ready' | 'running' | 'completed' | 'failed' | 'cancelled';
+/** `needs_human`: the worker hit something only a person can pass (bot check, login wall). Not a failure, not retried (#227). */
+export type TaskStatus = 'pending' | 'ready' | 'running' | 'completed' | 'failed' | 'cancelled' | 'needs_human';
 
 export interface ScheduledTask {
   id: string;
@@ -114,9 +115,10 @@ export class SwarmScheduler {
       return;
     }
 
+    // A dependency that needs a human has produced what it could: its dependents run on the evidence that exists.
     const allDepsCompleted = task.dependencies.every(depId => {
       const dep = this.tasks.get(depId);
-      return dep && dep.status === 'completed';
+      return dep && (dep.status === 'completed' || dep.status === 'needs_human');
     });
 
     const anyDepFailedOrCancelled = task.dependencies.some(depId => {
@@ -259,7 +261,29 @@ export class SwarmScheduler {
     }
   }
 
-  public failTask(taskId: string, error: string, httpStatus?: number): void {
+  /** The task stopped at something only a person can pass. It is neither completed nor failed and is not retried. */
+  public markNeedsHuman(taskId: string, reason: string, partialResult?: any): void {
+    const task = this.tasks.get(taskId);
+    if (!task) return;
+    if (task.url) this.frontier.complete(task.url, false);
+    task.status = 'needs_human';
+    task.error = reason;
+    task.result = partialResult;
+    task.completedAt = Date.now();
+    for (const t of this.tasks.values()) {
+      if (t.status === 'pending' && t.dependencies.includes(taskId)) this.refreshTaskReadiness(t);
+    }
+  }
+
+  /** Why a ready task cannot be handed out right now (politeness, dedupe, robots), or null when nothing blocks it. */
+  public getBlockReason(taskId: string): string | null {
+    const task = this.tasks.get(taskId);
+    if (!task || !task.url) return null;
+    const check = this.frontier.canFetch(task.url);
+    return check.allowed ? null : (check.reason || 'blocked');
+  }
+
+  public failTask(taskId: string, error: string, httpStatus?: number, retryable: boolean = true): void {
     const task = this.tasks.get(taskId);
     if (!task) return;
 
@@ -267,7 +291,7 @@ export class SwarmScheduler {
       this.frontier.complete(task.url, false, httpStatus);
     }
 
-    if (task.retryCount < task.maxRetries) {
+    if (retryable && task.retryCount < task.maxRetries) {
       task.retryCount++;
       task.status = 'ready';
       task.assignedWorkerId = undefined;

@@ -1,26 +1,28 @@
 /**
  * Project Aegis - Swarm Coordinator & Orchestrator-Worker Architecture
- * 
- * Implements Issue #147 [SWM-01] & #155 [SWM-09]:
- * - Lead agent mission decomposition into a typed task DAG
- * - Parallel read branches vs serialized side-effecting steps
- * - Scoped sub-agent dispatch with least-privilege tool subsets
- * - Shared URL Frontier, Politeness, and Hazard Locks integration
- * - Evidence aggregation via SharedBlackboard with conflict verifier escalation
- * - Verified deliverable report synthesis with source citations
- * - Prompt injection sanitization for untrusted worker outputs
+ *
+ * Implements Issue #147 [SWM-01] & #155 [SWM-09], and since #227 [SWX-01] the workers are real:
+ * - Lead agent mission decomposition into a typed task DAG (one researcher task per source URL the user named)
+ * - Parallel read branches vs serialized side-effecting steps, never wider than settings.maxWorkers
+ * - Every browser task is run by the caller's `workerExecutorFn` (worker_task_runner.ts: the model-driven AgentLoop on the
+ *   worker's own view). There is no built-in executor: a worker that only navigates and reports the page title is gone.
+ * - Evidence aggregation via SharedBlackboard; conflicts are adjudicated by the verifier stage (a model call that reads
+ *   the quotes), never by "highest confidence"
+ * - Per-task failure handling: one retry, then the supervisor quarantines the task as poison
+ * - Verified deliverable report synthesis from blackboard evidence only, with the quote and source of every row
  */
 
 import { EventEmitter } from 'node:events';
 import { SwarmManager } from './swarm_manager.js';
 import { IWorkerHost } from './worker_host.js';
-import { SharedBlackboard, EvidenceItem } from './blackboard.js';
+import { SharedBlackboard, EvidenceItem, ConflictRecord } from './blackboard.js';
 import { SwarmScheduler, ScheduledTask, TaskRole, TaskEffectClass } from './scheduler.js';
 import { URLFrontier } from './url_frontier.js';
 import { HazardLockManager } from './hazards_and_locks.js';
 import { SwarmStageBarrier } from './barrier.js';
 import { ResourceGovernor } from './resource_governor.js';
 import { WorkerSupervisor } from './supervisor.js';
+import { clampMaxWorkers } from '../infrastructure/settings.js';
 import { logger } from '../infrastructure/logger.js';
 
 export interface MissionDecompositionPlan {
@@ -46,6 +48,7 @@ export interface MissionDecompositionPlan {
 export interface SwarmMissionResult {
   missionId: string;
   goal: string;
+  /** True when at least one browser task (researcher/extractor/actor) finished. */
   success: boolean;
   completedTasks: number;
   totalTasks: number;
@@ -53,7 +56,25 @@ export interface SwarmMissionResult {
   deliverableMarkdown: string;
   durationMs: number;
   errors: string[];
+  /** Tasks that stopped at a bot check or login wall and wait for a person. */
+  needsHuman: Array<{ taskId: string; name: string; reason: string }>;
+  unresolvedConflicts: Array<{ entity: string; attribute: string; claims: number }>;
 }
+
+export type WorkerExecutor = (worker: IWorkerHost, task: ScheduledTask) => Promise<any>;
+const BROWSER_ROLES: TaskRole[] = ['researcher', 'extractor', 'actor'];
+/** A ready task that politeness keeps blocked this long is failed with the frontier's reason instead of waiting forever. */
+const THROTTLE_GIVE_UP_MS = 30_000;
+const THROTTLE_POLL_MS = 100;
+
+export interface ExecuteOptions {
+  /** Runs verifier/summariser tasks without a browser view. When absent they run on a worker like any other task. */
+  inlineExecutorFn?: (task: ScheduledTask) => Promise<any>;
+  /** Mission abort (user cancel): workers stop taking tasks. */
+  signal?: AbortSignal;
+}
+
+const MAX_SOURCES = 8;
 
 export class SwarmCoordinator extends EventEmitter {
   private swarm: SwarmManager;
@@ -63,6 +84,7 @@ export class SwarmCoordinator extends EventEmitter {
   private lockManager: HazardLockManager;
   private governor: ResourceGovernor;
   private supervisor: WorkerSupervisor;
+  private maxWorkers: number;
 
   constructor(options: {
     swarm?: SwarmManager;
@@ -71,6 +93,8 @@ export class SwarmCoordinator extends EventEmitter {
     lockManager?: HazardLockManager;
     governor?: ResourceGovernor;
     supervisor?: WorkerSupervisor;
+    /** Workers that run at once (settings.maxWorkers); clamped to 1..8. */
+    maxWorkers?: number;
   } = {}) {
     super();
     this.blackboard = options.blackboard || new SharedBlackboard({ inMemory: true });
@@ -80,20 +104,50 @@ export class SwarmCoordinator extends EventEmitter {
     this.governor = options.governor || new ResourceGovernor();
     this.supervisor = options.supervisor || new WorkerSupervisor();
     this.swarm = options.swarm || new SwarmManager();
+    this.maxWorkers = clampMaxWorkers(options.maxWorkers);
+    this.supervisor.on('workerStalled', e => this.emit('workerStalled', e));
+    this.supervisor.on('poisonTask', e => this.emit('poisonTask', e));
+  }
+
+  /** Source URLs the user named in the prompt, canonical-deduplicated, in the order given. */
+  public static extractSourceUrls(prompt: string): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const m of prompt.matchAll(/https?:\/\/[^\s"'<>)\]]+/gi)) {
+      const raw = m[0].replace(/[.,;:!?]+$/, '');
+      let key: string;
+      try { key = URLFrontier.normalize(raw); } catch { continue; }
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(raw);
+    }
+    return out.slice(0, MAX_SOURCES);
   }
 
   /**
    * Decomposes a high-level mission into an executable task DAG:
    * Identifies if parallelism is justified (e.g. multi-site comparison or research).
-   * If single linear task, width = 1.
+   * If single linear task, width = 1. A prompt that names source URLs gets one researcher task per URL.
    */
   public planMission(missionId: string, prompt: string): MissionDecompositionPlan {
     const trimmed = prompt.trim();
     const isComparison = /compare|vs|across|multiple|shops?|stores?|prices/i.test(trimmed);
     const isMultiSiteResearch = /research|find\s+(several|top|different|3|5)/i.test(trimmed);
+    const urls = SwarmCoordinator.extractSourceUrls(trimmed);
 
     // 1. Parallel Research & Comparison Plan
     if (isComparison || isMultiSiteResearch) {
+      const sources: Array<{ name: string; url?: string; instruction: string }> = urls.length >= 2
+        ? urls.map((url, i) => ({
+            name: `Read source ${i + 1} (${new URL(url).host})`,
+            url,
+            instruction: `Mission: "${trimmed}". Your sub-goal: read ONLY ${url} (follow links on that site if you need to) and report, with exact quotes from the page, every fact the mission asks for. Name the site in each entity.`
+          }))
+        : ['A', 'B', 'C'].map((letter, i) => ({
+            name: `Query ${['Primary', 'Alternative', 'Benchmark'][i]} Source ${letter}`,
+            instruction: `Mission: "${trimmed}". Your sub-goal: find ONE independent source (${['first', 'second', 'third'][i]} choice; other workers cover the others, do not reuse a site another worker already took) and report, with exact quotes from its page, every fact the mission asks for. Name the site in each entity.`
+          }));
+      const t = (i: number) => `${missionId}_t${i + 1}`;
       return {
         missionId,
         goal: trimmed,
@@ -101,33 +155,16 @@ export class SwarmCoordinator extends EventEmitter {
         stages: [
           {
             stageName: 'Discovery & Extraction',
-            parallelism: 3,
-            tasks: [
-              {
-                id: `${missionId}_t1`,
-                name: 'Query Primary Source A',
-                role: 'researcher',
-                instruction: `Search and extract details, specs, and price for: "${trimmed}" from primary vendor`,
-                effectClass: 'read',
-                dependencies: []
-              },
-              {
-                id: `${missionId}_t2`,
-                name: 'Query Alternative Source B',
-                role: 'researcher',
-                instruction: `Search and extract details, specs, and price for: "${trimmed}" from second vendor`,
-                effectClass: 'read',
-                dependencies: []
-              },
-              {
-                id: `${missionId}_t3`,
-                name: 'Query Benchmark Source C',
-                role: 'researcher',
-                instruction: `Search and extract details, specs, and price for: "${trimmed}" from third vendor`,
-                effectClass: 'read',
-                dependencies: []
-              }
-            ]
+            parallelism: Math.min(sources.length, this.maxWorkers),
+            tasks: sources.map((s, i) => ({
+              id: t(i),
+              name: s.name,
+              role: 'researcher' as TaskRole,
+              url: s.url,
+              instruction: s.instruction,
+              effectClass: 'read' as TaskEffectClass,
+              dependencies: []
+            }))
           },
           {
             stageName: 'Verification & Adjudication',
@@ -137,9 +174,9 @@ export class SwarmCoordinator extends EventEmitter {
                 id: `${missionId}_t_verify`,
                 name: 'Cross-Check Conflicts & Validate Claims',
                 role: 'verifier',
-                instruction: 'Inspect evidence blackboard, resolve conflicting claims or price mismatches',
+                instruction: 'Inspect evidence blackboard, resolve conflicting claims by comparing their quotes',
                 effectClass: 'read',
-                dependencies: [`${missionId}_t1`, `${missionId}_t2`, `${missionId}_t3`]
+                dependencies: sources.map((_, i) => t(i))
               }
             ]
           },
@@ -175,6 +212,7 @@ export class SwarmCoordinator extends EventEmitter {
               id: `${missionId}_t1`,
               name: 'Execute Target Goal',
               role: 'researcher',
+              url: urls[0],
               instruction: trimmed,
               effectClass: /buy|purchase|submit|sign\s*up|login/i.test(trimmed) ? 'write-non-idempotent' : 'read',
               dependencies: []
@@ -186,139 +224,164 @@ export class SwarmCoordinator extends EventEmitter {
   }
 
   /**
-   * Executes a multi-stage swarm mission
+   * Executes a multi-stage swarm mission. `workerExecutorFn` runs one browser task on one worker
+   * (worker_task_runner.ts `runWorkerTask` in the app).
    */
   public async executeMission(
     missionId: string,
     prompt: string,
-    workerExecutorFn?: (worker: IWorkerHost, task: ScheduledTask) => Promise<any>
+    workerExecutorFn: WorkerExecutor,
+    options: ExecuteOptions = {}
   ): Promise<SwarmMissionResult> {
     const startTime = Date.now();
     const plan = this.planMission(missionId, prompt);
     const errors: string[] = [];
+    const needsHuman: SwarmMissionResult['needsHuman'] = [];
     let completedTasks = 0;
+    let browserTasksCompleted = 0;
     let totalTasks = 0;
+    const aborted = () => options.signal?.aborted === true;
 
     logger.info('Starting swarm mission execution', { missionId, stages: plan.stages.length, justification: plan.justification });
     this.emit('missionStarted', { missionId, plan });
+    this.supervisor.start();
 
-    // Iterate through workflow stages
-    for (const stage of plan.stages) {
-      totalTasks += stage.tasks.length;
-      logger.info('Starting swarm stage', { stageName: stage.stageName, taskCount: stage.tasks.length });
-      this.emit('stageStarted', { stageName: stage.stageName, taskCount: stage.tasks.length });
+    try {
+      for (const stage of plan.stages) {
+        if (aborted()) break;
+        totalTasks += stage.tasks.length;
+        logger.info('Starting swarm stage', { stageName: stage.stageName, taskCount: stage.tasks.length });
+        this.emit('stageStarted', { stageName: stage.stageName, taskCount: stage.tasks.length });
 
-      // Add tasks to scheduler
-      for (const t of stage.tasks) {
-        this.scheduler.addTask({
-          id: t.id,
-          missionId,
-          name: t.name,
-          role: t.role,
-          url: t.url,
-          instruction: t.instruction,
-          priority: 10,
-          dependencies: t.dependencies,
-          effectClass: t.effectClass,
-          maxRetries: 1
-        });
-      }
+        for (const t of stage.tasks) {
+          this.scheduler.addTask({
+            id: t.id,
+            missionId,
+            name: t.name,
+            role: t.role,
+            url: t.url,
+            instruction: t.instruction,
+            priority: 10,
+            dependencies: t.dependencies,
+            effectClass: t.effectClass,
+            maxRetries: 1
+          });
+        }
+        const stageIds = new Set(stage.tasks.map(t => t.id));
+        const stageBarrier = new SwarmStageBarrier(stage.stageName, stage.tasks.length, stage.tasks.length);
 
-      // Dynamic worker scaling based on resource governance
-      const metrics = this.governor.getMetrics();
-      const activeConcurrency = Math.min(stage.parallelism, metrics.recommendedConcurrency);
-      const activeWorkers = await this.swarm.spawnSwarm(activeConcurrency, 'swarm_worker');
-
-      // Setup stage barrier with 100% quorum for verification/synthesis or 75% for wide fan-out
-      const stageBarrier = new SwarmStageBarrier(
-        stage.stageName,
-        stage.tasks.length,
-        stage.tasks.length > 2 ? Math.ceil(stage.tasks.length * 0.75) : stage.tasks.length
-      );
-
-      // Dispatch tasks to workers
-      const workerPromises = activeWorkers.map(async (worker) => {
-        this.supervisor.registerWorker(worker.id);
-
-        while (true) {
-          const task = this.scheduler.getNextTask(worker.id);
-          if (!task) break;
-
-          this.emit('taskStarted', { workerId: worker.id, identity: worker.identity, taskId: task.id, role: task.role });
-
+        // One finished (or failed, or parked) task = one arrival, so the barrier never waits on work that will not come.
+        const finishTask = async (workerId: string, identity: any, task: ScheduledTask, run: () => Promise<any>) => {
+          this.emit('taskStarted', { workerId, identity, taskId: task.id, role: task.role, name: task.name });
           try {
-            // Hazard lock handling for side-effects
             if (task.effectClass !== 'read') {
-              const lockKey = HazardLockManager.makeKey('form', task.url || 'default', task.id);
-              const lockResult = this.lockManager.acquireLock(lockKey, worker.id);
-              if (!lockResult.acquired) {
-                throw new Error(`Cannot execute task: ${lockResult.reason}`);
-              }
+              const lock = this.lockManager.acquireLock(HazardLockManager.makeKey('form', task.url || 'default', task.id), workerId);
+              if (!lock.acquired) throw new Error(`Cannot execute task: ${lock.reason}`);
             }
-
-            let taskResult: any;
-            if (workerExecutorFn) {
-              taskResult = await workerExecutorFn(worker, task);
+            const taskResult = await run();
+            if (taskResult && taskResult.status === 'needs_human') {
+              this.scheduler.markNeedsHuman(task.id, taskResult.reason || 'needs a person', taskResult);
+              needsHuman.push({ taskId: task.id, name: task.name, reason: String(taskResult.reason || taskResult.summary || '') });
+              this.emit('taskNeedsHuman', { workerId, identity, taskId: task.id, reason: taskResult.reason });
             } else {
-              // Built-in scoped execution fallback
-              taskResult = await this.defaultTaskExecution(worker, task);
+              this.scheduler.completeTask(task.id, taskResult);
+              completedTasks++;
+              if (BROWSER_ROLES.includes(task.role)) browserTasksCompleted++;
+              this.emit('taskCompleted', { workerId, identity, taskId: task.id, result: taskResult });
             }
-
-            this.scheduler.completeTask(task.id, taskResult);
-            completedTasks++;
-            stageBarrier.arrive(worker.id, taskResult);
-            this.emit('taskCompleted', { workerId: worker.id, identity: worker.identity, taskId: task.id, result: taskResult });
           } catch (err: any) {
-            errors.push(`Task ${task.id} failed: ${err.message}`);
-            this.scheduler.failTask(task.id, err.message);
-            this.emit('taskFailed', { workerId: worker.id, identity: worker.identity, taskId: task.id, error: err.message });
+            const reason = String(err?.message ?? err);
+            if (aborted()) {
+              this.scheduler.failTask(task.id, reason, undefined, false);
+              this.emit('taskFailed', { workerId, identity, taskId: task.id, error: reason, cancelled: true });
+            } else {
+              // First failure: one retry (with what the earlier attempt already reported). Second: poison, no more restarts.
+              const poison = this.supervisor.recordTaskFailure(task.id, reason);
+              this.scheduler.failTask(task.id, reason, undefined, !poison);
+              const permanent = this.scheduler.getTask(task.id)?.status === 'failed';
+              if (permanent) errors.push(`Task ${task.id} (${task.name}) failed${poison ? ' and was quarantined' : ''}: ${reason}`);
+              this.emit(permanent ? 'taskFailed' : 'taskRetry', { workerId, identity, taskId: task.id, error: reason, poison });
+            }
           } finally {
             if (task.effectClass !== 'read') {
-              const lockKey = HazardLockManager.makeKey('form', task.url || 'default', task.id);
-              this.lockManager.releaseLock(lockKey, worker.id);
+              this.lockManager.releaseLock(HazardLockManager.makeKey('form', task.url || 'default', task.id), workerId);
             }
+            stageBarrier.arrive(`${task.id}#${task.retryCount}`, { status: this.scheduler.getTask(task.id)?.status });
+          }
+        };
+
+        const browserStage = stage.tasks.some(t => BROWSER_ROLES.includes(t.role));
+        if (!browserStage && options.inlineExecutorFn) {
+          // Verifier / summariser: no browser view, so no extra tab appears for them.
+          for (const t of stage.tasks) {
+            const task = this.scheduler.getNextTask('coordinator');
+            if (!task || aborted()) break;
+            await finishTask('coordinator', { name: 'Coordinator', color: '#888888', glyph: 'C' }, task, () => options.inlineExecutorFn!(task));
+          }
+        } else {
+          // Width: the stage's parallelism, what the machine recommends right now, and settings.maxWorkers.
+          const metrics = this.governor.getMetrics();
+          const width = Math.max(1, Math.min(stage.parallelism, metrics.recommendedConcurrency, this.maxWorkers));
+          const activeWorkers = await this.swarm.spawnSwarm(width, 'swarm_worker');
+
+          const workerPromises = activeWorkers.map(async worker => {
+            this.supervisor.registerWorker(worker.id);
+            let blockedSince = 0;
+            while (!aborted()) {
+              const task = this.scheduler.getNextTask(worker.id);
+              if (!task) {
+                // Nothing handed out. If tasks of this stage are only held back by politeness (or a retry is pending), wait for them.
+                const ready = this.scheduler.getAllTasks().filter(t => stageIds.has(t.id) && t.status === 'ready' && !t.assignedWorkerId);
+                if (ready.length === 0) break;
+                blockedSince = blockedSince || Date.now();
+                if (Date.now() - blockedSince > THROTTLE_GIVE_UP_MS) {
+                  for (const r of ready) {
+                    const why = this.scheduler.getBlockReason(r.id) || 'not scheduled';
+                    this.scheduler.failTask(r.id, `Never started: ${why}`, undefined, false);
+                    errors.push(`Task ${r.id} (${r.name}) never started: ${why}`);
+                    stageBarrier.arrive(`${r.id}#blocked`, { status: 'failed' });
+                  }
+                  break;
+                }
+                await new Promise(r => setTimeout(r, THROTTLE_POLL_MS));
+                continue;
+              }
+              blockedSince = 0;
+              await finishTask(worker.id, worker.identity, task, () => workerExecutorFn(worker, task));
+            }
+          });
+
+          await Promise.all(workerPromises);
+          await stageBarrier.await(2000).catch(() => undefined); // every task of the stage has arrived by now
+          for (const w of activeWorkers) {
+            this.supervisor.unregisterWorker(w.id);
+            await this.swarm.retireWorker(w.id, true);
           }
         }
-      });
 
-      // Wait for all workers to finish their assigned work in this stage
-      await Promise.all(workerPromises);
-      await stageBarrier.await(30000); // 30s timeout
-
-      // Scale down or recycle stage workers
-      for (const w of activeWorkers) {
-        this.supervisor.unregisterWorker(w.id);
-        await this.swarm.retireWorker(w.id, true);
+        this.emit('stageCompleted', { stageName: stage.stageName });
       }
-
-      this.emit('stageCompleted', { stageName: stage.stageName });
+    } finally {
+      this.supervisor.stop();
     }
 
-    // Check for unresolved blackboard conflicts and adjudicate
+    // Conflicts nobody could settle stay open and are reported as such: no confidence-based guess is made here.
     const unresolved = this.blackboard.getUnresolvedConflicts();
-    if (unresolved.length > 0) {
-      logger.info('Adjudicating remaining evidence conflicts', { count: unresolved.length });
-      for (const c of unresolved) {
-        // Fallback consensus: pick item with highest confidence
-        const best = c.items.sort((a, b) => b.confidence - a.confidence)[0];
-        this.blackboard.resolveConflict(c.entity, c.attribute, best.value, 'verifier_adjudicated');
-      }
-    }
-
-    // Synthesize final deliverable markdown
     const allEvidence = this.blackboard.getAllEvidence();
-    const deliverableMarkdown = this.synthesizeReport(prompt, allEvidence, errors);
+    const deliverableMarkdown = this.synthesizeReport(prompt, allEvidence, errors, { unresolved, needsHuman });
 
     const result: SwarmMissionResult = {
       missionId,
       goal: prompt,
-      success: completedTasks > 0,
+      success: browserTasksCompleted > 0,
       completedTasks,
       totalTasks,
       evidence: allEvidence,
       deliverableMarkdown,
       durationMs: Date.now() - startTime,
-      errors
+      errors,
+      needsHuman,
+      unresolvedConflicts: unresolved.map(c => ({ entity: c.entity, attribute: c.attribute, claims: c.items.length }))
     };
 
     logger.info('Swarm mission finished', { missionId, success: result.success, evidenceCount: allEvidence.length });
@@ -327,79 +390,51 @@ export class SwarmCoordinator extends EventEmitter {
   }
 
   /**
-   * Built-in execution logic for scoped workers
+   * Synthesizes a structured deliverable report from blackboard evidence only: every row carries the quote that was
+   * verified on the page and the page it came from.
    */
-  private async defaultTaskExecution(worker: IWorkerHost, task: ScheduledTask): Promise<any> {
-    if (task.role === 'researcher' || task.role === 'extractor') {
-      const url = task.url || 'https://duckduckgo.com';
-      const domState = await worker.navigate(url);
-      
-      // Post discovered evidence to blackboard
-      this.blackboard.postEvidence({
-        entity: domState.title || 'Page',
-        attribute: 'url',
-        category: 'fact',
-        value: domState.url,
-        source: {
-          url: domState.url,
-          quote: domState.title,
-          sourceType: 'primary'
-        },
-        workerId: worker.id,
-        confidence: 0.95
-      });
-
-      return {
-        url: domState.url,
-        title: domState.title,
-        elementCount: domState.elementCount
-      };
-    } else if (task.role === 'verifier') {
-      const conflicts = this.blackboard.getUnresolvedConflicts();
-      for (const c of conflicts) {
-        const top = c.items.sort((a, b) => b.confidence - a.confidence)[0];
-        this.blackboard.resolveConflict(c.entity, c.attribute, top.value, 'verifier_adjudicated');
-      }
-      return { verifiedConflicts: conflicts.length };
-    }
-
-    return { status: 'completed' };
-  }
-
-  /**
-   * Synthesizes a structured, verified deliverable report with explicit citations
-   */
-  public synthesizeReport(goal: string, evidence: EvidenceItem[], errors: string[]): string {
+  public synthesizeReport(
+    goal: string,
+    evidence: EvidenceItem[],
+    errors: string[],
+    extra: { unresolved?: ConflictRecord[]; needsHuman?: SwarmMissionResult['needsHuman'] } = {}
+  ): string {
+    const rows = evidence.filter(e => !e.source.url.startsWith('consensus://'));
+    const notes = errors.length + (extra.needsHuman?.length ?? 0) + (extra.unresolved?.length ?? 0);
     const lines: string[] = [];
     lines.push(`# Swarm Mission Report: ${goal}`);
-    lines.push(`\n**Status:** ${errors.length === 0 ? 'Verified Complete' : 'Completed with Notes'}`);
-    lines.push(`**Evidence Items Gathered:** ${evidence.length}`);
+    lines.push(`\n**Status:** ${notes === 0 ? 'Verified Complete' : 'Completed with Notes'}`);
+    lines.push(`**Evidence Items Gathered:** ${rows.length}`);
     lines.push(`**Timestamp:** ${new Date().toISOString()}`);
 
-    if (evidence.length > 0) {
+    const cell = (v: unknown, max: number) => String(v ?? '').replace(/[|\n\r]/g, ' ').slice(0, max);
+    if (rows.length > 0) {
       lines.push('\n## Verified Findings & Evidence Table');
-      lines.push('| Entity | Attribute | Value | Source URL | Confidence |');
+      lines.push('| Entity | Attribute | Value | Quote (verified on the page) | Source URL |');
       lines.push('|---|---|---|---|---|');
-
-      for (const item of evidence) {
-        // Sanitize string to prevent prompt injection or broken markdown
-        const safeEntity = String(item.entity).replace(/[|\n\r]/g, ' ').slice(0, 50);
-        const safeAttr = String(item.attribute).replace(/[|\n\r]/g, ' ').slice(0, 30);
-        const safeVal = String(item.normalized.text || item.value).replace(/[|\n\r]/g, ' ').slice(0, 60);
-        const safeUrl = item.source.url.replace(/[|\n\r]/g, ' ');
-        const conf = `${Math.round(item.confidence * 100)}%`;
-
-        lines.push(`| ${safeEntity} | ${safeAttr} | ${safeVal} | [${item.source.domain || 'link'}](${safeUrl}) | ${conf} |`);
+      for (const item of rows) {
+        const safeVal = cell(item.normalized.text || item.value, 60);
+        const quote = item.source.quote ? `"${cell(item.source.quote, 160)}"` : '-';
+        const safeUrl = item.source.url.replace(/[|\n\r\s]/g, ' ').trim();
+        lines.push(`| ${cell(item.entity, 60)} | ${cell(item.attribute, 30)} | ${safeVal} | ${quote} | [${item.source.domain || 'link'}](${safeUrl}) |`);
       }
     } else {
       lines.push('\nNo verified evidence items recorded.');
     }
 
+    if (extra.unresolved?.length) {
+      lines.push('\n## Conflicting Findings (not settled)');
+      for (const c of extra.unresolved) {
+        lines.push(`- ${cell(c.entity, 80)} / ${cell(c.attribute, 40)}: ${c.items.map(i => `${cell(i.value, 40)} (${i.source.domain})`).join(' vs ')}`);
+      }
+    }
+    if (extra.needsHuman?.length) {
+      lines.push('\n## Waiting for you');
+      for (const n of extra.needsHuman) lines.push(`- ${cell(n.name, 80)}: ${cell(n.reason, 200)}`);
+    }
     if (errors.length > 0) {
       lines.push('\n## Execution Notes & Roadblocks');
-      for (const err of errors) {
-        lines.push(`- ${err.replace(/[\n\r]/g, ' ')}`);
-      }
+      for (const err of errors) lines.push(`- ${err.replace(/[\n\r]/g, ' ')}`);
     }
 
     return lines.join('\n');
@@ -415,5 +450,9 @@ export class SwarmCoordinator extends EventEmitter {
 
   public getFrontier(): URLFrontier {
     return this.frontier;
+  }
+
+  public getSupervisor(): WorkerSupervisor {
+    return this.supervisor;
   }
 }
