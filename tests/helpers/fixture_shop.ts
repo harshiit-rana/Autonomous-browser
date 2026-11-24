@@ -6,7 +6,7 @@
 import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-export interface FixtureShop { port: number; base: string; orders(): number; close(): Promise<void> }
+export interface FixtureShop { port: number; base: string; orders(): number; reset(): void; close(): Promise<void> }
 
 const page = (title: string, body: string) => `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body style="font-family:sans-serif">${body}</body></html>`;
 
@@ -38,6 +38,7 @@ export async function startFixtureShop(port = 0): Promise<FixtureShop> {
     port: p,
     base: `http://127.0.0.1:${p}`,
     orders: () => orders,
+    reset: () => { orders = 0; },
     close: () => new Promise<void>(r => { server.closeAllConnections(); server.close(() => r()); })
   };
 }

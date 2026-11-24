@@ -361,6 +361,8 @@ export class AgentLoop {
         this.toolResult(call.id, call.name, 'Skipped: an earlier tool call in this turn failed. Look at the new observation first.', true);
         continue;
       }
+      // Pause/takeover apply to every call of a multi-call reply, not only to the first one.
+      if (this.deps.waitWhilePaused) await this.deps.waitWhilePaused();
       this.checkAbort();
       if (GlobalKillSwitch.getInstance().isTriggered()) return this.end('cancelled', { error: 'Mission halted by Emergency Kill Switch' });
       const outcome = await this.runToolCall(call, snapshot, step);
@@ -564,6 +566,9 @@ export class AgentLoop {
   }
 
   private async ask(q: Omit<UserQuestion, 'id'>): Promise<string> {
+    // A question while paused/in takeover would be an illegal waiting_* transition (and a stuck pause flag): wait first.
+    if (this.deps.waitWhilePaused) await this.deps.waitWhilePaused();
+    this.checkAbort();
     const question: UserQuestion = { ...q, id: `q${++this.questionSeq}` };
     this.deps.emit.status(q.kind === 'approval' ? 'waiting_approval' : 'waiting_user', `Waiting for you: ${q.text.slice(0, 140)}`);
     this.deps.emit.event?.('question', question);

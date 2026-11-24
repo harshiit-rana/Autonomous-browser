@@ -33,7 +33,7 @@ const defer = <T = void>() => { let resolve!: (v: T) => void; const promise = ne
 
 // ------------------------------------------------------------------ scripted model (test only)
 interface Call { name: string; arguments: Record<string, any> }
-type Step = (req: ModelRequest, obs: string) => Promise<Call> | Call;
+type Step = (req: ModelRequest, obs: string) => Promise<Call | Call[]> | Call | Call[];
 let callSeq = 0;
 const tc = (name: string, args: Record<string, any> = {}): Call => ({ name, arguments: args });
 
@@ -64,8 +64,9 @@ class ScriptProvider implements IModelProvider {
     const fn = this.steps.shift();
     if (!fn) throw new Error('scripted provider: script exhausted');
     const aborted = new Promise<never>((_, rej) => req.abortSignal?.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' })), { once: true }));
-    const call = await Promise.race([Promise.resolve(fn(req, obs)), aborted]);
-    return { text: '', toolCalls: [{ id: `call_${++callSeq}`, name: call.name, arguments: call.arguments }], finishReason: 'tool_calls', usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
+    const out = await Promise.race([Promise.resolve(fn(req, obs)), aborted]);
+    const calls = Array.isArray(out) ? out : [out]; // one reply may carry several tool calls (normal for OpenAI/Anthropic)
+    return { text: '', toolCalls: calls.map(c => ({ id: `call_${++callSeq}`, name: c.name, arguments: c.arguments })), finishReason: 'tool_calls', usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
   }
 }
 const passVerifier = () => new ScriptProvider(Array.from({ length: 6 }, () => () => tc('report_verdict', { pass: true, reasons: ['supported by the page'] })));
@@ -237,6 +238,35 @@ scenario('pause / resume / takeover / hand back: the state follows, and nothing 
   assert.deepEqual(t.statuses.map(s => s.reason), ['mission_started', 'loop_started', 'user_pause', 'user_resume', 'user_takeover', 'user_handback', 'loop_finished']);
   return t.states().join('>');
 });
+
+for (const mode of ['takeover', 'pause'] as const) {
+  scenario(`${mode} during call 1 of a 2-call reply holds call 2 (a financial click that needs approval) until control returns`, async ctx => {
+    const prov = new ScriptProvider([
+      () => tc('navigate', { url: `${ctx.shop.base}/shop` }),
+      (_r, obs) => [tc('wait', { ms: 1500 }), tc('click', { ref: refIn(obs, 'Place order') })],
+      done('placed')
+    ]);
+    const { rt, t } = mkRuntime(ctx, { prov });
+    await startOk(rt, `Buy Widget Pro at ${ctx.shop.base}/shop`);
+    await until(() => t.evidence.some(e => e.startsWith('[Action] wait')), 20000, 'call 1 (wait 1500 ms) to start');
+    if (mode === 'takeover') rt.takeover(); else rt.pause();
+    assert.equal(rt.getState(), mode === 'takeover' ? 'takeover' : 'paused');
+    await sleep(2400); // call 1 finishes at 1500 ms; call 2 must NOT start
+    assert.equal(ctx.shop.orders(), 0, 'call 2 did not run while the human had control');
+    assert.ok(!t.states().includes('waiting_approval'), 'no approval question while paused/in takeover');
+    assert.ok(!t.states().includes('failed'), `no illegal transition: ${t.states().join('>')}`);
+    assert.equal(t.evidence.filter(e => e.startsWith('[Action] click')).length, 0, 'call 2 never started');
+    if (mode === 'takeover') await rt.handBack(); else rt.resume();
+    await until(() => t.states().includes('waiting_approval'), 15000, 'the approval question after control returned');
+    assert.equal(ctx.shop.orders(), 0, 'still nothing placed before the approval');
+    const q = t.questions.at(-1)!;
+    assert.deepEqual(rt.answerQuestion(q.missionId, q.id, 'Approve'), { ok: true });
+    await until(() => t.states().includes('completed'), 30000, 'completed');
+    assert.equal(ctx.shop.orders(), 1, 'exactly one order after approval');
+    assert.ok(!t.states().includes('failed'));
+    return t.states().join('>');
+  });
+}
 
 scenario('questions: ask_user -> waiting_user, policy approval -> waiting_approval, each back to running', async ctx => {
   const prov = new ScriptProvider([
@@ -423,6 +453,7 @@ export async function run() {
   for (const [name, fn] of scenarios) {
     if (only && !name.includes(only)) continue;
     const t0 = Date.now();
+    shop.reset(); // every scenario starts with an empty order book
     try {
       results.push({ name, ok: true, detail: await fn(ctx), ms: Date.now() - t0 });
     } catch (err: any) {
