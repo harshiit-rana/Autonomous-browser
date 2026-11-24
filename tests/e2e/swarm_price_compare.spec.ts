@@ -61,6 +61,14 @@ test.describe('swarm price-compare', () => {
     expect(new Set(views.map(v => v.sessionIndex)).size, 'three separate session partitions').toBe(3);
     expect(views.every(v => v.isDefaultSession === false)).toBe(true);
     const mid = await app.snapshot();
+    const evidenceDir = process.env.AEGIS_E2E_EVIDENCE_DIR; // set by hand to keep a copy of this run (docs/audits/evidence/227)
+    if (evidenceDir) {
+      fs.mkdirSync(evidenceDir, { recursive: true });
+      await app.chromePage.screenshot({ path: path.join(evidenceDir, 'swarm-workers-running.png') });
+      await app.chromePage.locator('button', { hasText: /^Grid$/ }).first().click({ timeout: 2000 }).catch(() => undefined);
+      await app.chromePage.waitForTimeout(400);
+      await app.chromePage.screenshot({ path: path.join(evidenceDir, 'swarm-grid-running.png') });
+    }
     expect(mid.tabs.map(t => t.url), "the user's tabs were not touched while the workers ran").toEqual(userTabUrls);
     expect(mid.activeTabId).toBe(before.activeTabId);
 
@@ -108,5 +116,10 @@ test.describe('swarm price-compare', () => {
     expect(new Set(workers.map(w => w.name)).size).toBe(3);
 
     await screenshot(app, testInfo, 'swarm-price-compare-done');
+    if (evidenceDir) {
+      await app.chromePage.screenshot({ path: path.join(evidenceDir, 'swarm-done.png') });
+      fs.writeFileSync(path.join(evidenceDir, 'report.md'), report);
+      fs.writeFileSync(path.join(evidenceDir, 'run.json'), JSON.stringify({ views, beatSpans: spans, hitsDuringMission, workers, statusHistory: after.statusHistory.map(s => s.status), model: after.model, evidenceLines: after.evidence.filter(e => /Blackboard|Action|Observing|Swarm/.test(e)).slice(0, 60) }, null, 2));
+    }
   });
 });
