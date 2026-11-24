@@ -2,6 +2,8 @@
   "testOnly": [
     "evaluation/agent_benchmarks.ts",
     "evaluation/web_eval_harness.ts",
+    "main/e2e_entry.ts",
+    "main/e2e_hooks.ts",
     "security/red_team_harness.ts",
     "security/red_team_suite.ts",
     "testing/fault_injector.ts"

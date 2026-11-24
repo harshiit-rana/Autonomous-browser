@@ -3,7 +3,6 @@
  */
 
 import { WebArenaServer } from '../fixtures/arena_server.js';
-import { E2EHarness } from './e2e/e2e_harness.js';
 import { AgentBenchmarkRunner, BenchmarkTask } from '../src/evaluation/agent_benchmarks.js';
 import { runRegressionSuite } from './regression_suite.js';
 import { FaultInjector } from '../src/testing/fault_injector.js';
@@ -11,8 +10,8 @@ import * as assert from 'node:assert';
 
 console.log('--- Testing Milestone M8: Quality, Evals & Edge-Cases (#194 - #205, #217) ---\n');
 
-async function testWebArenaAndE2EHarness() {
-  console.log('[#194, #195] Testing Web Arena Server & Real E2E Scripted Mission...');
+async function testWebArenaServer() {
+  console.log('[#194] Testing Web Arena Server and its machine-checkable state endpoint (the real-app e2e in tests/e2e runs against it)...');
 
   const arena = new WebArenaServer();
   const port = await arena.start();
@@ -20,23 +19,25 @@ async function testWebArenaAndE2EHarness() {
   const baseUrl = arena.getBaseUrl();
 
   try {
-    const harness = new E2EHarness(arena, { mode: 'scripted', maxCostUSD: 0.50 });
+    const state = async () => (await fetch(`${baseUrl}/__state`)).json();
+    assert.deepStrictEqual((await state()).submittedForms, []);
 
-    // Execute multi-step mission against Web Arena
-    const missionRes = await harness.executeScriptedMission('m_e2e_shop', [
-      { tool: 'navigate', args: { url: `${baseUrl}/shop` }, delayMs: 10 },
-      { tool: 'click', args: { ref: 'buy-p1' }, delayMs: 10 }
-    ]);
+    const post = await fetch(`${baseUrl}/forms/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'form_id=t&full_name=Ada&website_hp='
+    });
+    assert.strictEqual((await post.json()).success, true);
 
-    assert.strictEqual(missionRes.success, true);
-    assert.strictEqual(missionRes.stepsExecuted, 2);
-    assert.strictEqual(missionRes.costUSD > 0, true);
+    const after = await state();
+    assert.strictEqual(after.submittedForms.length, 1);
+    assert.strictEqual(after.submittedForms[0].fields.full_name, 'Ada');
+    assert.strictEqual(after.submittedForms[0].honeypotTriggered, false);
 
-    const events = harness.getEvents();
-    assert.strictEqual(events.some(e => e.type === 'mission_started'), true);
-    assert.strictEqual(events.some(e => e.type === 'mission_completed'), true);
+    await fetch(`${baseUrl}/api/oracle/reset`, { method: 'POST' });
+    assert.deepStrictEqual((await state()).submittedForms, []);
 
-    console.log('✓ Web Arena server and E2E scripted mission harness verified\n');
+    console.log('✓ Web Arena server and /__state oracle verified\n');
   } finally {
     await arena.stop();
   }
@@ -106,7 +107,7 @@ function testFaultInjectionCorpus() {
 }
 
 async function main() {
-  await testWebArenaAndE2EHarness();
+  await testWebArenaServer();
   await testAgentBenchmarks();
   testFaultInjectionCorpus();
   runRegressionSuite();

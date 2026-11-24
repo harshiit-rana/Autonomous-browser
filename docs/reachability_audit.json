@@ -252,6 +252,14 @@
     "isReachable": true
   },
   {
+    "path": "main/e2e_entry.ts",
+    "isReachable": false
+  },
+  {
+    "path": "main/e2e_hooks.ts",
+    "isReachable": false
+  },
+  {
     "path": "main/frame_hub.ts",
     "isReachable": true
   },

@@ -26,6 +26,9 @@ Boots in <500ms on loopback (`127.0.0.1`) on a dynamically allocated port.
 7. **`/chaos`**:
    - Simulated HTTP 429 rate-limiting, HTTP 503 outages with `Retry-After`, and artificial network delays.
 
+## Real-app e2e
+The Playwright harness (`docs/dev/E2E.md`) starts this server on an ephemeral port and points the real Electron app at it.
+
 ## Machine-Checkable Oracle API
-- `GET /api/oracle/state`: Returns the server-verified execution state (orders, logins, submitted forms, detected attacks).
+- `GET /api/oracle/state` (alias `GET /__state`): Returns the server-verified execution state (orders, logins, submitted forms, detected attacks, `pageViews`: every page path requested, in order).
 - `POST /api/oracle/reset`: Clears all in-memory oracle records back to zero state.

@@ -70,6 +70,12 @@ function lookupApiKey(provider: Exclude<ModelProviderId, 'ollama'>, settings: Ap
   return trimmed ? trimmed : undefined;
 }
 
+/** Real-app e2e only: scripted / replay (without recording) need no key. Mirrors e2eModeIsOffline in demo/e2e_scripted.ts. */
+function e2eOffline(): boolean {
+  const mode = process.env.AEGIS_E2E_MODEL_MODE;
+  return mode === 'scripted' || (mode === 'replay' && process.env.AEGIS_E2E_RECORD !== '1');
+}
+
 export class ModelProviderFactory {
   /** Synchronous check of the saved credentials for the provider that would serve `modelOverride`. No network. */
   public static inspect(modelOverride?: string): ModelConfigInspection {
@@ -77,8 +83,8 @@ export class ModelProviderFactory {
     const model = modelOverride || settings.modelName || 'gemini-2.0-flash';
     const provider = resolveProviderId(settings, model);
 
-    if (process.env.AEGIS_E2E_MODEL_MODE === 'scripted') {
-      return { provider, model, configured: true }; // explicit e2e opt-in, see createProvider
+    if (e2eOffline()) {
+      return { provider, model, configured: true }; // explicit e2e opt-in (scripted or replay), see createProvider
     }
     if (provider === 'ollama') {
       return { provider, model, configured: true, baseUrl: ollamaRootUrl(settings.ollamaBaseUrl) };
@@ -156,15 +162,19 @@ export class ModelProviderFactory {
 
   /**
    * Builds the provider for a real mission. Throws `ModelNotConfiguredError` when no usable credential exists; there
-   * is no fallback to a scripted provider. The only way to get one is `AEGIS_E2E_MODEL_MODE=scripted` (real-app e2e
-   * runs), loaded through a dynamic import so it stays out of the normal path.
+   * is no fallback to a scripted provider. The only way to get one is `AEGIS_E2E_MODEL_MODE=scripted|replay` (real-app e2e
+   * runs; `live` wraps the real provider in a cost cap), loaded through a dynamic import so it stays out of the normal path.
    */
   public static async createProvider(modelOverride?: string): Promise<IModelProvider> {
-    if (process.env.AEGIS_E2E_MODEL_MODE === 'scripted') {
+    const e2eMode = process.env.AEGIS_E2E_MODEL_MODE;
+    if (e2eMode) {
       const e2e = await import('./demo/e2e_scripted.js');
-      return e2e.createE2EScriptedProvider();
+      return e2e.createE2EProvider(e2eMode, () => ModelProviderFactory.createRealProvider(modelOverride));
     }
+    return ModelProviderFactory.createRealProvider(modelOverride);
+  }
 
+  private static async createRealProvider(modelOverride?: string): Promise<IModelProvider> {
     const settings = getSettings();
     const check = ModelProviderFactory.inspect(modelOverride);
     logger.info('Creating model provider', { model: check.model, provider: check.provider });

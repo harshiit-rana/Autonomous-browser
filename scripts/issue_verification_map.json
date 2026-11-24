@@ -1522,9 +1522,10 @@
    "modules": [],
    "tests": [],
    "files": [
-    "tests/e2e/e2e_harness.ts"
+    "tests/e2e/fixtures.ts",
+    "tests/e2e/smoke.spec.ts"
    ],
-   "gap": "Not a Playwright _electron harness; never launches the app.",
+   "gap": "Playwright _electron harness exists (tests/e2e, #254) and passes locally; the 3-OS CI run, macOS/Linux and live/replay specs are open (#256).",
    "owning": [
     254
    ]

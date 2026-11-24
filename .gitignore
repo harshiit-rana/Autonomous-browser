@@ -13,3 +13,5 @@ temp_*.enc
 .aegis-user-data/
 tests/output/
 .native/
+test-results/
+playwright-report/

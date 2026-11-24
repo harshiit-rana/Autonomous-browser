@@ -1,25 +1,24 @@
-# Release Gate Status: **NOT READY (4 of 7 checks failing)**
+# Release Gate Status: **NOT READY (3 of 7 checks failing)**
 
-> Generated automatically by `scripts/release_gate.mjs` at 2026-11-19T09:21:13.851Z
-> Commit: `b1277c1` | Working tree dirty: `true`
+> Generated automatically by `scripts/release_gate.mjs` at 2026-11-20T19:00:56.865Z
+> Commit: `c458eb3` | Working tree dirty: `false`
 
 ## Gate Measurements Summary Table
 
 | Check ID | Area / Description | Verification Command | Status | Measured Evidence / Notes |
 |---|---|---|---|---|
-| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 1106ms |
-| `unit` | Unit & Integration Test Manifest | `tests/manifest.json (23 suites)` | **PASS** | 23/23 suites passed (10544ms total) |
-| `reachability` | Reachability Policy & Orphan Allowlist | `node scripts/audit_reachability.mjs` | **FAIL** | 63 orphaned modules awaiting wiring in allowlist pending list |
-| `e2e` | Real-App Electron E2E Suite | `npm run test:e2e` | **FAIL** | no real-app e2e suite (Playwright _electron) |
-| `docs-consistency` | Documentation Truth & Status Consistency | `scripts/gen_status.mjs hash check` | **PASS** | docs/STATUS.md matches reachability audit hash c1ef7520 |
-| `no-fake-paths` | Zero Forbidden Fake Patterns in src/ | `scripts/release_gate.mjs scan src/` | **FAIL** | Found 11 forbidden fake pattern(s): src/models/mock_provider.ts:12 (MockModelProvider outside demo), src/models/provider_factory.ts:5 (MockModelProvider outside demo), src/models/provider_factory.ts:32 (MockModelProvider outside demo), src/models/provider_factory.ts:33 (MockModelProvider outside demo) |
+| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 8782ms |
+| `unit` | Unit & Integration Test Manifest | `tests/manifest.json (32 suites)` | **PASS** | 32/32 suites passed (99868ms total) |
+| `reachability` | Reachability Policy & Orphan Allowlist | `node scripts/audit_reachability.mjs` | **FAIL** | 59 orphaned modules awaiting wiring in allowlist pending list |
+| `e2e` | Real-App Electron E2E Suite | `npm run test:e2e` | **PASS** | Real-app Playwright Electron E2E suite passed |
+| `docs-consistency` | Documentation Truth & Status Consistency | `scripts/gen_status.mjs hash check` | **PASS** | docs/STATUS.md matches reachability audit hash 305d33ef |
+| `no-fake-paths` | Zero Forbidden Fake Patterns in src/ | `scripts/release_gate.mjs scan src/` | **FAIL** | Found 1 forbidden fake pattern(s): src/swarm/coordinator.ts:349 (hardcoded confidence 0.95) |
 | `security-attack-suite` | Live Red-Team Security Attack Suite | `npm run test:security:live` | **FAIL** | live red-team harness not yet wired to real agent loop (ASR unmeasured) |
 
 ## Required Completion Items
 
-- [ ] **Reachability Policy & Orphan Allowlist** (`reachability`): 63 orphaned modules awaiting wiring in allowlist pending list
-- [ ] **Real-App Electron E2E Suite** (`e2e`): no real-app e2e suite (Playwright _electron)
-- [ ] **Zero Forbidden Fake Patterns in src/** (`no-fake-paths`): Found 11 forbidden fake pattern(s): src/models/mock_provider.ts:12 (MockModelProvider outside demo), src/models/provider_factory.ts:5 (MockModelProvider outside demo), src/models/provider_factory.ts:32 (MockModelProvider outside demo), src/models/provider_factory.ts:33 (MockModelProvider outside demo)
+- [ ] **Reachability Policy & Orphan Allowlist** (`reachability`): 59 orphaned modules awaiting wiring in allowlist pending list
+- [ ] **Zero Forbidden Fake Patterns in src/** (`no-fake-paths`): Found 1 forbidden fake pattern(s): src/swarm/coordinator.ts:349 (hardcoded confidence 0.95)
 - [ ] **Live Red-Team Security Attack Suite** (`security-attack-suite`): live red-team harness not yet wired to real agent loop (ASR unmeasured)
 
 ---
