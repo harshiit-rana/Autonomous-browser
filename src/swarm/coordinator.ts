@@ -134,6 +134,8 @@ export class SwarmCoordinator extends EventEmitter {
     const isComparison = /compare|vs|across|multiple|shops?|stores?|prices/i.test(trimmed);
     const isMultiSiteResearch = /research|find\s+(several|top|different|3|5)/i.test(trimmed);
     const urls = SwarmCoordinator.extractSourceUrls(trimmed);
+    // The URLs are each worker's own start page; the mission text each worker sees does not repeat all of them.
+    const missionText = urls.length ? trimmed.replace(/https?:\/\/[^\s"'<>)\]]+/gi, '').replace(/\s+/g, ' ').trim() : trimmed;
 
     // 1. Parallel Research & Comparison Plan
     if (isComparison || isMultiSiteResearch) {
@@ -141,7 +143,7 @@ export class SwarmCoordinator extends EventEmitter {
         ? urls.map((url, i) => ({
             name: `Read source ${i + 1} (${new URL(url).host})`,
             url,
-            instruction: `Mission: "${trimmed}". Your sub-goal: read ONLY ${url} (follow links on that site if you need to) and report, with exact quotes from the page, every fact the mission asks for. Name the site in each entity.`
+            instruction: `Mission: "${missionText}". Your sub-goal: read ONLY ${url} and report, with exact quotes, every fact the mission asks for.`
           }))
         : ['A', 'B', 'C'].map((letter, i) => ({
             name: `Query ${['Primary', 'Alternative', 'Benchmark'][i]} Source ${letter}`,

@@ -296,7 +296,8 @@ export class AgentRuntime {
       this.emitMissionStatus('running', `Stage: ${ev.stageName}`);
     });
 
-    const workerEvent = (ev: any, task: string, status: WorkerEventPayload['status'], progress: number) => this.emitWorkerEvent({
+    // The coordinator's own verifier/summariser tasks have no view: they are log lines, not a worker in the Grid.
+    const workerEvent = (ev: any, task: string, status: WorkerEventPayload['status'], progress: number) => ev.workerId === 'coordinator' ? this.emitEvidence(`[Swarm] ${task}`) : this.emitWorkerEvent({
       id: ev.workerId, workerId: ev.workerId, name: ev.identity?.name, color: ev.identity?.color, glyph: ev.identity?.glyph,
       task, progress, status, at: Date.now()
     });
