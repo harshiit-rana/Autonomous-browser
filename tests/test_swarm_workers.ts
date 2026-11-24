@@ -141,15 +141,15 @@ async function main() {
   // ---- conflicts are adjudicated by a model call that reads the quotes; no valid verdict leaves them open
   {
     const bb = new SharedBlackboard({ inMemory: true });
-    bb.postEvidence({ entity: 'Widget', attribute: 'price', value: '$10.00', source: { url: 'http://a.test/', quote: 'Widget now $10.00' }, workerId: 'w1', confidence: 0.99 });
-    const posted = bb.postEvidence({ entity: 'Widget', attribute: 'price', value: '$12.00', source: { url: 'http://b.test/', quote: 'Widget price $12.00' }, workerId: 'w2', confidence: 0.4 });
+    bb.postEvidence({ entity: 'Widget', attribute: 'price', value: '$10.00', source: { url: 'http://a.test/', quote: 'Widget now $10.00', pageTitle: 'A shop' }, pageText: 'A shop. Widget now $10.00. Free returns.', workerId: 'w1' });
+    const posted = bb.postEvidence({ entity: 'Widget', attribute: 'price', value: '$12.00', source: { url: 'http://b.test/', quote: 'Widget price $12.00', pageTitle: 'B shop' }, pageText: 'B shop. Widget price $12.00. In stock.', workerId: 'w2' });
     assert.ok(posted.conflict, 'different prices for one entity are a conflict');
     const seen: ModelRequest[] = [];
     const judge = (pick: number | null): IModelProvider => ({
       providerName: 'test', modelName: 'test',
       async generate(req: ModelRequest): Promise<ModelResponse> {
         seen.push(req);
-        return { text: '', toolCalls: pick === null ? [] : [{ id: 'c1', name: 'resolve_conflict', arguments: { choice: pick, reason: 'quote 1 states the price directly' } }], finishReason: 'stop', usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
+        return { text: '', toolCalls: pick === null ? [] : [{ id: 'c1', name: 'resolve_conflict', arguments: { verdict: 'winner', winner: pick, reason: 'quote 1 states the price directly' } }], finishReason: 'stop', usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
       }
     });
     const none = await adjudicateConflicts(bb, judge(null), { missionId: 'm' });
@@ -160,7 +160,7 @@ async function main() {
     assert.equal(bb.getUnresolvedConflicts().length, 0);
     const prompt = String((seen[1].messages[0] as any).content);
     assert.ok(prompt.includes('Widget now $10.00') && prompt.includes('Widget price $12.00') && prompt.includes('http://b.test/'), 'the model is shown both quotes and urls');
-    // 0.99 vs 0.4 confidence: the model chose the LOWER-confidence claim, so the choice came from the model, not the confidence
+    // the model chose claim 1 (the other claim was first and posted first), so the choice came from the model, not from order or confidence
     assert.equal((bb.getUnresolvedConflicts().length === 0) && bb.getConflicts()[0].resolvedValue, '$12.00');
     console.log('✓ verifier stage: model reads the quotes; no verdict leaves the conflict open; the verdict overrides confidence');
   }
@@ -226,10 +226,10 @@ async function main() {
   {
     const { c } = coordinator();
     const bb = c.getBlackboard();
-    bb.postEvidence({ entity: 'Widget at Shop A', attribute: 'price', value: '$10.00', source: { url: 'http://a.test/p', quote: 'Widget $10.00 incl. tax' }, workerId: 'w1' });
+    bb.postEvidence({ entity: 'Widget at Shop A', attribute: 'price', value: '$10.00', source: { url: 'http://a.test/p', quote: 'Widget $10.00 incl. tax' }, pageText: 'Shop A\nWidget $10.00 incl. tax\nFree returns', workerId: 'w1' });
     const md = c.synthesizeReport('goal', bb.getAllEvidence(), []);
-    assert.match(md, /\| Widget at Shop A \| price \| \$10\.00 \| "Widget \$10\.00 incl\. tax" \| \[a\.test\]\(http:\/\/a\.test\/p\) \|/);
-    assert.doesNotMatch(md, /Confidence|consensus:/);
+    assert.match(md, /\| ev_\w+ \| Widget at Shop A \| price \| \$10\.00 \| "Widget \$10\.00 incl\. tax" \| \[a\.test\]\(http:\/\/a\.test\/p\) \| 0\.55 \(primary; 1 independent source\) \|/);
+    assert.doesNotMatch(md, /consensus:/);
     assert.match(md, /Verified Complete/);
     console.log('✓ report rows come from blackboard evidence with quote and source');
   }

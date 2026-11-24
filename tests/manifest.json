@@ -35,6 +35,7 @@
   { "id": "mission_abort", "cmd": "tsx tests/test_mission_abort.ts", "area": "agent" },
   { "id": "mission_resume", "cmd": "tsx tests/test_mission_resume.ts", "area": "agent" },
   { "id": "mission_lifecycle", "cmd": "tsx tests/test_mission_lifecycle.ts", "area": "agent" },
-    { "id": "frame_hub", "cmd": "tsx tests/test_frame_hub.ts", "area": "mission-control" },
-  { "id": "swarm_workers", "cmd": "tsx tests/test_swarm_workers.ts", "area": "swarm" }
+  { "id": "frame_hub", "cmd": "tsx tests/test_frame_hub.ts", "area": "mission-control" },
+  { "id": "swarm_workers", "cmd": "tsx tests/test_swarm_workers.ts", "area": "swarm" },
+  { "id": "evidence_truth", "cmd": "tsx tests/test_evidence_truth.ts", "area": "swarm" }
 ]
