@@ -161,7 +161,7 @@
   },
   {
     "path": "data/verified_report.ts",
-    "isReachable": false
+    "isReachable": true
   },
   {
     "path": "evaluation/agent_benchmarks.ts",
@@ -517,6 +517,10 @@
   },
   {
     "path": "swarm/coordinator.ts",
+    "isReachable": true
+  },
+  {
+    "path": "swarm/evidence_truth.ts",
     "isReachable": true
   },
   {
