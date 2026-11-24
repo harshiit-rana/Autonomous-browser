@@ -96,12 +96,15 @@ const takeoverLabel = app => app.chrome.$eval('#takeover-btn', e => ({ text: e.t
 const questionCard = app => app.chrome.evaluate(() => { const c = document.getElementById('question-card'); return c && !c.classList.contains('hidden') ? { kind: document.getElementById('question-kind').textContent, text: document.getElementById('question-text').textContent, options: [...document.querySelectorAll('#question-options button')].map(b => b.textContent.trim()) } : null; });
 const ckptFiles = () => { const d = path.join(prof, 'missions'); try { return fs.readdirSync(d).map(i => path.join(d, i, 'checkpoint.json')).filter(f => fs.existsSync(f)); } catch { return []; } };
 
+const onlyC = process.argv.includes('--only-c');
+setTimeout(() => { console.log('WATCHDOG: driver exceeded 9 minutes'); process.exit(2); }, 9 * 60 * 1000).unref();
 let appA, appB, appC;
 try {
+  if (!onlyC) {
   // ================================================================ Launch A
   appA = await launch('A', 'A');
   const goal = `Buy Widget Pro at ${shop}/shop and report the confirmation`;
-  check('A: mission started from the omnibar + plan preview', await startViaUi(appA, goal));
+  check('A: mission started from the omnibar (/do) + plan preview', await startViaUi(appA, `/do ${goal}`));
   const earlier = [];
   const approval = await waitUntil(async () => {
     const q = await questionCard(appA);
@@ -142,7 +145,7 @@ try {
   check('A: one mission:status event per transition, seq gapless from 1', ev.every((e, i) => e.seq === i + 1) && ev.map(e => e.status).join('>').includes('paused>running>takeover>running'), ev.map(e => `${e.seq}:${e.status}(${e.reason})`).join(' '));
   fs.writeFileSync(path.join(outDir, 'status_events_A.json'), JSON.stringify(ev, null, 2));
 
-  await startViaUi(appA, 'Second mission while the first is running');
+  await startViaUi(appA, '/do Second mission while the first is running');
   const toast = await waitUntil(() => appA.chrome.$eval('.aegis-toast', e => e.textContent), 8000);
   check('A: a second start shows the MISSION_ACTIVE toast and starts nothing', toast && /already running/.test(toast) && (await missions(appA)).length === 1, toast);
   shot(appA, 'os_04_mission_active_toast.png');
@@ -172,6 +175,7 @@ try {
   kill(appB);
   await sleep(1500);
 
+  }
   // ================================================================ Launch C
   appC = await launch('C', 'C');
   check('C: no banner after a resumed mission (offered once)', !(await appC.chrome.$('#interrupted-banner')));
@@ -189,24 +193,24 @@ try {
   const tabPage = appC.browser.contexts()[0].pages().find(p => /^https?:/.test(p.url()));
   check('C: found the mission tab page to crash', Boolean(tabPage), tabPage?.url());
   const cdp = await appC.browser.contexts()[0].newCDPSession(tabPage);
-  await cdp.send('Page.crash').catch(() => {});
+  cdp.send('Page.crash').catch(() => {}); // the target dies before it can reply: do not await
   const crash = await waitUntil(async () => { const q = await questionCard(appC); return q && q.kind === 'Page crashed' ? q : null; }, 15000);
   check('C: renderer crash -> banner with Reload page / Skip, mission paused', crash && crash.options.join() === 'Reload page,Skip' && (await missions(appC)).find(m => m.id === r2.missionId)?.state === 'paused', JSON.stringify(crash));
   const evC = await statusEvents(appC, r2.missionId);
   check('C: the pause reason is tab_crashed', evC.some(e => e.status === 'paused' && e.reason === 'tab_crashed'), evC.map(e => `${e.status}(${e.reason})`).join(' '));
   shot(appC, 'os_07_crash_banner.png');
-  await appC.chrome.click('#question-options button:has-text("Reload page")');
+  await appC.chrome.evaluate(() => [...document.querySelectorAll('#question-options button')].find(b => b.textContent.trim() === 'Reload page').click());
   const done = await waitUntil(async () => (await missions(appC)).find(m => m.id === r2.missionId && m.state === 'completed'), 60000);
   check('C: after Reload page the mission continued and completed', Boolean(done), `${done?.state}`);
   const evC2 = await statusEvents(appC, r2.missionId);
   fs.writeFileSync(path.join(outDir, 'status_events_C_crash.json'), JSON.stringify(evC2, null, 2));
   check('C: crash_reload transition recorded', evC2.some(e => e.reason === 'crash_reload'), evC2.map(e => `${e.seq}:${e.status}(${e.reason})`).join(' '));
   shot(appC, 'os_08_after_crash_complete.png');
-  check('C: no unhandled error in any log', ![appA, appB, appC].some(a => /Unhandled (Promise|error)|FATAL/.test(a.log)));
+  check('C: no unhandled error in any log', ![appA, appB, appC].filter(Boolean).some(a => /Unhandled (Promise|error)|FATAL/.test(a.log)));
 } catch (err) {
   check('driver ran to completion', false, err.stack);
 } finally {
-  fs.writeFileSync(path.join(outDir, 'results.json'), JSON.stringify({ at: new Date().toISOString(), model: 'scripted e2e provider (no real model)', shop: 'tests/helpers/fixture_shop.ts', results }, null, 2));
+  fs.writeFileSync(path.join(outDir, onlyC ? 'results_C.json' : 'results.json'), JSON.stringify({ at: new Date().toISOString(), model: 'scripted e2e provider (no real model)', shop: 'tests/helpers/fixture_shop.ts', results }, null, 2));
   for (const a of [appA, appB, appC]) { if (a) { try { await a.browser?.close(); } catch {} kill(a); } }
   shopProc.kill();
   const failed = results.filter(r => !r.ok).length;

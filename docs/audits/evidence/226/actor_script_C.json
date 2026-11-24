@@ -2,10 +2,10 @@
   {
     "toolCalls": [
       {
-        "id": "c_heyan4",
+        "id": "c_vch9oe",
         "name": "navigate",
         "arguments": {
-          "url": "http://127.0.0.1:55067/shop"
+          "url": "http://127.0.0.1:52435/shop"
         }
       }
     ]
@@ -13,7 +13,7 @@
   {
     "toolCalls": [
       {
-        "id": "c_sr0kkf",
+        "id": "c_vgflvb",
         "name": "wait",
         "arguments": {
           "ms": 5000
@@ -24,7 +24,7 @@
   {
     "toolCalls": [
       {
-        "id": "c_spk42t",
+        "id": "c_i4j84n",
         "name": "wait",
         "arguments": {
           "ms": 5000
@@ -35,7 +35,7 @@
   {
     "toolCalls": [
       {
-        "id": "c_6r4sfk",
+        "id": "c_i6quu1",
         "name": "wait",
         "arguments": {
           "ms": 5000
@@ -46,7 +46,7 @@
   {
     "toolCalls": [
       {
-        "id": "c_b3xtqr",
+        "id": "c_6v8jfk",
         "name": "done",
         "arguments": {
           "result": "Fixture shop reached; mission survived the crash",
