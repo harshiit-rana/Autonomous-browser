@@ -155,3 +155,25 @@ Workers are the single-agent `AgentLoop` on their own `WorkerHost` view (own in-
 | Telemetry | Per-worker spend is tracked for each worker's cost budget (max cost / maxWorkers) but the mission-control token/cost tiles are not summed across workers. | Follow-up. |
 | Governor fix | `ConcurrencyGovernor` freed a slot before a retry finished and ran queued requests without retry; fixed here so three workers on a 429 stay within the provider cap (tested). | Found while writing the rate-limit test. |
 | Loopback politeness origin | `URLFrontier.getOrigin` turned every IPv4 address into the origin "0.1"; IPs and localhost are now `host:port` origins. | Found by the e2e (three local shops were throttled as one site). |
+
+## Truthful evidence (#230 SWX-04)
+
+Design and formula: `docs/swarm/evidence.md`. Proof: `tests/test_evidence_truth.ts` (adversarial unit cases) and `tests/e2e/evidence_truth.spec.ts` (real app, evidence in `docs/audits/evidence/230/`). Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| Real model behaviour | **Not verified.** The e2e uses a scripted provider, including the verifier's verdict (`needs_human`); no real key was available. Whether a real model quotes faithfully or judges conflicts well is untested. | Live evals: #256 / #257. |
+| Strength is a heuristic | The weights (official 1.0 ... ugc 0.5) and the corroboration curve are fixed by design, not calibrated on data. The report calls it a score, not a probability. | Calibration needs real-model runs. |
+| Result UI | The mission status line shows the first 100 characters of the report; the full report with evidence ids, strengths, conflicts and what was left out is the deliverable file. The live "Evidence" list in the mission panel and the report footer still print `entity - attribute: value from url` without strength (that code is in `runtime.ts`, being changed by #226). | A conflict and evidence panel is #235. |
+| "Include unverifiable findings" | `SwarmCoordinator({ includeUnverifiable })` exists and is tested; no setting or UI control reaches it, so in the app they are always left out (and listed under "Left out"). | UI work outside #230. |
+| Snapshot is the page text the model saw | The text is the first 6000 characters of the page (`perception.ts`), so a fact later on a long page cannot be quoted or verified. Snapshots are plain files, not encrypted, and never deleted. | Perception limit; retention belongs to the data-lifecycle work. |
+| Visited-URL log | URLs are logged when a worker starts a task, navigates (tool guard), or a verified finding is posted. A page reached by a link click is logged only if it yields a finding; a redirect target is logged through the finding. | Observations are inside `agent_loop.ts` (#226). |
+| Page changed since the finding | `verifyEvidence` detects it only when a caller supplies the current page text; the product never re-fetches (by design: "re-fetches nothing"). | Re-verification against the live page is a separate feature. |
+| Stale pages | Reported as `stale` after 24 h in the report row; not removed. | Threshold is a constant, not a setting. |
+| Paywalled quotes | Non-goal. Only the text the page exposes can be quoted; a teaser verifies like any text and nothing marks it as a paywall. | No reliable paywall detector. |
+| Other languages | The original quote is verified and stored with an optional language and English translation; the translation is never verified. | A translation check needs a model call. |
+| Locale-dependent money | `parseMoney` takes a locale; the swarm does not know the page's locale, so a single separator followed by three digits ("1.299") with no locale is flagged `ambiguous` and read as a decimal. A currency symbol outside the small supported set is not recognised. | Locale detection is out of scope. |
+| Independence | Two pages of one site (host:port) count as one source; mirrors and syndicated copies on different hosts count as independent. | No origin-of-content analysis. |
+| Auto-adjudication | The credibility-weight rule and "official source wins" were removed from the blackboard; only a head count of independent verified sites (>= 2, >= 65%) settles a conflict without the verifier. | Issue: never decide by confidence alone. |
+| Unsupported-claim check on free text | `VerifiedReportSynthesizer.synthesizeReport` (free-text sections with citations) is still unused by the swarm: the swarm report has no model-written prose. The grounding assertion (`assertGrounded`) and the findings table are wired. | #251. |
+| Verifier-stage tests in the app | The e2e covers `needs_human`; `winner` and `both_valid` are covered by unit tests only. | Time. |

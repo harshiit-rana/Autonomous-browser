@@ -1,0 +1,12 @@
+{
+  "snapshots": [
+    "4ba79549fb91a336539c08640be89b3929ab59b2aee93f2bc5a0119e4772fbeb.txt",
+    "fec29e1f27574d6845a1c26390fa0b9f300b3efca90686ee5060f5d6722fa132.txt"
+  ],
+  "visited": [
+    "http://127.0.0.1:52203/product",
+    "http://127.0.0.1:52204/product",
+    "http://127.0.0.1:52204/product",
+    "http://127.0.0.1:52203/product"
+  ]
+}

@@ -232,7 +232,8 @@ async function runMilestoneM6Tests() {
   assert.strictEqual(report.sections[0].citedClaimIds.length, 1);
   assert.strictEqual(report.sections[0].citedClaimIds[0], 'claim_101');
   assert.strictEqual(report.citations[0].claimId, 'claim_101');
-  assert.strictEqual(report.citations[0].verified, true);
+  // The hand-made claim has a quote but no stored page snapshot, so it is NOT reported as verified (the old rule trusted confidence >= 0.7).
+  assert.strictEqual(report.citations[0].verified, false);
 
   // Markdown report with footnotes
   const reportMd = VerifiedReportSynthesizer.exportToMarkdown(report);

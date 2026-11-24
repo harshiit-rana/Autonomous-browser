@@ -1,8 +1,8 @@
 {
   "total": 117,
   "verified": 1,
-  "partial": 71,
-  "notInApp": 45,
+  "partial": 72,
+  "notInApp": 44,
   "issues": [
     {
       "number": 101,
@@ -611,7 +611,7 @@
         {
           "path": "src/data/verified_report.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         },
         {
           "path": "src/data/report_synthesizer.ts",
@@ -1050,7 +1050,7 @@
         {
           "path": "src/data/verified_report.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         },
         {
           "path": "src/renderer/app.ts",
@@ -1987,12 +1987,12 @@
       "number": 182,
       "title": "[DAT-02] Report synthesis with verified citations (no fabricated sources), charts and export",
       "kind": "code",
-      "result": "not-in-app",
+      "result": "partial",
       "evidence": [
         {
           "path": "src/data/verified_report.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         },
         {
           "path": "src/data/report_synthesizer.ts",

@@ -16,6 +16,7 @@ import { EventEmitter } from 'node:events';
 import { SwarmManager } from './swarm_manager.js';
 import { IWorkerHost } from './worker_host.js';
 import { SharedBlackboard, EvidenceItem, ConflictRecord } from './blackboard.js';
+import { VerifiedReportSynthesizer, ReportGroundingError } from '../data/verified_report.js';
 import { SwarmScheduler, ScheduledTask, TaskRole, TaskEffectClass } from './scheduler.js';
 import { URLFrontier } from './url_frontier.js';
 import { HazardLockManager } from './hazards_and_locks.js';
@@ -24,6 +25,9 @@ import { ResourceGovernor } from './resource_governor.js';
 import { WorkerSupervisor } from './supervisor.js';
 import { clampMaxWorkers } from '../infrastructure/settings.js';
 import { logger } from '../infrastructure/logger.js';
+
+/** A finding older than this is reported as stale. */
+const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 
 export interface MissionDecompositionPlan {
   missionId: string;
@@ -85,6 +89,7 @@ export class SwarmCoordinator extends EventEmitter {
   private governor: ResourceGovernor;
   private supervisor: WorkerSupervisor;
   private maxWorkers: number;
+  private includeUnverifiable: boolean;
 
   constructor(options: {
     swarm?: SwarmManager;
@@ -95,6 +100,8 @@ export class SwarmCoordinator extends EventEmitter {
     supervisor?: WorkerSupervisor;
     /** Workers that run at once (settings.maxWorkers); clamped to 1..8. */
     maxWorkers?: number;
+    /** List findings that have no verified quote in the report (default: they are counted but left out). */
+    includeUnverifiable?: boolean;
   } = {}) {
     super();
     this.blackboard = options.blackboard || new SharedBlackboard({ inMemory: true });
@@ -105,6 +112,7 @@ export class SwarmCoordinator extends EventEmitter {
     this.supervisor = options.supervisor || new WorkerSupervisor();
     this.swarm = options.swarm || new SwarmManager();
     this.maxWorkers = clampMaxWorkers(options.maxWorkers);
+    this.includeUnverifiable = options.includeUnverifiable === true;
     this.supervisor.on('workerStalled', e => this.emit('workerStalled', e));
     this.supervisor.on('poisonTask', e => this.emit('poisonTask', e));
   }
@@ -372,12 +380,21 @@ export class SwarmCoordinator extends EventEmitter {
     // Conflicts nobody could settle stay open and are reported as such: no confidence-based guess is made here.
     const unresolved = this.blackboard.getUnresolvedConflicts();
     const allEvidence = this.blackboard.getAllEvidence();
-    const deliverableMarkdown = this.synthesizeReport(prompt, allEvidence, errors, { unresolved, needsHuman });
+    let deliverableMarkdown: string;
+    let reportRefused = false;
+    try {
+      deliverableMarkdown = this.synthesizeReport(prompt, allEvidence, errors, { unresolved, needsHuman, conflicts: this.blackboard.getConflicts() });
+    } catch (err) {
+      if (!(err instanceof ReportGroundingError)) throw err;
+      reportRefused = true;
+      errors.push(err.message);
+      deliverableMarkdown = `# Swarm Mission Report: ${prompt}\n\n**Status:** Report refused\n\nThe report cites pages that no worker visited, so it was not produced:\n${err.problems.map(p => `- ${p}`).join('\n')}`;
+    }
 
     const result: SwarmMissionResult = {
       missionId,
       goal: prompt,
-      success: browserTasksCompleted > 0,
+      success: browserTasksCompleted > 0 && !reportRefused,
       completedTasks,
       totalTasks,
       evidence: allEvidence,
@@ -394,42 +411,51 @@ export class SwarmCoordinator extends EventEmitter {
   }
 
   /**
-   * Synthesizes a structured deliverable report from blackboard evidence only: every row carries the quote that was
-   * verified on the page and the page it came from.
+   * Synthesizes a structured deliverable report from blackboard evidence only: every row carries its evidence id, the quote
+   * that was re-verified against the stored page snapshot, the page it came from and a computed strength. Throws
+   * ReportGroundingError when a row cites a URL that is not in the mission's visited-URL log (no report is produced then).
    */
   public synthesizeReport(
     goal: string,
     evidence: EvidenceItem[],
     errors: string[],
-    extra: { unresolved?: ConflictRecord[]; needsHuman?: SwarmMissionResult['needsHuman'] } = {}
+    extra: { unresolved?: ConflictRecord[]; conflicts?: ConflictRecord[]; needsHuman?: SwarmMissionResult['needsHuman'] } = {}
   ): string {
-    const rows = evidence.filter(e => !e.source.url.startsWith('consensus://'));
-    const notes = errors.length + (extra.needsHuman?.length ?? 0) + (extra.unresolved?.length ?? 0);
+    const verify = (item: EvidenceItem) => this.blackboard.verifyEvidence(item, { maxAgeMs: STALE_AFTER_MS });
+    const table = VerifiedReportSynthesizer.renderFindings(evidence, { verify, includeUnverifiable: this.includeUnverifiable });
+    VerifiedReportSynthesizer.assertGrounded(table.listed, this.blackboard.getVisitedUrls());
+    const notes = errors.length + (extra.needsHuman?.length ?? 0) + (extra.unresolved?.length ?? 0) + table.excluded.length;
     const lines: string[] = [];
     lines.push(`# Swarm Mission Report: ${goal}`);
     lines.push(`\n**Status:** ${notes === 0 ? 'Verified Complete' : 'Completed with Notes'}`);
-    lines.push(`**Evidence Items Gathered:** ${rows.length}`);
+    lines.push(`**Evidence Items Gathered:** ${table.listed.length}${table.excluded.length ? ` (${table.excluded.length} more left out: no verified quote)` : ''}`);
     lines.push(`**Timestamp:** ${new Date().toISOString()}`);
 
     const cell = (v: unknown, max: number) => String(v ?? '').replace(/[|\n\r]/g, ' ').slice(0, max);
-    if (rows.length > 0) {
+    if (table.listed.length > 0) {
       lines.push('\n## Verified Findings & Evidence Table');
-      lines.push('| Entity | Attribute | Value | Quote (verified on the page) | Source URL |');
-      lines.push('|---|---|---|---|---|');
-      for (const item of rows) {
-        const safeVal = cell(item.value, 60); // as the worker read it (the normalised form is for conflict matching only)
-        const quote = item.source.quote ? `"${cell(item.source.quote, 160)}"` : '-';
-        const safeUrl = item.source.url.replace(/[|\n\r\s]/g, ' ').trim();
-        lines.push(`| ${cell(item.entity, 60)} | ${cell(item.attribute, 30)} | ${safeVal} | ${quote} | [${item.source.domain || 'link'}](${safeUrl}) |`);
-      }
+      lines.push(...table.lines);
     } else {
       lines.push('\nNo verified evidence items recorded.');
     }
+    if (table.excluded.length) {
+      lines.push(`\n## Left out: no verified quote (${table.excluded.length})`);
+      for (const e of table.excluded) lines.push(`- ${cell(e.entity, 80)} / ${cell(e.attribute, 40)}: ${cell(e.value, 40)} (${e.id}): ${cell(this.blackboard.verifyEvidence(e).reason, 120)}`);
+    }
 
+    const conflictLine = (c: ConflictRecord) => c.items.filter(i => !i.source.url.startsWith('consensus://')).map(i => `${cell(i.value, 40)} (${i.source.domain}, ${i.id}, strength ${i.confidence.toFixed(2)})`).join(' vs ');
+    const settled = (extra.conflicts ?? []).filter(c => c.resolved);
+    if (settled.length) {
+      lines.push('\n## Conflicting Findings (settled)');
+      for (const c of settled) {
+        const how = c.resolutionMethod === 'both_valid' ? 'both are valid' : c.resolutionMethod === 'majority' ? `${cell(c.resolvedValue, 40)} (stated by the most independent sites)` : `${cell(c.resolvedValue, 40)} (${c.resolutionMethod})`;
+        lines.push(`- ${cell(c.entity, 80)} / ${cell(c.attribute, 40)}: ${conflictLine(c)}. Verdict: ${how}${c.verdictReason ? ` - ${cell(c.verdictReason, 200)}` : ''}`);
+      }
+    }
     if (extra.unresolved?.length) {
       lines.push('\n## Conflicting Findings (not settled)');
       for (const c of extra.unresolved) {
-        lines.push(`- ${cell(c.entity, 80)} / ${cell(c.attribute, 40)}: ${c.items.map(i => `${cell(i.value, 40)} (${i.source.domain})`).join(' vs ')}`);
+        lines.push(`- ${cell(c.entity, 80)} / ${cell(c.attribute, 40)}: ${conflictLine(c)}${c.verdict === 'needs_human' ? ` - needs your decision: ${cell(c.verdictReason, 200)}` : ''}`);
       }
     }
     if (extra.needsHuman?.length) {

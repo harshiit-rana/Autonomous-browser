@@ -128,8 +128,10 @@ async function runWorkerTaskInner(worker: IWorkerHost, task: ScheduledTask, deps
     const holder = deps.claims.claim(task.url, worker.id);
     if (holder) throw new Error(`The page ${task.url} is already covered by worker ${holder}`);
     await worker.navigate(task.url);
+    deps.blackboard.recordVisit(task.url, worker.id);
   } else if (deps.startUrl) {
     await worker.navigate(deps.startUrl);
+    deps.blackboard.recordVisit(deps.startUrl, worker.id);
   }
   await tab.executor.ensureReady().catch(() => { /* CDP unavailable: tools report their own errors */ });
 
@@ -167,16 +169,26 @@ async function runWorkerTaskInner(worker: IWorkerHost, task: ScheduledTask, deps
         return { output: `Finding rejected: ${check.problem}`, isError: true };
       }
       const attribute = String(args.attribute);
+      const language = typeof args.language === 'string' && args.language.trim() ? String(args.language).trim().slice(0, 16) : undefined;
+      const translation = typeof args.translation === 'string' && args.translation.trim() ? String(args.translation).trim().slice(0, 400) : undefined;
+      // The blackboard verifies the quote again against this very page text and keeps the text as the finding's snapshot.
       const posted = deps.blackboard.postEvidence({
         entity: String(args.entity),
         attribute,
         category: /price|cost/i.test(attribute) ? 'price' : 'fact',
         value: String(args.value),
-        source: { url: ctx.snapshot.url, quote: squashQuote(String(args.quote)), sourceType: 'primary' },
+        source: { url: ctx.snapshot.url, quote: squashQuote(String(args.quote)), sourceType: 'primary', pageTitle: ctx.snapshot.title, language, translation },
+        pageText: ctx.snapshot.pageText || '',
         workerId: worker.id,
         stepId: task.id
       });
-      if (!posted.posted) return { output: 'This finding is already on the blackboard (same entity, attribute and value). Nothing new was recorded.' };
+      if (posted.rejected) {
+        deps.recordEvent?.('worker.finding_rejected', { workerId: worker.id, taskId: task.id, problem: posted.rejected });
+        return { output: `Finding rejected: ${posted.rejected} Nothing was recorded.`, isError: true };
+      }
+      deps.recordEvent?.('worker.visited', { workerId: worker.id, url: ctx.snapshot.url });
+      if (posted.corroborated) { findings++; return { output: `Recorded as a second independent source for ${args.entity} / ${attribute} = ${args.value}.` }; }
+      if (!posted.posted) return { output: 'This finding is already on the blackboard (same entity, attribute and value, same site). Nothing new was recorded.' };
       findings++;
       const note = posted.conflict ? ' It conflicts with another worker\'s finding; the verifier stage will compare the quotes.' : '';
       return { output: `Recorded: ${args.entity} / ${attribute} = ${args.value}.${note}` };
@@ -210,6 +222,7 @@ async function runWorkerTaskInner(worker: IWorkerHost, task: ScheduledTask, deps
     guardTool: (toolName, args) => {
       if (toolName !== 'navigate' || typeof args.url !== 'string') return null;
       const holder = deps.claims.claim(/^[a-z][a-z0-9+.-]*:/i.test(args.url) ? args.url : `https://${args.url}`, worker.id);
+      if (!holder) deps.blackboard.recordVisit(/^[a-z][a-z0-9+.-]*:/i.test(args.url) ? args.url : `https://${args.url}`, worker.id);
       return holder ? `Worker ${holder} already covers ${args.url}. Choose a different source for your sub-goal.` : null;
     },
     settings: {

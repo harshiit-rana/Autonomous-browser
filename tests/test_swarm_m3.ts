@@ -434,7 +434,8 @@ async function runSwarmTests() {
         attribute: 'price',
         category: 'price',
         value: task.id.includes('t1') ? '$398.00' : '$379.99',
-        source: { url: `https://shop-${task.id}.com/sony`, sourceType: 'primary' },
+        source: { url: `https://shop-${task.id}.com/sony`, sourceType: 'primary', quote: `Sony WH-1000XM5 now ${task.id.includes('t1') ? '$398.00' : '$379.99'}` },
+        pageText: `Welcome. Sony WH-1000XM5 now ${task.id.includes('t1') ? '$398.00' : '$379.99'} with free shipping.`,
         workerId: worker.id,
         confidence: 0.95
       });
