@@ -20,6 +20,48 @@ test.afterAll(async () => { await Promise.all(shops.map(s => s.stop())); });
 
 test.describe('truthful evidence', () => {
   test.use({
+    orchestratorScript: {
+      build: () => {
+        const list = two();
+        return [{
+          expectTools: ['submit_plan'],
+          respond: {
+            tool: 'submit_plan',
+            args: {
+              mode: 'swarm',
+              justification: 'Two independent shop origins require parallel extraction and cross-verification.',
+              stages: [
+                {
+                  name: 'extract',
+                  parallelism: 2,
+                  tasks: list.map((shop, i) => ({
+                    id: `shop_${i + 1}`,
+                    name: `${shop.name} extractor`,
+                    role: 'extractor',
+                    goal: `Extract price and exact quote for ${PRODUCT} on ${shop.name}.`,
+                    startUrl: shop.productUrl,
+                    dependsOn: [],
+                    effectClass: 'read'
+                  }))
+                },
+                {
+                  name: 'verify',
+                  parallelism: 1,
+                  tasks: [{
+                    id: 'verify_1',
+                    name: 'Verify and settle price conflict',
+                    role: 'verifier',
+                    goal: 'Compare gathered quotes across shops and settle any conflicts.',
+                    dependsOn: list.map((_, i) => `shop_${i + 1}`),
+                    effectClass: 'read'
+                  }]
+                }
+              ]
+            }
+          }
+        }];
+      }
+    },
     script: {
       build: () => {
         const [alpha, beta] = two();

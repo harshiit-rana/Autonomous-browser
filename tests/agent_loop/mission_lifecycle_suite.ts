@@ -70,6 +70,21 @@ class ScriptProvider implements IModelProvider {
   }
 }
 const passVerifier = () => new ScriptProvider(Array.from({ length: 6 }, () => () => tc('report_verdict', { pass: true, reasons: ['supported by the page'] })));
+const singleOrchestrator = () => new ScriptProvider(Array.from({ length: 6 }, () => req => {
+  const firstUser = req.messages.find(m => m.role === 'user');
+  const txt = typeof firstUser?.content === 'string' ? firstUser.content : '';
+  const m = /User Mission Goal:\s*(.+)/i.exec(txt);
+  const goal = m?.[1]?.trim() || 'Execute mission goal';
+  return tc('submit_plan', {
+    mode: 'single',
+    justification: 'Single linear mission for lifecycle test.',
+    stages: [{
+      name: 'execute',
+      parallelism: 1,
+      tasks: [{ id: 't1', name: 'Execute Goal', role: 'actor', goal, dependsOn: [], effectClass: 'read' }]
+    }]
+  });
+}));
 const done = (result = 'finished', evidence: string[] = []): Step => () => tc('done', { result, evidence });
 
 // ------------------------------------------------------------------ harness
@@ -90,6 +105,7 @@ function mkRuntime(ctx: Ctx, holder: { prov: IModelProvider; verifier?: IModelPr
     strict: true,
     inspect: () => ({ configured: true }),
     createProvider: async () => { if (holder.boom) throw new Error(holder.boom); return holder.prov; },
+    createOrchestratorProvider: async () => singleOrchestrator(),
     createVerifierProvider: async () => holder.verifier ?? passVerifier(),
     userDataDir: () => userData,
     stepDelayMs: 30,

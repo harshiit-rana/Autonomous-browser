@@ -56,6 +56,7 @@ export interface E2EModelState {
 }
 
 const STATE_KEY = '__AEGIS_E2E_MODEL__';
+const PROVIDER_CACHE_KEY = '__AEGIS_E2E_MODEL_PROVIDERS__';
 
 /** Read by the main-process e2e hooks; lives on globalThis so the hooks never import the provider classes. */
 export function getE2EModelState(): E2EModelState | undefined {
@@ -67,7 +68,22 @@ function sharedState(mode: E2EModelMode): E2EModelState {
   if (existing && existing.mode === mode) return existing;
   const state: E2EModelState = { mode, roles: {}, consumed: 0, requests: 0, costUSD: 0, deviations: [] };
   (globalThis as any)[STATE_KEY] = state;
+  (globalThis as any)[PROVIDER_CACHE_KEY] = new Map<string, IModelProvider>();
   return state;
+}
+
+function cachedScriptedProvider(cacheKey: string, build: (state: E2EModelState) => IModelProvider): IModelProvider {
+  const state = sharedState('scripted');
+  let map = (globalThis as any)[PROVIDER_CACHE_KEY] as Map<string, IModelProvider> | undefined;
+  if (!map) {
+    map = new Map<string, IModelProvider>();
+    (globalThis as any)[PROVIDER_CACHE_KEY] = map;
+  }
+  const hit = map.get(cacheKey);
+  if (hit) return hit;
+  const created = build(state);
+  map.set(cacheKey, created);
+  return created;
 }
 
 /** One ledger per process so the actor's and the verifier's live spend add up against the same cap. */
@@ -333,10 +349,12 @@ export function parseMaxCost(raw: string | undefined): number {
 
 export async function createE2EProvider(mode: string, makeLive: () => Promise<IModelProvider>): Promise<IModelProvider> {
   if (mode === 'scripted') {
-    const scriptPath = process.env.AEGIS_E2E_SCRIPT;
-    const steps = scriptPath ? normalizeScript(JSON.parse(fs.readFileSync(scriptPath, 'utf8'))) : [];
-    logger.warn('AEGIS_E2E_MODEL_MODE=scripted: model output comes from a script, not a model', { scriptPath, steps: steps.length });
-    return new E2EScriptedProvider(steps, sharedState('scripted'), 'actor');
+    const scriptPath = process.env.AEGIS_E2E_SCRIPT || '';
+    return cachedScriptedProvider(`actor:${scriptPath}`, state => {
+      const steps = scriptPath ? normalizeScript(JSON.parse(fs.readFileSync(scriptPath, 'utf8'))) : [];
+      logger.warn('AEGIS_E2E_MODEL_MODE=scripted: model output comes from a script, not a model', { scriptPath, steps: steps.length });
+      return new E2EScriptedProvider(steps, state, 'actor');
+    });
   }
   if (mode === 'replay') {
     const file = process.env.AEGIS_E2E_REPLAY;
@@ -364,8 +382,64 @@ export async function createE2EProvider(mode: string, makeLive: () => Promise<IM
  * state, so a verdict that was not scripted is a recorded deviation like any other.
  */
 export function createE2EScriptedVerifier(): IModelProvider {
-  const scriptPath = process.env.AEGIS_E2E_VERIFIER_SCRIPT;
-  const steps = scriptPath ? normalizeScript(JSON.parse(fs.readFileSync(scriptPath, 'utf8'))) : [];
-  logger.warn('AEGIS_E2E_MODEL_MODE=scripted: verifier output comes from a script, not a model', { scriptPath, steps: steps.length });
-  return new E2EScriptedProvider(steps, sharedState('scripted'), 'verifier');
+  const scriptPath = process.env.AEGIS_E2E_VERIFIER_SCRIPT || '';
+  return cachedScriptedProvider(`verifier:${scriptPath}`, state => {
+    const steps = scriptPath ? normalizeScript(JSON.parse(fs.readFileSync(scriptPath, 'utf8'))) : [];
+    logger.warn('AEGIS_E2E_MODEL_MODE=scripted: verifier output comes from a script, not a model', { scriptPath, steps: steps.length });
+    return new E2EScriptedProvider(steps, state, 'verifier');
+  });
+}
+
+/**
+ * The orchestrator's script for real-app e2e runs (`AEGIS_E2E_ORCHESTRATOR_SCRIPT`, answering with `submit_plan`).
+ * When a single-agent e2e test omits `orchestratorScript`, returns a single-agent plan without recording a deviation so
+ * existing actor-focused suites exercise the orchestrator -> runtime -> agent loop without boilerplate.
+ */
+export function createE2EScriptedOrchestrator(): IModelProvider {
+  const scriptPath = process.env.AEGIS_E2E_ORCHESTRATOR_SCRIPT;
+  if (scriptPath) {
+    return cachedScriptedProvider(`orchestrator:${scriptPath}`, state => {
+      const steps = normalizeScript(JSON.parse(fs.readFileSync(scriptPath, 'utf8')));
+      logger.warn('AEGIS_E2E_MODEL_MODE=scripted: orchestrator output comes from a script, not a model', { scriptPath, steps: steps.length });
+      return new E2EScriptedProvider(steps, state, 'orchestrator');
+    });
+  }
+  const state = sharedState('scripted');
+  return {
+    providerName: 'scripted',
+    modelName: 'scripted-orchestrator',
+    async generate(request: ModelRequest): Promise<ModelResponse> {
+      const firstUser = request.messages.find(m => m.role === 'user');
+      const text = typeof firstUser?.content === 'string' ? firstUser.content : '';
+      const goalMatch = /User Mission Goal:\s*(.+)/i.exec(text);
+      const goal = goalMatch?.[1]?.trim() || 'Execute user goal';
+      const forceSwarm = /Override:\s*User explicitly requested \/swarm/i.test(text);
+      state.requests += 1;
+      return {
+        text: '',
+        toolCalls: [{
+          id: 'e2e_orch_default',
+          name: 'submit_plan',
+          arguments: {
+            mode: forceSwarm ? 'swarm' : 'single',
+            justification: forceSwarm ? 'Explicit /swarm override requested.' : 'Single-agent default for scripted single-mission run.',
+            stages: [{
+              name: 'Execute Goal',
+              parallelism: 1,
+              tasks: [{
+                id: 't1',
+                name: 'Execute Goal',
+                role: forceSwarm ? 'researcher' : 'actor',
+                goal,
+                dependsOn: [],
+                effectClass: 'read'
+              }]
+            }]
+          }
+        }],
+        finishReason: 'tool_calls',
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+      };
+    }
+  };
 }

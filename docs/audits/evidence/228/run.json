@@ -1,0 +1,129 @@
+{
+  "views": [
+    {
+      "url": "http://127.0.0.1:58255/product",
+      "found": true,
+      "sessionIndex": 2,
+      "isDefaultSession": false
+    },
+    {
+      "url": "http://127.0.0.1:58256/product",
+      "found": true,
+      "sessionIndex": 1,
+      "isDefaultSession": false
+    },
+    {
+      "url": "http://127.0.0.1:58257/product",
+      "found": true,
+      "sessionIndex": 0,
+      "isDefaultSession": false
+    }
+  ],
+  "beatSpans": [
+    {
+      "shop": "alpha",
+      "start": 1795803096620,
+      "end": 1795803097531,
+      "n": 2
+    },
+    {
+      "shop": "beta",
+      "start": 1795803096619,
+      "end": 1795803097532,
+      "n": 2
+    },
+    {
+      "shop": "gamma",
+      "start": 1795803096631,
+      "end": 1795803098455,
+      "n": 3
+    }
+  ],
+  "hitsDuringMission": [
+    1,
+    1,
+    1
+  ],
+  "workers": [
+    {
+      "id": "swarm_worker_1",
+      "workerId": "swarm_worker_1",
+      "name": "Ada",
+      "color": "#38BDF8",
+      "glyph": "▲",
+      "task": "Done: Shop Alpha lists Aegis Widget X at $129.00.",
+      "progress": 100,
+      "status": "done",
+      "step": 2,
+      "lastAction": "finish_task {\"status\":\"completed\",\"summary\":\"Shop Alpha lists Aegis Widget X at $129.00.\"}",
+      "at": 1795803098252
+    },
+    {
+      "id": "swarm_worker_2",
+      "workerId": "swarm_worker_2",
+      "name": "Bram",
+      "color": "#F472B6",
+      "glyph": "●",
+      "task": "Done: Shop Beta lists Aegis Widget X at $119.50.",
+      "progress": 100,
+      "status": "done",
+      "step": 2,
+      "lastAction": "finish_task {\"status\":\"completed\",\"summary\":\"Shop Beta lists Aegis Widget X at $119.50.\"}",
+      "at": 1795803098248
+    },
+    {
+      "id": "swarm_worker_3",
+      "workerId": "swarm_worker_3",
+      "name": "Cleo",
+      "color": "#A3E635",
+      "glyph": "◆",
+      "task": "Done: Shop Gamma lists Aegis Widget X at $134.99.",
+      "progress": 100,
+      "status": "done",
+      "step": 2,
+      "lastAction": "finish_task {\"status\":\"completed\",\"summary\":\"Shop Gamma lists Aegis Widget X at $134.99.\"}",
+      "at": 1795803098243
+    }
+  ],
+  "statusHistory": [
+    "planning",
+    "running",
+    "completed"
+  ],
+  "model": {
+    "mode": "scripted",
+    "roles": {
+      "orchestrator": {
+        "scriptSteps": 1,
+        "consumed": 1
+      },
+      "actor": {
+        "scriptSteps": 6,
+        "consumed": 6
+      }
+    },
+    "consumed": 0,
+    "requests": 7,
+    "costUSD": 0,
+    "deviations": []
+  },
+  "evidenceLines": [
+    "[Swarm Stage Started] extract (3 tasks)",
+    "[Ada] [Step 1] Observing: \"Shop Alpha - Aegis Widget X\" (0 elements)",
+    "[Ada] [Action] report_finding({\"entity\":\"Aegis Widget X at Shop Alpha\",\"attribute\":\"price\",\"value\":\"$129.00\",\"quote\":\"Aegis Widget)",
+    "[Blackboard Evidence] [Aegis Widget X at Shop Alpha - price: USD 129.00] from http://127.0.0.1:58255/product",
+    "[Bram] [Step 1] Observing: \"Shop Beta - Aegis Widget X\" (0 elements)",
+    "[Bram] [Action] report_finding({\"entity\":\"Aegis Widget X at Shop Beta\",\"attribute\":\"price\",\"value\":\"$119.50\",\"quote\":\"Aegis Widget )",
+    "[Blackboard Evidence] [Aegis Widget X at Shop Beta - price: USD 119.50] from http://127.0.0.1:58256/product",
+    "[Cleo] [Step 1] Observing: \"Shop Gamma - Aegis Widget X\" (0 elements)",
+    "[Cleo] [Action] report_finding({\"entity\":\"Aegis Widget X at Shop Gamma\",\"attribute\":\"price\",\"value\":\"$134.99\",\"quote\":\"Aegis Widget)",
+    "[Blackboard Evidence] [Aegis Widget X at Shop Gamma - price: USD 134.99] from http://127.0.0.1:58257/product",
+    "[Cleo] [Step 2] Observing: \"Shop Gamma - Aegis Widget X\" (0 elements)",
+    "[Cleo] [Action] finish_task({\"status\":\"completed\",\"summary\":\"Shop Gamma lists Aegis Widget X at $134.99.\"})",
+    "[Bram] [Step 2] Observing: \"Shop Beta - Aegis Widget X\" (0 elements)",
+    "[Bram] [Action] finish_task({\"status\":\"completed\",\"summary\":\"Shop Beta lists Aegis Widget X at $119.50.\"})",
+    "[Ada] [Step 2] Observing: \"Shop Alpha - Aegis Widget X\" (0 elements)",
+    "[Ada] [Action] finish_task({\"status\":\"completed\",\"summary\":\"Shop Alpha lists Aegis Widget X at $129.00.\"})",
+    "[Mission Finished] Mission succeeded: # Swarm Mission Report: compare the price of Aegis Widget X across http://127.0.0.1:58255/product ht"
+  ]
+}

@@ -69,9 +69,12 @@ export class BrowserApp {
   private tokensStat: HTMLElement;
   private costStat: HTMLElement;
 
-  // Plan Preview Modal (Issue #140)
+  // Plan Preview Modal (Issues #140, #228)
   private planPreviewModal: HTMLElement;
   private planGoalText: HTMLElement;
+  private planModeBadge: HTMLElement;
+  private planJustificationText: HTMLElement;
+  private switchSinglePlanBtn: HTMLButtonElement;
   private planStepsContainer: HTMLElement;
   private planEstDuration: HTMLElement;
   private planEstCost: HTMLElement;
@@ -79,6 +82,7 @@ export class BrowserApp {
   private cancelPlanBtn: HTMLButtonElement;
   private executePlanBtn: HTMLButtonElement;
   private pendingPlanPrompt: string | null = null;
+  private pendingPreviewPlan: any | null = null;
 
   // Settings Modal (Issues #129, #133)
   private settingsBtn: HTMLButtonElement;
@@ -91,6 +95,7 @@ export class BrowserApp {
   private settingsAnthropicKey: HTMLInputElement;
   private settingsOpenaiKey: HTMLInputElement;
   private settingsOllamaUrl: HTMLInputElement;
+  private settingsSkipLowRiskPreview: HTMLInputElement;
   private settingsNotice: HTMLElement;
   private demoBanner: HTMLElement;
   private groupGeminiKey: HTMLElement;
@@ -142,6 +147,9 @@ export class BrowserApp {
     // Plan Preview
     this.planPreviewModal = document.getElementById('plan-preview-modal') as HTMLElement;
     this.planGoalText = document.getElementById('plan-goal-text') as HTMLElement;
+    this.planModeBadge = document.getElementById('plan-mode-badge') as HTMLElement;
+    this.planJustificationText = document.getElementById('plan-justification-text') as HTMLElement;
+    this.switchSinglePlanBtn = document.getElementById('switch-single-plan-btn') as HTMLButtonElement;
     this.planStepsContainer = document.getElementById('plan-steps-container') as HTMLElement;
     this.planEstDuration = document.getElementById('plan-est-duration') as HTMLElement;
     this.planEstCost = document.getElementById('plan-est-cost') as HTMLElement;
@@ -160,6 +168,7 @@ export class BrowserApp {
     this.settingsAnthropicKey = document.getElementById('settings-anthropic-key') as HTMLInputElement;
     this.settingsOpenaiKey = document.getElementById('settings-openai-key') as HTMLInputElement;
     this.settingsOllamaUrl = document.getElementById('settings-ollama-url') as HTMLInputElement;
+    this.settingsSkipLowRiskPreview = document.getElementById('settings-skip-low-risk-preview') as HTMLInputElement;
     this.settingsNotice = document.getElementById('settings-notice') as HTMLElement;
     this.demoBanner = document.getElementById('demo-banner') as HTMLElement;
     this.groupGeminiKey = document.getElementById('group-gemini-key') as HTMLElement;
@@ -526,6 +535,7 @@ export class BrowserApp {
     if (!aegis?.previewPlan) return;
 
     this.pendingPlanPrompt = goal;
+    this.pendingPreviewPlan = null;
     aegis.setOverlayActive?.(true); // Occlusion protection (Issue #138)
 
     const model = this.modelSelect?.value || 'gemini-2.0-flash';
@@ -538,54 +548,177 @@ export class BrowserApp {
     const res = await aegis.previewPlan(goal, model);
     const plan = res?.data || res;
 
-    this.planGoalText.textContent = sanitizeText(goal);
-    this.planStepsContainer.replaceChildren();
+    if (plan?.ok === false || (!plan?.stages && plan?.error)) {
+      this.pendingPlanPrompt = null;
+      this.pendingPreviewPlan = null;
+      aegis?.setOverlayActive?.(false);
+      const errMsg = plan?.error || 'Failed to plan mission.';
+      this.showToast(errMsg);
+      this.addTimelineItem(`[Plan Error] ${errMsg}`, undefined, 'errors');
+      return;
+    }
 
-    if (plan?.steps) {
-      for (const step of plan.steps) {
+    this.pendingPreviewPlan = {
+      goal: plan.goal || goal,
+      mode: plan.mode === 'swarm' ? 'swarm' : 'single',
+      justification: plan.justification || '',
+      stages: Array.isArray(plan.stages)
+        ? plan.stages.map((s: any) => ({
+            ...s,
+            tasks: Array.isArray(s.tasks) ? s.tasks.map((t: any) => ({ ...t })) : []
+          }))
+        : [],
+      estimatedDurationSec: plan.estimatedDurationSec ?? 0,
+      estimatedCostUSD: plan.estimatedCostUSD ?? null
+    };
+
+    if (plan?.skipPreview) {
+      await this.executeConfirmedPlan();
+      return;
+    }
+
+    this.planGoalText.textContent = sanitizeText(goal);
+    this.renderPlanPreviewBody();
+    this.planPreviewModal.classList.remove('hidden');
+  }
+
+  private renderPlanPreviewBody(): void {
+    const plan = this.pendingPreviewPlan;
+    if (!plan) return;
+
+    if (this.planModeBadge) {
+      const isSwarm = plan.mode === 'swarm';
+      this.planModeBadge.textContent = isSwarm ? 'SWARM' : 'SINGLE AGENT';
+      this.planModeBadge.classList.toggle('swarm', isSwarm);
+      this.planModeBadge.classList.toggle('single', !isSwarm);
+    }
+    if (this.planJustificationText) {
+      this.planJustificationText.textContent = sanitizeText(plan.justification || 'No justification provided.');
+    }
+    if (this.switchSinglePlanBtn) {
+      this.switchSinglePlanBtn.classList.toggle('hidden', plan.mode !== 'swarm');
+    }
+
+    this.planStepsContainer.replaceChildren();
+    const totalTasks = plan.stages.reduce((acc: number, s: any) => acc + (s.tasks?.length || 0), 0);
+    let stepNum = 0;
+
+    for (let sIdx = 0; sIdx < plan.stages.length; sIdx++) {
+      const stage = plan.stages[sIdx];
+      for (let tIdx = 0; tIdx < (stage.tasks?.length || 0); tIdx++) {
+        const task = stage.tasks[tIdx];
+        stepNum++;
         const stepEl = document.createElement('div');
         stepEl.className = 'plan-step-item';
 
         const badge = document.createElement('div');
         badge.className = 'step-num-badge';
-        badge.textContent = String(step.stepNumber);
+        badge.textContent = String(stepNum);
         stepEl.appendChild(badge);
 
         const content = document.createElement('div');
         content.className = 'step-content';
 
-        const title = document.createElement('div');
-        title.className = 'step-title';
-        title.textContent = sanitizeText(step.title);
-        content.appendChild(title);
+        const titleRow = document.createElement('div');
+        titleRow.className = 'step-title';
+        titleRow.textContent = sanitizeText(`[${stage.stageName}] ${task.name} (${task.role} · ${task.effectClass})`);
+        content.appendChild(titleRow);
 
-        const desc = document.createElement('div');
-        desc.className = 'step-desc';
-        desc.textContent = sanitizeText(step.description);
-        content.appendChild(desc);
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-input plan-task-input';
+        input.value = String(task.instruction || '');
+        input.setAttribute('aria-label', `Edit instruction for ${task.name}`);
+        input.addEventListener('input', () => {
+          task.instruction = input.value;
+        });
+        content.appendChild(input);
+
+        if (task.url) {
+          const desc = document.createElement('div');
+          desc.className = 'step-desc';
+          desc.textContent = sanitizeText(task.url);
+          content.appendChild(desc);
+        }
 
         stepEl.appendChild(content);
+
+        if (totalTasks > 1) {
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'btn-secondary plan-remove-task-btn';
+          removeBtn.textContent = 'Remove';
+          removeBtn.addEventListener('click', () => {
+            const removedId = task.id;
+            stage.tasks.splice(tIdx, 1);
+            for (const remStage of plan.stages) {
+              for (const remTask of remStage.tasks) {
+                if (Array.isArray(remTask.dependencies)) {
+                  remTask.dependencies = remTask.dependencies.filter((d: string) => d !== removedId);
+                }
+              }
+            }
+            plan.stages = plan.stages.filter((s: any) => s.tasks.length > 0);
+            for (const remStage of plan.stages) {
+              remStage.parallelism = Math.max(1, Math.min(remStage.parallelism, remStage.tasks.length));
+            }
+            this.renderPlanPreviewBody();
+          });
+          stepEl.appendChild(removeBtn);
+        }
+
         this.planStepsContainer.appendChild(stepEl);
       }
     }
 
-    if (plan?.estimatedDurationSec) {
-      this.planEstDuration.textContent = `~${plan.estimatedDurationSec}s`;
+    this.planEstDuration.textContent = plan.estimatedDurationSec ? `~${plan.estimatedDurationSec}s` : '—';
+    if (plan.estimatedCostUSD === null || plan.estimatedCostUSD === undefined) {
+      this.planEstCost.textContent = 'no pricing data';
+    } else {
+      this.planEstCost.textContent = `~$${Number(plan.estimatedCostUSD).toFixed(4)}`;
     }
-    if (plan?.estimatedCostUSD) {
-      this.planEstCost.textContent = `~$${plan.estimatedCostUSD.toFixed(4)}`;
-    }
+  }
 
-    this.planPreviewModal.classList.remove('hidden');
+  private switchPlanToSingleAgent(): void {
+    const plan = this.pendingPreviewPlan;
+    if (!plan) return;
+    const goal = this.pendingPlanPrompt || plan.goal;
+    const allTasks = plan.stages.flatMap((s: any) => s.tasks || []);
+    const hasApproval = allTasks.some((t: any) => t.requiresApproval);
+    const nonRead = allTasks.find((t: any) => t.effectClass && t.effectClass !== 'read');
+    const firstUrl = allTasks.find((t: any) => t.url)?.url;
+    plan.mode = 'single';
+    plan.justification = 'User switched plan to single-agent execution.';
+    plan.stages = [
+      {
+        stageName: 'execute',
+        parallelism: 1,
+        tasks: [
+          {
+            id: 'task_single',
+            name: 'Single-Agent Execution',
+            role: nonRead ? 'actor' : 'researcher',
+            ...(firstUrl ? { url: firstUrl } : {}),
+            instruction: goal,
+            effectClass: nonRead ? nonRead.effectClass : 'read',
+            dependencies: [],
+            ...(hasApproval ? { requiresApproval: true } : {})
+          }
+        ]
+      }
+    ];
+    this.renderPlanPreviewBody();
   }
 
   private closePlanPreview(): void {
     this.planPreviewModal.classList.add('hidden');
+    this.pendingPreviewPlan = null;
     (window as any).aegis?.setOverlayActive?.(false);
   }
 
   private async executeConfirmedPlan(): Promise<void> {
     const goal = this.pendingPlanPrompt;
+    const editedPlan = this.pendingPreviewPlan;
     this.closePlanPreview();
     if (!goal) return;
 
@@ -597,7 +730,19 @@ export class BrowserApp {
     const model = this.modelSelect?.value || 'gemini-2.0-flash';
     this.addTimelineItem(`[Mission Plan Confirmed] "${goal}"`, undefined, 'actions');
 
-    const res = await aegis.startMission(goal, model);
+    const startOptions = editedPlan
+      ? {
+          approvedMode: editedPlan.mode,
+          approvedPlan: {
+            missionId: `preview_${Date.now()}`,
+            goal,
+            justification: editedPlan.justification,
+            stages: editedPlan.stages
+          }
+        }
+      : undefined;
+
+    const res = await aegis.startMission(goal, model, startOptions);
     if (!res?.data?.started) {
       const reason = res?.data?.message || res?.error || 'Agent runtime not configured.';
       if (res?.data?.code === MISSION_ACTIVE) {
@@ -630,6 +775,7 @@ export class BrowserApp {
     this.closePlanBtn.addEventListener('click', () => this.closePlanPreview());
     this.cancelPlanBtn.addEventListener('click', () => this.closePlanPreview());
     this.executePlanBtn.addEventListener('click', () => this.executeConfirmedPlan());
+    this.switchSinglePlanBtn?.addEventListener('click', () => this.switchPlanToSingleAgent());
 
     // Credential test probes
     document.getElementById('test-gemini-btn')?.addEventListener('click', () => this.testKey('gemini'));
@@ -720,6 +866,9 @@ export class BrowserApp {
         this.settingsAnthropicKey.value = settings.apiKeys?.anthropic || '';
         this.settingsOpenaiKey.value = settings.apiKeys?.openai || '';
         this.settingsOllamaUrl.value = settings.ollamaBaseUrl || 'http://localhost:11434';
+        if (this.settingsSkipLowRiskPreview) {
+          this.settingsSkipLowRiskPreview.checked = Boolean(settings.skipLowRiskPlanPreview);
+        }
       }
     } catch (err) {
       console.error('Failed to load settings', err);
@@ -759,7 +908,8 @@ export class BrowserApp {
         anthropic: this.settingsAnthropicKey.value.trim(),
         openai: this.settingsOpenaiKey.value.trim()
       },
-      ollamaBaseUrl: this.settingsOllamaUrl.value.trim() || 'http://localhost:11434'
+      ollamaBaseUrl: this.settingsOllamaUrl.value.trim() || 'http://localhost:11434',
+      skipLowRiskPlanPreview: Boolean(this.settingsSkipLowRiskPreview?.checked)
     };
 
     // Validate the selected provider's key before saving (CREDENTIALS_TEST). A second Save on the same
@@ -880,7 +1030,10 @@ export class BrowserApp {
     if (welcome) welcome.style.display = 'none';
 
     if (intent.type === 'agent_command') {
-      const promptText = intent.prompt || raw;
+      const promptText =
+        intent.command === 'swarm'
+          ? (intent.prompt ? `/swarm ${intent.prompt}` : '/swarm')
+          : (intent.prompt || raw);
       // Show plan preview modal for approval before execution (Issue #140)
       await this.promptPlanPreview(promptText);
     } else if (intent.type === 'url' || intent.type === 'search') {
