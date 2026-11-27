@@ -24,8 +24,10 @@ export interface E2ESnapshot {
   workers: Record<string, WorkerEventPayload>;
   telemetry: { tokensTotal: number; costTotal: number } | null;
   evidence: string[];
-  /** Last presence event the product emitted (none until #233 ships an emitter). */
+  /** Last presence event the product sent to the presence overlay window (#233). */
   presence: unknown | null;
+  /** Newest page-view rectangle (content-relative DIP, or null when hidden) the product gave the presence layer, per worker/tab id. */
+  presenceRects: Record<string, unknown>;
   /** Tab list as the product reported it to the chrome window. */
   tabs: TabState[];
   activeTabId: string | null;
@@ -57,6 +59,7 @@ export function installE2EHooks(): void {
   const questions: MissionQuestionPayload[] = [];
   let telemetry: E2ESnapshot['telemetry'] = null;
   let presence: unknown | null = null;
+  const presenceRects: Record<string, unknown> = {};
   let tabs: TabState[] = [];
   let activeTabId: string | null = null;
   const waiters = new Set<Waiter>();
@@ -86,7 +89,9 @@ export function installE2EHooks(): void {
         telemetry = { tokensTotal: Number(payload?.tokensTotal ?? 0), costTotal: Number(payload?.costTotal ?? 0) };
         break;
       case IPC_CHANNELS.EVENT_PRESENCE:
-        presence = payload;
+        // The overlay window receives `{op:'event'|'rect'|'remove'}`; the snapshot keeps the newest drawn event.
+        if (payload?.op === 'event') presence = payload.event;
+        else if (payload?.op === 'rect') presenceRects[payload.workerId] = payload.rect;
         break;
       case IPC_CHANNELS.EVENT_TABS_SYNC: {
         const snap = payload as TabsSnapshot;
@@ -126,6 +131,7 @@ export function installE2EHooks(): void {
     telemetry,
     evidence: [...evidence],
     presence,
+    presenceRects: { ...presenceRects },
     tabs: tabs.map(t => ({ ...t })),
     activeTabId,
     contents: webContents.getAllWebContents().map(wc => ({

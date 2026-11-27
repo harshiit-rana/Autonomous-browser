@@ -288,6 +288,22 @@
     "isReachable": true
   },
   {
+    "path": "main/presence_geometry.ts",
+    "isReachable": true
+  },
+  {
+    "path": "main/presence_layer.ts",
+    "isReachable": true
+  },
+  {
+    "path": "main/presence_preload.ts",
+    "isReachable": true
+  },
+  {
+    "path": "main/presence_window.ts",
+    "isReachable": true
+  },
+  {
     "path": "main/process_errors.ts",
     "isReachable": true
   },
@@ -424,6 +440,10 @@
     "isReachable": true
   },
   {
+    "path": "renderer/presence.ts",
+    "isReachable": true
+  },
+  {
     "path": "renderer/swarm_grid.ts",
     "isReachable": true
   },
@@ -498,10 +518,6 @@
   {
     "path": "session/trajectory_replay.ts",
     "isReachable": false
-  },
-  {
-    "path": "stealth/cursor_overlay.ts",
-    "isReachable": true
   },
   {
     "path": "stealth/fingerprint_shield.ts",

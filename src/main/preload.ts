@@ -141,9 +141,6 @@ contextBridge.exposeInMainWorld('aegis', {
   },
   onTelemetry: (callback: (data: any) => void) => {
     ipcRenderer.on(IPC_CHANNELS.EVENT_TELEMETRY, (_, data) => callback(data));
-  },
-  onPresence: (callback: (data: any) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.EVENT_PRESENCE, (_, data) => callback(data));
   }
 });
 

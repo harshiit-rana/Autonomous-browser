@@ -1,0 +1,68 @@
+{
+  "geo": {
+    "view": {
+      "x": 0,
+      "y": 88,
+      "width": 460,
+      "height": 512
+    },
+    "winWidth": 800,
+    "zoom": 1,
+    "dpr": 0,
+    "tabId": "tab_1795514470309_w94z8"
+  },
+  "before": {
+    "file": "D:\\REA\\wt-LIV-02\\docs\\audits\\evidence\\233\\dpr1_before.png",
+    "left": 0,
+    "top": 0,
+    "width": 800,
+    "height": 600
+  },
+  "after": {
+    "file": "D:\\REA\\wt-LIV-02\\docs\\audits\\evidence\\233\\dpr1_after.png",
+    "left": 0,
+    "top": 0,
+    "width": 800,
+    "height": 600
+  },
+  "m": {
+    "ratio": 1,
+    "count": 44,
+    "cx": 119.5,
+    "cy": 152.5,
+    "ex": 120,
+    "ey": 153,
+    "errX": -0.5,
+    "errY": -0.5,
+    "changed": 0,
+    "total": 199104,
+    "changedBox": {
+      "x0": 1000000000,
+      "y0": 1000000000,
+      "x1": -1,
+      "y1": -1
+    },
+    "view": [
+      0,
+      88,
+      460,
+      600
+    ],
+    "shot": {
+      "width": 800,
+      "height": 600
+    }
+  },
+  "event": {
+    "workerId": "tab_1795514470309_w94z8",
+    "seq": 3,
+    "ts": 1795514473354,
+    "zoom": 1,
+    "name": "Agent",
+    "color": "#7C5CFF",
+    "kind": "click",
+    "x": 120,
+    "y": 65,
+    "label": "left"
+  }
+}

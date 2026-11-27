@@ -12,7 +12,6 @@ import {
   TabPatch,
   WorkerEventPayload,
   EvidenceEventPayload,
-  PresenceEventPayload,
   GridSourcesPayload,
   MissionStatusPayload,
   MissionQuestionPayload,
@@ -57,8 +56,6 @@ export class BrowserApp {
   // Swarm Grid & Presence Overlay (Issues #135, #136)
   private swarmGridContainer: HTMLElement;
   private swarmGrid: SwarmGrid;
-  private presenceOverlay: HTMLElement;
-  private cursorElement: HTMLElement | null = null;
 
   // Live Timeline & Steering (Issues #137, #211)
   private evidenceFeed: HTMLElement;
@@ -130,7 +127,6 @@ export class BrowserApp {
     this.layoutTheatreBtn = document.getElementById('layout-theatre-btn') as HTMLButtonElement;
     this.paneResizer = document.getElementById('pane-resizer') as HTMLElement;
     this.swarmGridContainer = document.getElementById('swarm-grid-container') as HTMLElement;
-    this.presenceOverlay = document.getElementById('presence-overlay') as HTMLElement;
 
     // Timeline & Steering
     this.evidenceFeed = document.getElementById('evidence-feed') as HTMLElement;
@@ -263,11 +259,6 @@ export class BrowserApp {
         this.costStat.textContent = `$${data.costTotal.toFixed(4)}`;
       }
     });
-
-    // Agent Presence Layer (Issue #136: Rendering outside page DOM)
-    aegis.onPresence?.((data: PresenceEventPayload) => {
-      this.handlePresenceEvent(data);
-    });
   }
 
   // ==========================================
@@ -321,35 +312,6 @@ export class BrowserApp {
 
     this.swarmGridContainer.classList.toggle('hidden', mode !== 'grid');
     this.swarmGrid.setActive(mode === 'grid');
-  }
-
-  // ==========================================
-  // Presence Overlay Layer (#136)
-  // ==========================================
-  private handlePresenceEvent(data: PresenceEventPayload): void {
-    if (!this.presenceOverlay) return;
-
-    if (!this.cursorElement) {
-      this.cursorElement = document.createElement('div');
-      this.cursorElement.className = '__presence_cursor__';
-      const chip = document.createElement('span');
-      chip.className = 'cursor-chip';
-      chip.textContent = sanitizeText(data.workerName || 'Aegis Agent');
-      this.cursorElement.appendChild(chip);
-      this.presenceOverlay.appendChild(this.cursorElement);
-    }
-
-    if (data.type === 'move') {
-      this.cursorElement.style.transform = `translate(${data.x - 9}px, ${data.y - 9}px)`;
-    } else if (data.type === 'click') {
-      this.cursorElement.style.transform = `translate(${data.x - 9}px, ${data.y - 9}px)`;
-      const ripple = document.createElement('div');
-      ripple.className = '__presence_ripple__';
-      ripple.style.left = `${data.x}px`;
-      ripple.style.top = `${data.y}px`;
-      this.presenceOverlay.appendChild(ripple);
-      setTimeout(() => ripple.remove(), 400);
-    }
   }
 
   // ==========================================

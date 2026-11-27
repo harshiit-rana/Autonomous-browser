@@ -20,8 +20,8 @@ function testDocsTruth() {
 
   const bannedClaims: string[] = JSON.parse(fs.readFileSync(bannedClaimsPath, 'utf8'));
 
-  // Run gate in memory with skip-unit for fast response
-  const jsonRaw = execSync('node scripts/release_gate.mjs --json --skip-unit', {
+  // Run gate in memory with skip-unit and skip-e2e so unit runs do not nest the Electron e2e suite
+  const jsonRaw = execSync('node scripts/release_gate.mjs --json --skip-unit --skip-e2e', {
     cwd: process.cwd(),
     encoding: 'utf8'
   });

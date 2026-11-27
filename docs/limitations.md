@@ -196,3 +196,26 @@ Design and formula: `docs/swarm/evidence.md`. Proof: `tests/test_evidence_truth.
 | Auto-adjudication | The credibility-weight rule and "official source wins" were removed from the blackboard; only a head count of independent verified sites (>= 2, >= 65%) settles a conflict without the verifier. | Issue: never decide by confidence alone. |
 | Unsupported-claim check on free text | `VerifiedReportSynthesizer.synthesizeReport` (free-text sections with citations) is still unused by the swarm: the swarm report has no model-written prose. The grounding assertion (`assertGrounded`) and the findings table are wired. | #251. |
 | Verifier-stage tests in the app | The e2e covers `needs_human`; `winner` and `both_valid` are covered by unit tests only. | Time. |
+
+## Agent presence layer (#233 LIV-02)
+
+Design and measurements: `docs/adr/0011-presence-layer.md`. Proof: `tests/test_presence_layer.ts` (mapping, coalescing, window tracking, executor emission, masking) and `tests/e2e/presence.spec.ts` (real app, real OS screenshots and a real OS click, evidence in `docs/audits/evidence/233/`). Windows only. Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| Other platforms | **Not verified, no layer on Linux.** macOS builds the same window but was never run. On Linux (no `setIgnoreMouseEvents` forwarding) the layer draws nothing; the ADR's fallback B2 (cursor-sized overlay view) is not built. The e2e is skipped off Windows, so CI (Linux) does not exercise the pixels. | No macOS or Linux machine. |
+| Real model | **Not verified.** The e2e drives the real click tool with a scripted model. | Live evals: #256 / #257. |
+| Display scale | Forced device scale factor 1 and 2 are measured; real Windows 100 / 150 / 175 % settings and a monitor-to-monitor move with different DPR are not. The layer re-fits on `display-metrics-changed` (unit-tested with a fake). | One machine at 125 %. |
+| Page zoom != 1 | The mapping `view origin + (x * zoom, y * zoom)` is unit-tested and `ViewManager` stamps the live `getZoomFactor()`, but no e2e ran with a zoomed page. ADR 0011 measured zoom 1.5 at about 1 px. | Time. |
+| Iframes and shadow DOM | Coordinates come from `__aegisAbsRect` in the executor (same-origin frames and open shadow roots). Cross-origin iframe offsets are not mapped. | Perception limit. |
+| Fullscreen video / HTML fullscreen | Non-goal here: an owned window may sit above or below a fullscreen page. Not tested. | Platform behaviour, needs hardware. |
+| `cursor: none` pages | By construction unaffected (the overlay is a separate window), and the e2e fixture sets `cursor:none`; no dedicated assertion. | |
+| Off-screen target edge indicator | **Not built.** A target outside the viewport is drawn clipped (invisible) because each view's box clips its cursor; `pointInView` exists and is tested but nothing uses it. | Visual follow-up. |
+| Set-of-Marks for the user | **Not built** (no toggle, no numbered boxes drawn from snapshot refs). The model-side SoM is unchanged. | Needs the UI toggle (#234/#235). |
+| Visual polish | Per-worker colour, name chip, ripple, caret bubble, scroll arrows, target box, think pulse and needs-you beacon are drawn by `presence.html`/`presence.ts`; `think` and `needs_you` have no emitter yet (the mission lifecycle in `agent_loop.ts` / `runtime.ts` is being changed by #226). Smoothness as seen by a person and `prefers-reduced-motion` were not evaluated. | Follow-up after #226. |
+| Cursor path | The path is what was dispatched: the agent's tools jump straight to the target, so the path has two points (start, target) and the overlay interpolates between them. The legacy human-curve methods (`clickElement`, `moveMouseTo`) send their whole curve. | The tools do not use curves. |
+| Coalescing | Moves are merged per 16 ms tick; clicks and typing are never merged. 100 actions per minute was not load-tested in the app. | Unit-tested only. |
+| Window follow latency | After `setBounds`, `resize` and `minimize/restore` the overlay matched the content area in the same tick (0 px). Continuous drag, snap layouts and Alt-Tab with a `skipTaskbar` child were not exercised. | Needs real input. |
+| Focus | The overlay is `focusable: false`; the harness's own OS helpers activate windows, so page-visible focus events are inconclusive (ADR 0011). | |
+| Screen recorders | Whether a recorder or remote desktop captures the click-through window was not tested. Model screenshots (`capturePage`, CDP) never contain it (tested). | |
+| Layer lifetime | The cursor stays drawn (dimmed after 30 s) until its view is hidden or removed; there is no "agent finished" fade. | Needs the mission lifecycle (#226). |

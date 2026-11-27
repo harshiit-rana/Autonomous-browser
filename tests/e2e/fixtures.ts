@@ -70,6 +70,8 @@ interface TestOptions {
   allowDeviations: boolean;
   /** Tests that stop a mission early: do not require the whole script to have been consumed. */
   allowUnconsumedScript: boolean;
+  /** Extra Chromium switches for the Electron process (e.g. `--force-device-scale-factor=2`). */
+  extraArgs: string[];
 }
 
 export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: ArenaHandle }>({
@@ -79,6 +81,7 @@ export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: Arena
   replayFile: [undefined, { option: true }],
   allowDeviations: [false, { option: true }],
   allowUnconsumedScript: [false, { option: true }],
+  extraArgs: [[], { option: true }],
 
   arena: [
     async ({}, use) => {
@@ -96,7 +99,7 @@ export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: Arena
     { scope: 'worker' }
   ],
 
-  app: async ({ arena, modelMode, script, verifierScript, replayFile, allowDeviations, allowUnconsumedScript }, use, testInfo) => {
+  app: async ({ arena, modelMode, script, verifierScript, replayFile, allowDeviations, allowUnconsumedScript, extraArgs }, use, testInfo) => {
     await arena.reset();
     if (modelMode === 'live' && !process.env.AEGIS_E2E_MAX_COST_USD) {
       throw new Error('modelMode "live" requires AEGIS_E2E_MAX_COST_USD (hard cost cap in USD)');
@@ -141,6 +144,7 @@ export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: Arena
       '--disable-gpu'
     ];
     if (process.platform === 'linux' && process.env.CI) args.push('--no-sandbox');
+    args.push(...extraArgs);
     args.push(ENTRY);
 
     const recordVideo = (process.env.AEGIS_E2E_VIDEO ?? 'off') !== 'off'

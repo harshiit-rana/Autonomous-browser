@@ -7,9 +7,10 @@
  */
 import { build } from 'esbuild';
 
-await build({
-  entryPoints: ['dist/main/preload.js'],
-  outfile: 'dist/main/preload.js',
+// Both sandboxed windows: the chrome window and the presence overlay window (#233).
+for (const name of ['preload', 'presence_preload']) await build({
+  entryPoints: [`dist/main/${name}.js`],
+  outfile: `dist/main/${name}.js`,
   allowOverwrite: true,
   bundle: true,
   platform: 'node',

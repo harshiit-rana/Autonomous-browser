@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { OmnibarParser } from '../src/ui/omnibar_parser.js';
-import { PresenceEventPayload, PlanPreviewResponse } from '../ipc/contract.js';
+import { PresenceEvent, PlanPreviewResponse } from '../ipc/contract.js';
 
 console.log('--- Testing Milestone M3: Mission Control & Swarm Chrome UX ---');
 
@@ -32,24 +32,22 @@ async function runTests() {
 
   // 2. Issue #136: Agent Presence Layer Contract
   console.log('Testing Agent Presence Layer Contract...');
-  const moveEvent: PresenceEventPayload = {
-    tabId: 'tab_test_1',
-    type: 'move',
+  const moveEvent: PresenceEvent = {
+    workerId: 'tab_test_1', seq: 1, ts: 0, kind: 'move', zoom: 1,
     x: 420,
     y: 280,
-    workerName: 'Operator-1'
+    name: 'Operator-1'
   };
 
-  const clickEvent: PresenceEventPayload = {
-    tabId: 'tab_test_1',
-    type: 'click',
+  const clickEvent: PresenceEvent = {
+    workerId: 'tab_test_1', seq: 2, ts: 0, kind: 'click', zoom: 1,
     x: 420,
     y: 280,
-    workerName: 'Operator-1'
+    name: 'Operator-1'
   };
 
-  assert.strictEqual(moveEvent.type, 'move');
-  assert.strictEqual(clickEvent.type, 'click');
+  assert.strictEqual(moveEvent.kind, 'move');
+  assert.strictEqual(clickEvent.kind, 'click');
   assert.strictEqual(moveEvent.x, clickEvent.x);
   console.log('✓ Agent Presence Layer payload contract verified');
 
