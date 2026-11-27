@@ -85,6 +85,10 @@ contextBridge.exposeInMainWorld('aegis', {
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_UNDO),
   answerQuestion: (missionId: string, questionId: string, answer: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_ANSWER, { missionId, questionId, answer }),
+  getInterruptedMission: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_INTERRUPTED),
+  resumeInterruptedMission: (missionId: string, discard?: boolean) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_RESUME_INTERRUPTED, { missionId, discard }),
 
   // Persistence: mission history, backup/restore (Issue #239)
   listMissions: (limit?: number) =>

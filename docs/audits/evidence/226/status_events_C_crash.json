@@ -1,0 +1,42 @@
+[
+  {
+    "missionId": "m_1795499725688_vctq",
+    "status": "planning",
+    "message": "Planning goal: \"Open http://127.0.0.1:52435/shop and survive a cra...\"",
+    "reason": "mission_started",
+    "ts": 1795499725689,
+    "seq": 1
+  },
+  {
+    "missionId": "m_1795499725688_vctq",
+    "status": "running",
+    "message": "Mission running",
+    "reason": "loop_started",
+    "ts": 1795499725691,
+    "seq": 2
+  },
+  {
+    "missionId": "m_1795499725688_vctq",
+    "status": "paused",
+    "message": "Page crashed: reload it or skip?",
+    "reason": "tab_crashed",
+    "ts": 1795499725712,
+    "seq": 3
+  },
+  {
+    "missionId": "m_1795499725688_vctq",
+    "status": "running",
+    "message": "Page reloaded after crash",
+    "reason": "crash_reload",
+    "ts": 1795499727814,
+    "seq": 4
+  },
+  {
+    "missionId": "m_1795499725688_vctq",
+    "status": "completed",
+    "message": "Mission succeeded (verifier: pass): Fixture shop reached; mission survived the crash",
+    "reason": "loop_finished",
+    "ts": 1795499748065,
+    "seq": 5
+  }
+]

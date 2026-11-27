@@ -22,6 +22,8 @@ export interface AnthropicModelConfig {
   thinkingBudget?: number;
   enableThinking?: boolean;
   enablePromptCaching?: boolean;
+  /** API root override (a proxy, or a local server in tests). */
+  baseURL?: string;
 }
 
 export class AnthropicModelProvider implements IModelProvider {
@@ -40,7 +42,8 @@ export class AnthropicModelProvider implements IModelProvider {
 
     const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
     this.client = new Anthropic({
-      apiKey: apiKey || 'dummy-key-for-init'
+      apiKey: apiKey || 'dummy-key-for-init',
+      baseURL: config.baseURL || undefined
     });
   }
 
@@ -106,6 +109,8 @@ export class AnthropicModelProvider implements IModelProvider {
 
       return this.parseResponse(response);
     } catch (err: any) {
+      // A cancelled mission is not a provider error: reject so the caller (governor, loop) sees the abort, not an "Anthropic Error" reply.
+      if (request.abortSignal?.aborted) throw err;
       return this.handleError(err);
     }
   }

@@ -79,6 +79,9 @@ export class ViewManager {
     });
   }
 
+  /** Called after a tab's renderer process died (the AgentRuntime pauses the mission when it is the mission's tab, #226). */
+  public onTabCrashed: ((tabId: string, reason: string) => void) | null = null;
+
   public getTabGroupManager(): TabGroupManager {
     return this.tabGroupManager;
   }
@@ -295,6 +298,7 @@ export class ViewManager {
       this.broadcastTabPatch(id, { isCrashed: true, isLoading: false, title: 'Crashed' });
       // The crashed page shows nothing: hide it so its tile shows the last frame with a badge.
       this.relayout();
+      try { this.onTabCrashed?.(id, String(details?.reason ?? 'crashed')); } catch (err: any) { logger.error('onTabCrashed listener failed', err); }
     });
 
     wc.on('unresponsive', () => {

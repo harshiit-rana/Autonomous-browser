@@ -1003,3 +1003,15 @@ body.dark-theme {
 .question-card .question-options { display: flex; flex-wrap: wrap; gap: 6px; }
 .question-card .question-free { display: flex; gap: 6px; }
 .question-card .question-free input { flex: 1; min-width: 0; }
+
+/* #226: toast (MISSION_ACTIVE) and the "resume interrupted mission" banner */
+.aegis-toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 9000;
+  background: var(--bg-elevated, #1f2430); color: var(--text-primary, #e8eaf0); border: 1px solid var(--accent, #6c8cff);
+  padding: 10px 16px; border-radius: 8px; font-size: 13px; max-width: 70vw; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+.interrupted-banner {
+  position: fixed; left: 50%; top: 52px; transform: translateX(-50%); z-index: 8900; display: flex; gap: 10px; align-items: center;
+  background: var(--bg-elevated, #1f2430); color: var(--text-primary, #e8eaf0); border: 1px solid var(--warning, #e0a030);
+  padding: 8px 14px; border-radius: 8px; font-size: 12.5px; max-width: 80vw; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}

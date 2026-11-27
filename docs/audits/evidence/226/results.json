@@ -1,0 +1,142 @@
+{
+  "at": "2026-11-24T05:55:16.927Z",
+  "model": "scripted e2e provider (no real model)",
+  "shop": "tests/helpers/fixture_shop.ts",
+  "results": [
+    {
+      "name": "A: mission started from the omnibar (/do) + plan preview",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "A: policy approval card for the financial click",
+      "ok": true,
+      "detail": "{\"kind\":\"Approval needed\",\"text\":\"Allow click on \\\"Place order\\\"? Financial action detected: \\\"Place order\\\". Human confirmation required before purchase or payment.\",\"options\":[\"Approve\",\"Deny\"]}"
+    },
+    {
+      "name": "A: status during the approval is waiting_approval (own state, not waiting_user)",
+      "ok": true,
+      "detail": "planning>running>waiting_approval"
+    },
+    {
+      "name": "A: Pause button is disabled while waiting for approval (label cannot lie)",
+      "ok": true,
+      "detail": "{\"text\":\"Pause\",\"disabled\":true}"
+    },
+    {
+      "name": "A: the order was placed exactly once after approval",
+      "ok": true,
+      "detail": "orders=1"
+    },
+    {
+      "name": "A: a checkpoint with the done click exists in the app data dir (not the repo)",
+      "ok": true,
+      "detail": "C:\\Users\\ASUS\\AppData\\Local\\Temp\\aegis-226-K9Bq9M\\missions\\m_1795499669717_3b65\\checkpoint.json"
+    },
+    {
+      "name": "A: Pause -> button reads Resume and the mission state is paused",
+      "ok": true,
+      "detail": "{\"text\":\"Resume\",\"disabled\":false}"
+    },
+    {
+      "name": "A: Resume -> button reads Pause, state running",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "A: Takeover -> button reads Hand Back, state takeover, Pause disabled",
+      "ok": true,
+      "detail": "[{\"text\":\"Hand Back\",\"disabled\":false},{\"text\":\"Pause\",\"disabled\":true}]"
+    },
+    {
+      "name": "A: Hand Back -> button reads Takeover, state running",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "A: one mission:status event per transition, seq gapless from 1",
+      "ok": true,
+      "detail": "1:planning(mission_started) 2:running(loop_started) 3:waiting_approval(question_asked) 4:running(question_answered) 5:paused(user_pause) 6:running(user_resume) 7:takeover(user_takeover) 8:running(user_handback)"
+    },
+    {
+      "name": "A: a second start shows the MISSION_ACTIVE toast and starts nothing",
+      "ok": true,
+      "detail": "A mission is already running. Cancel it or wait for it to finish before starting another."
+    },
+    {
+      "name": "B: relaunch offers \"Resume interrupted mission\"",
+      "ok": true,
+      "detail": "Interrupted mission: \"Buy Widget Pro at http://127.0.0.1:52417/shop and report the confirmation\" (3 step(s) done, 1 with side effects that will NOT be repeated).Resume interrupted missionDiscard"
+    },
+    {
+      "name": "B: the killed mission itself stays recorded as failed/interrupted in history",
+      "ok": true,
+      "detail": "failed Interrupted: the app exited before this mission finished."
+    },
+    {
+      "name": "B: the resumed mission completed",
+      "ok": true,
+      "detail": "completed The order was confirmed (resumed after the app was killed)"
+    },
+    {
+      "name": "B: the order was NOT placed again (orders still 1)",
+      "ok": true,
+      "detail": "orders=1"
+    },
+    {
+      "name": "B: banner gone, old checkpoint consumed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "C: no banner after a resumed mission (offered once)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "C: mission 1 started",
+      "ok": true,
+      "detail": "{\"started\":true,\"missionId\":\"m_1795499691493_fuo7\"}"
+    },
+    {
+      "name": "C: Cancel during a 5 s tool -> cancelled and runtime idle in < 1 s",
+      "ok": true,
+      "detail": "54 ms"
+    },
+    {
+      "name": "C: a new mission can start right after the cancel (no MISSION_ACTIVE)",
+      "ok": true,
+      "detail": "{\"started\":true,\"missionId\":\"m_1795499692711_i0ze\"}"
+    },
+    {
+      "name": "C: found the mission tab page to crash",
+      "ok": true,
+      "detail": "http://127.0.0.1:52417/shop"
+    },
+    {
+      "name": "C: renderer crash -> banner with Reload page / Skip, mission paused",
+      "ok": true,
+      "detail": "{\"kind\":\"Page crashed\",\"text\":\"The page crashed (crashed). Reload it and continue, or skip it?\",\"options\":[\"Reload page\",\"Skip\"]}"
+    },
+    {
+      "name": "C: the pause reason is tab_crashed",
+      "ok": true,
+      "detail": "planning(mission_started) running(loop_started) paused(tab_crashed)"
+    },
+    {
+      "name": "C: after Reload page the mission continued and completed",
+      "ok": true,
+      "detail": "completed"
+    },
+    {
+      "name": "C: crash_reload transition recorded",
+      "ok": true,
+      "detail": "1:planning(mission_started) 2:running(loop_started) 3:paused(tab_crashed) 4:running(crash_reload) 5:completed(loop_finished)"
+    },
+    {
+      "name": "C: no unhandled error in any log",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

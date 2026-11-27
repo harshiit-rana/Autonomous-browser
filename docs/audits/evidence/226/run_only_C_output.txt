@@ -1,0 +1,18 @@
+PASS  C: no banner after a resumed mission (offered once)
+PASS  C: mission 1 started  -> {"started":true,"missionId":"m_1795499724483_6s59"}
+PASS  C: Cancel during a 5 s tool -> cancelled and runtime idle in < 1 s  -> 52 ms
+PASS  C: a new mission can start right after the cancel (no MISSION_ACTIVE)  -> {"started":true,"missionId":"m_1795499725688_vctq"}
+PASS  C: found the mission tab page to crash  -> http://127.0.0.1:52435/shop
+PASS  C: renderer crash -> banner with Reload page / Skip, mission paused  -> {"kind":"Page crashed","text":"The page crashed (crashed). Reload it and continue, or skip it?","options":["Reload page","Skip"]}
+PASS  C: the pause reason is tab_crashed  -> planning(mission_started) running(loop_started) paused(tab_crashed)
+  screenshot os_07_crash_banner.png: rect=85,0,1750,1020 dpi=120 iconic=False foreground=True
+PASS  C: after Reload page the mission continued and completed  -> completed
+PASS  C: crash_reload transition recorded  -> 1:planning(mission_started) 2:running(loop_started) 3:paused(tab_crashed) 4:running(crash_reload) 5:completed(loop_finished)
+  screenshot os_08_after_crash_complete.png: rect=85,0,1750,1020 dpi=120 iconic=False foreground=True
+FAIL  driver ran to completion  -> TypeError: Cannot read properties of undefined (reading 'log')
+    at file:///D:/REA/wt-RUN-04/scripts/dev/drive_run04.mjs:209:116
+    at Array.some (<anonymous>)
+    at file:///D:/REA/wt-RUN-04/scripts/dev/drive_run04.mjs:209:65
+
+9/10 checks passed
+finished

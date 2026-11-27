@@ -1,6 +1,6 @@
 import type { AegisDb } from '../db.js';
 
-export type PersistedMissionState = 'idle' | 'planning' | 'running' | 'paused' | 'waiting_user' | 'completed' | 'completed_unverified' | 'failed' | 'cancelled';
+export type PersistedMissionState = 'idle' | 'planning' | 'running' | 'paused' | 'waiting_user' | 'waiting_approval' | 'takeover' | 'completed' | 'completed_unverified' | 'failed' | 'cancelled';
 
 export interface MissionRow {
   id: string;
@@ -152,7 +152,7 @@ export class MissionsRepo {
   /** Missions that were still running/planning/paused when the process stopped (crash or kill). */
   listInterrupted(): MissionRow[] {
     return this.db.guard(() =>
-      this.db.handle.prepare("SELECT * FROM missions WHERE state IN ('planning','running','paused','waiting_user') ORDER BY created_at").all().map(toMission)
+      this.db.handle.prepare("SELECT * FROM missions WHERE state IN ('planning','running','paused','waiting_user','waiting_approval','takeover') ORDER BY created_at").all().map(toMission)
     );
   }
 }

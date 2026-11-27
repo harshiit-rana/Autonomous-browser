@@ -70,12 +70,15 @@ export const MODEL_NOT_CONFIGURED = 'MODEL_NOT_CONFIGURED' as const;
 /** Resolved model provider behind a model name + saved settings. */
 export type ModelProviderId = 'gemini' | 'anthropic' | 'openai' | 'ollama';
 
+/** `startMission` refused because a mission is already running (single-mission rule; a queue is #244). */
+export const MISSION_ACTIVE = 'MISSION_ACTIVE' as const;
+
 export interface MissionStartResponse {
   started: boolean;
   missionId?: string;
   reason?: 'agent-runtime-not-available' | 'no-api-key' | 'invalid-request' | 'error';
-  /** Set when the mission was refused because no model is usable. */
-  code?: typeof MODEL_NOT_CONFIGURED;
+  /** Set when the mission was refused: no usable model, or another mission is still active. */
+  code?: typeof MODEL_NOT_CONFIGURED | typeof MISSION_ACTIVE;
   provider?: ModelProviderId;
   message?: string;
 }
@@ -130,8 +133,14 @@ export interface EvidenceEventPayload {
 
 export interface MissionStatusPayload {
   missionId?: string;
-  status: 'idle' | 'planning' | 'running' | 'paused' | 'waiting_user' | 'completed' | 'completed_unverified' | 'failed' | 'cancelled';
+  status: 'idle' | 'planning' | 'running' | 'paused' | 'waiting_user' | 'waiting_approval' | 'takeover' | 'completed' | 'completed_unverified' | 'failed' | 'cancelled';
   message?: string;
+  /** Why the state changed (machine-readable, e.g. `user_pause`, `tab_crashed`, `loop_error`). One event per transition (#226). */
+  reason?: string;
+  /** Epoch ms of the transition; never decreases within a mission. */
+  ts?: number;
+  /** 1, 2, 3... per mission; a gap or a repeat means a lost or duplicated event. */
+  seq?: number;
   /** `demo` while a recorded replay is playing: the renderer shows the DEMO banner. Absent means a live mission. */
   source?: MissionSource;
 }
@@ -142,7 +151,26 @@ export interface MissionQuestionPayload {
   id: string;
   text: string;
   options?: string[];
-  kind: 'question' | 'approval' | 'stuck' | 'handoff';
+  kind: 'question' | 'approval' | 'stuck' | 'handoff' | 'crash';
+}
+
+/** A mission that was still running when the app last exited and can be resumed (#226 step 6). */
+export interface InterruptedMission {
+  missionId: string;
+  prompt: string;
+  url?: string;
+  stepCount: number;
+  savedAt: number;
+  /** Side-effecting actions already performed (shown to the user before resuming). */
+  performed: string[];
+  /** An action that was running when the app exited; its outcome is unknown. */
+  unknownOutcome?: string;
+}
+
+export interface ResumeInterruptedRequest {
+  missionId: string;
+  /** true: forget the checkpoint instead of resuming. */
+  discard?: boolean;
 }
 
 export interface MissionAnswerRequest {
@@ -357,6 +385,8 @@ export const IPC_CHANNELS = {
   MISSION_STEER: 'mission:steer',
   MISSION_UNDO: 'mission:undo',
   MISSION_ANSWER: 'mission:answer',
+  MISSION_INTERRUPTED: 'mission:interrupted',
+  MISSION_RESUME_INTERRUPTED: 'mission:resume_interrupted',
 
   // Persistence: mission history and backup/restore (Issue #239)
   MISSIONS_LIST: 'missions:list',

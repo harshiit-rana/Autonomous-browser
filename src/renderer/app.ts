@@ -15,7 +15,8 @@ import {
   GridSourcesPayload,
   MissionStatusPayload,
   MissionQuestionPayload,
-  MODEL_NOT_CONFIGURED
+  MODEL_NOT_CONFIGURED,
+  MISSION_ACTIVE
 } from '../ipc/contract.js';
 
 function sanitizeText(str: string): string {
@@ -237,8 +238,12 @@ export class BrowserApp {
     // Agent question / approval card (#225): the loop waits (no model calls) until this is answered.
     aegis.onMissionQuestion?.((q: MissionQuestionPayload) => this.showQuestion(q));
     aegis.onMissionStatus?.((data: MissionStatusPayload) => {
-      if (data.status !== 'waiting_user') this.hideQuestion();
+      this.applyMissionStatus(data);
+      // The crash banner is a question on a PAUSED mission: it stays until answered.
+      const keep = data.status === 'waiting_user' || data.status === 'waiting_approval' || (data.status === 'paused' && data.reason === 'tab_crashed');
+      if (!keep) this.hideQuestion();
     });
+    void this.checkInterruptedMission();
 
     // Evidence & Activity Timeline feed
     aegis.onEvidenceEvent((data: EvidenceEventPayload) => {
@@ -315,28 +320,17 @@ export class BrowserApp {
   private bindControls(): void {
     const aegis = (window as any).aegis;
 
-    // Pause / Resume
+    // Pause / Resume: the label follows the mission:status events from the main process (#226), never a local toggle,
+    // so it cannot disagree with the real state (it used to flip even when nothing was running).
     this.pauseBtn.addEventListener('click', () => {
-      this.isPaused = !this.isPaused;
-      this.pauseBtn.textContent = this.isPaused ? 'Resume' : 'Pause';
-      this.pauseBtn.className = this.isPaused ? 'badge-btn' : 'badge-btn warning';
-      if (this.isPaused) {
-        aegis?.pauseMission?.();
-      } else {
-        aegis?.resumeMission?.();
-      }
+      if (this.missionStatus === 'paused') aegis?.resumeMission?.();
+      else if (this.missionStatus === 'running') aegis?.pauseMission?.();
     });
 
-    // Manual Takeover
+    // Manual Takeover / Hand Back, same rule
     this.takeoverBtn.addEventListener('click', () => {
-      this.isTakeover = !this.isTakeover;
-      this.takeoverBtn.textContent = this.isTakeover ? 'Hand Back' : 'Takeover';
-      this.takeoverBtn.className = this.isTakeover ? 'badge-btn warning' : 'badge-btn danger';
-      if (this.isTakeover) {
-        aegis?.takeoverMission?.();
-      } else {
-        aegis?.handBackMission?.();
-      }
+      if (this.missionStatus === 'takeover') aegis?.handBackMission?.();
+      else if (this.missionStatus === 'running' || this.missionStatus === 'paused') aegis?.takeoverMission?.();
     });
 
     // Undo Last Action (Issue #214)
@@ -381,6 +375,64 @@ export class BrowserApp {
   }
 
   private openQuestion: MissionQuestionPayload | null = null;
+  private missionStatus: MissionStatusPayload['status'] = 'idle';
+
+  /** Pause/Takeover buttons and their labels are a pure function of the mission status (#226). */
+  private applyMissionStatus(data: MissionStatusPayload): void {
+    if (data.source === 'demo') return;
+    this.missionStatus = data.status;
+    this.isPaused = data.status === 'paused';
+    this.isTakeover = data.status === 'takeover';
+    this.pauseBtn.textContent = this.isPaused ? 'Resume' : 'Pause';
+    this.pauseBtn.className = this.isPaused ? 'badge-btn' : 'badge-btn warning';
+    this.pauseBtn.disabled = !(data.status === 'running' || data.status === 'paused') || (data.status === 'paused' && data.reason === 'tab_crashed');
+    this.takeoverBtn.textContent = this.isTakeover ? 'Hand Back' : 'Takeover';
+    this.takeoverBtn.className = this.isTakeover ? 'badge-btn warning' : 'badge-btn danger';
+    this.takeoverBtn.disabled = !(data.status === 'running' || data.status === 'paused' || data.status === 'takeover');
+    this.addTimelineItem(`[Status] ${data.status}${data.reason ? ` (${data.reason})` : ''}`, undefined, 'actions');
+  }
+
+  /** A short-lived message at the bottom of the window (e.g. MISSION_ACTIVE). */
+  private showToast(message: string): void {
+    const t = document.createElement('div');
+    t.className = 'aegis-toast';
+    t.setAttribute('role', 'status');
+    t.textContent = sanitizeText(message);
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 5000);
+  }
+
+  /** "Resume interrupted mission" banner: shown at launch when the last run left a mission unfinished (#226 step 6). */
+  private async checkInterruptedMission(): Promise<void> {
+    const aegis = (window as any).aegis;
+    if (!aegis?.getInterruptedMission) return;
+    const res = await aegis.getInterruptedMission();
+    const m = res?.data;
+    if (!m?.missionId) return;
+    const bar = document.createElement('div');
+    bar.id = 'interrupted-banner';
+    bar.className = 'interrupted-banner';
+    const text = document.createElement('span');
+    const unknown = m.unknownOutcome ? ` One action was running when the app closed and its outcome is unknown (${sanitizeText(m.unknownOutcome)}); the agent will check the page first.` : '';
+    text.textContent = `Interrupted mission: "${sanitizeText(String(m.prompt)).slice(0, 80)}" (${m.stepCount} step(s) done${m.performed?.length ? `, ${m.performed.length} with side effects that will NOT be repeated` : ''}).${unknown}`;
+    const resume = document.createElement('button');
+    resume.id = 'interrupted-resume-btn';
+    resume.className = 'badge-btn';
+    resume.textContent = 'Resume interrupted mission';
+    const discard = document.createElement('button');
+    discard.id = 'interrupted-discard-btn';
+    discard.className = 'badge-btn danger';
+    discard.textContent = 'Discard';
+    resume.addEventListener('click', async () => {
+      bar.remove();
+      const r = await aegis.resumeInterruptedMission(m.missionId);
+      if (!r?.data?.started) this.showToast(r?.data?.message || r?.error || 'Could not resume the mission');
+      else this.addTimelineItem(`[Mission] Resumed interrupted mission "${sanitizeText(String(m.prompt)).slice(0, 60)}"`, undefined, 'actions');
+    });
+    discard.addEventListener('click', () => { bar.remove(); void aegis.resumeInterruptedMission(m.missionId, true); });
+    bar.append(text, resume, discard);
+    document.body.appendChild(bar);
+  }
 
   private showQuestion(q: MissionQuestionPayload): void {
     const card = document.getElementById('question-card');
@@ -391,7 +443,7 @@ export class BrowserApp {
     const send = document.getElementById('question-send-btn') as HTMLButtonElement | null;
     if (!card || !text || !kind || !opts || !input || !send) return;
     this.openQuestion = q;
-    kind.textContent = q.kind === 'approval' ? 'Approval needed' : q.kind === 'stuck' ? 'The agent is stuck' : q.kind === 'handoff' ? 'Your help is needed in the page' : 'The agent is asking';
+    kind.textContent = q.kind === 'crash' ? 'Page crashed' : q.kind === 'approval' ? 'Approval needed' : q.kind === 'stuck' ? 'The agent is stuck' : q.kind === 'handoff' ? 'Your help is needed in the page' : 'The agent is asking';
     text.textContent = sanitizeText(q.text);
     opts.textContent = '';
     for (const o of q.options || []) {
@@ -548,7 +600,9 @@ export class BrowserApp {
     const res = await aegis.startMission(goal, model);
     if (!res?.data?.started) {
       const reason = res?.data?.message || res?.error || 'Agent runtime not configured.';
-      if (res?.data?.code === MODEL_NOT_CONFIGURED) {
+      if (res?.data?.code === MISSION_ACTIVE) {
+        this.showToast(reason);
+      } else if (res?.data?.code === MODEL_NOT_CONFIGURED) {
         // Typed first-run error (#224): open Settings on the provider with the message, no mission started
         this.openSettings({ provider: res.data.provider, notice: reason });
       } else {

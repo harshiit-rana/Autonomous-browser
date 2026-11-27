@@ -182,9 +182,32 @@ export class E2EScriptedProvider implements IModelProvider {
     this.used[at] = true;
     this.index += 1;
     this.progress.consumed = this.index;
-    this.queue.enqueueResponse(step.response);
+    this.queue.enqueueResponse(resolveRefPlaceholders(step.response, latestObservation(request)));
     return this.queue.generate(request);
   }
+}
+
+/**
+ * Element refs (`e1`...) keep counting across observations in the real app, so a script cannot hard-code them. A string
+ * argument `{{ref:Place order}}` is replaced by the ref of the element whose accessible name contains that text in the
+ * latest observation the loop sent; with no such element the placeholder stays and the tool call fails like any bad ref (#226).
+ */
+export function resolveRefPlaceholders(response: ScriptedStepResponse, observation: string): ScriptedStepResponse {
+  const resolve = (v: any): any => {
+    if (typeof v === 'string') {
+      return v.replace(/\{\{ref:([^}]+)\}\}/g, (whole, name: string) => {
+        for (const line of observation.split('\n')) {
+          const m = line.match(/^\[(e\d+)\] .*"([^"]*)"/);
+          if (m && m[2].includes(name.trim())) return m[1];
+        }
+        return whole;
+      });
+    }
+    if (Array.isArray(v)) return v.map(resolve);
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, resolve(x)]));
+    return v;
+  };
+  return { ...response, toolCalls: response.toolCalls?.map(c => ({ ...c, arguments: resolve(c.arguments) })) };
 }
 
 // ---------------------------------------------------------------------------------------------------- replay
