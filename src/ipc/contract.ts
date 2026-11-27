@@ -186,15 +186,39 @@ export interface TelemetryEventPayload {
   stepCost?: number;
 }
 
-export interface PresenceEventPayload {
-  tabId: string;
-  type: 'move' | 'click' | 'type' | 'scroll';
+/** What the agent is doing, drawn by the presence layer (ADR 0011). */
+export type PresenceKind = 'move' | 'click' | 'type' | 'scroll' | 'think' | 'needs_you' | 'target';
+
+/**
+ * One presence event. x/y are CSS px, viewport-relative, in the top-level frame's space and PRE-zoom; the overlay
+ * position is `viewRect.origin + (x * zoom, y * zoom)` (ADR 0011, no DPR term).
+ */
+export interface PresenceEvent {
+  workerId: string;
+  seq: number;
+  ts: number;
+  kind: PresenceKind;
   x: number;
   y: number;
-  workerName?: string;
-  color?: string;
+  zoom: number;
+  /** The mouse path the executor really dispatched, CSS px, ms since dispatch started. */
+  path?: Array<{ x: number; y: number; t: number }>;
+  quadRect?: { x: number; y: number; w: number; h: number };
   label?: string;
+  /** Typed text so far; already masked (bullets) when the focused field is secret. */
+  textPreview?: string;
+  /** Worker identity for the cursor chip. */
+  name?: string;
+  color?: string;
+  glyph?: string;
 }
+
+/** Main -> presence overlay window, on `presence:event`. */
+export type PresenceMessage =
+  | { op: 'event'; event: PresenceEvent }
+  /** Where a worker's page view is (DIP, relative to the content area); null = the view is hidden. */
+  | { op: 'rect'; workerId: string; rect: LayoutRect | null }
+  | { op: 'remove'; workerId: string };
 
 // ---------------------------------------------------------------------------------------------------------
 // Live Swarm Grid (#232, ADR 0010 frames, ADR 0012 layout)

@@ -161,10 +161,12 @@ async function testPreloadBundleWorksInSandbox() {
   const tscBin = path.join(ROOT, 'node_modules', 'typescript', 'bin', 'tsc');
   // Compile just the preload (and what it imports) exactly like the app build does: CommonJS, relative requires.
   execFileSync(process.execPath, [
-    tscBin, path.join(ROOT, 'src', 'main', 'preload.ts'), '--outDir', path.join(work, 'dist'), '--rootDir', path.join(ROOT, 'src'),
+    tscBin, path.join(ROOT, 'src', 'main', 'preload.ts'), path.join(ROOT, 'src', 'main', 'presence_preload.ts'),
+    '--outDir', path.join(work, 'dist'), '--rootDir', path.join(ROOT, 'src'),
     '--module', 'commonjs', '--moduleResolution', 'node', '--target', 'ES2022', '--esModuleInterop', '--skipLibCheck', '--lib', 'ES2022,DOM'
   ], { cwd: ROOT, stdio: 'pipe' });
   const preloadFile = path.join(work, 'dist', 'main', 'preload.js');
+  const presencePreloadFile = path.join(work, 'dist', 'main', 'presence_preload.js');
 
   const exposed: Record<string, any> = {};
   const sandboxRequire = (id: string) => {
@@ -190,6 +192,9 @@ async function testPreloadBundleWorksInSandbox() {
   runInSandbox(preloadFile);
   assert.strictEqual(typeof exposed.aegis, 'object', 'window.aegis must be exposed after bundling');
   assert.strictEqual(typeof exposed.aegis.minimize, 'function');
+  runInSandbox(presencePreloadFile);
+  assert.strictEqual(typeof exposed.presence, 'object', 'window.presence must be exposed after bundling');
+  assert.strictEqual(typeof exposed.presence.onMessage, 'function');
 
   // And the pre-pack check would have caught the unbundled file.
   fs.writeFileSync(path.join(work, 'package.json'), JSON.stringify({ name: 'x', main: 'dist/main/index.js' }));

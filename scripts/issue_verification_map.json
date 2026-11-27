@@ -106,14 +106,13 @@
    "modules": [
     "renderer/app.ts",
     "main/index.ts",
-    "security/electron_hardening.ts",
-    "stealth/cursor_overlay.ts"
+    "security/electron_hardening.ts"
    ],
    "tests": [],
    "files": [
     "src/renderer/index.html"
    ],
-   "gap": "stealth/cursor_overlay.ts still uses innerHTML; electron_hardening.ts is orphaned; CSP unverified at runtime.",
+   "gap": "the page-injected cursor (stealth/cursor_overlay.ts) was deleted by #233; electron_hardening.ts is orphaned; CSP unverified at runtime.",
    "owning": [
     247
    ]
@@ -582,7 +581,6 @@
    "title": "[MCX-03] Agent presence layer: per-worker cursors, highlights, typing and scroll indicators rendered outside the page DOM",
    "kind": "code",
    "modules": [
-    "stealth/cursor_overlay.ts",
     "renderer/app.ts"
    ],
    "tests": [],
@@ -1808,8 +1806,7 @@
    "title": "[ANI-01] Motion & choreography: implement the live \"agents at work\" animation with an early prototype, truthful event-to-motion mapping and measurable performance",
    "kind": "code",
    "modules": [
-    "ui/motion_engine.ts",
-    "stealth/cursor_overlay.ts"
+    "ui/motion_engine.ts"
    ],
    "tests": [
     "test_workspace_and_motion.ts"

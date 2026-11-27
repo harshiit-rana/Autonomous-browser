@@ -3,7 +3,8 @@ import { DOM_INDEXER_SCRIPT, PageDOMState, IndexedElement } from './dom_indexer.
 import { MouseTrajectoryGenerator, Point } from '../stealth/mouse_trajectory.js';
 import { KeyboardTyper } from '../stealth/keyboard_typer.js';
 import { FingerprintShield } from '../stealth/fingerprint_shield.js';
-import { CURSOR_OVERLAY_SCRIPT } from '../stealth/cursor_overlay.js';
+import { isSecretField, maskTextPreview } from '../main/presence_geometry.js';
+import type { PresenceEvent } from '../ipc/contract.js';
 import { RESOLVE_LOCATOR_JS } from '../agent/perception.js';
 
 export interface ClickOptions {
@@ -12,6 +13,13 @@ export interface ClickOptions {
   doubleClick?: boolean;
   realisticTrajectory?: boolean;
 }
+
+/**
+ * What the executor reports about the action it just dispatched, in top-level-frame CSS px (PRE-zoom). The owner (ViewManager)
+ * adds the worker id, sequence number, live zoom factor and identity before the presence layer draws it. The executor draws nothing.
+ */
+export type ExecutorPresence = Pick<PresenceEvent, 'kind' | 'x' | 'y'> & Partial<Pick<PresenceEvent, 'path' | 'quadRect' | 'label' | 'textPreview'>>;
+export type PresenceSink = (event: ExecutorPresence) => void;
 
 export interface TypeOptions {
   wordsPerMinute?: number;
@@ -28,8 +36,34 @@ export class ActionExecutor {
   private isAttached: boolean = false;
   private lastMousePos: Point = { x: 100, y: 100 };
 
+  private presenceSink: PresenceSink | null = null;
+
   constructor(webContents: WebContents) {
     this.webContents = webContents;
+  }
+
+  /** Where this executor reports what it does (#233). Never throws into an action. */
+  public setPresenceSink(sink: PresenceSink | null): void {
+    this.presenceSink = sink;
+  }
+
+  private emitPresence(e: ExecutorPresence): void {
+    try { this.presenceSink?.(e); } catch { /* presence must never break an action */ }
+  }
+
+  /** Read-only look at the focused field (never writes to the page): is it a secret field whose text must not be shown? */
+  private async focusedFieldIsSecret(): Promise<boolean> {
+    try {
+      const f = await this.webContents.executeJavaScript(`(() => {
+        let e = document.activeElement;
+        while (e && e.shadowRoot && e.shadowRoot.activeElement) e = e.shadowRoot.activeElement;
+        if (!e) return null;
+        return { tag: e.tagName, type: e.type || '', autocomplete: e.getAttribute ? (e.getAttribute('autocomplete') || '') : '' };
+      })()`);
+      return isSecretField(f);
+    } catch {
+      return true;
+    }
   }
 
   public async attachCDP(): Promise<void> {
@@ -49,11 +83,6 @@ export class ActionExecutor {
       await this.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', {
         source: stealthScript
       });
-      await this.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', {
-        source: CURSOR_OVERLAY_SCRIPT
-      });
-      // Also inject into current document immediately if loaded
-      this.webContents.executeJavaScript(CURSOR_OVERLAY_SCRIPT).catch(() => {});
     } catch (err) {
       console.warn('[ActionExecutor] Debugger attach warning:', err);
     }
@@ -127,6 +156,7 @@ export class ActionExecutor {
         );
 
         let lastTime = 0;
+        const dispatched: Array<{ x: number; y: number; t: number }> = [];
         for (const pt of trajectory) {
           const delta = pt.timestamp - lastTime;
           if (delta > 0) {
@@ -137,23 +167,23 @@ export class ActionExecutor {
             x: pt.x,
             y: pt.y
           });
-          this.webContents.executeJavaScript(`if(window.__updateAgentCursor) window.__updateAgentCursor(${Math.round(pt.x)}, ${Math.round(pt.y)});`).catch(() => {});
+          dispatched.push({ x: pt.x, y: pt.y, t: pt.timestamp });
           lastTime = pt.timestamp;
         }
+        this.emitPresence({ kind: 'move', x: targetX, y: targetY, path: dispatched });
       } else {
         await this.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
           type: 'mouseMoved',
           x: targetX,
           y: targetY
         });
-        this.webContents.executeJavaScript(`if(window.__updateAgentCursor) window.__updateAgentCursor(${targetX}, ${targetY});`).catch(() => {});
+        this.emitPresence({ kind: 'move', x: targetX, y: targetY });
       }
 
       this.lastMousePos = { x: targetX, y: targetY };
       await this.sleep(30 + Math.random() * 20);
 
-      // Visual Click Ripple Feedback
-      this.webContents.executeJavaScript(`if(window.__triggerAgentClick) window.__triggerAgentClick(${targetX}, ${targetY});`).catch(() => {});
+      this.emitPresence({ kind: 'click', x: targetX, y: targetY });
 
       // Press down
       await this.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
@@ -196,6 +226,7 @@ export class ActionExecutor {
     );
 
     let lastTime = 0;
+    const dispatched: Array<{ x: number; y: number; t: number }> = [];
     for (const pt of trajectory) {
       const delta = pt.timestamp - lastTime;
       if (delta > 0) {
@@ -206,17 +237,19 @@ export class ActionExecutor {
         x: pt.x,
         y: pt.y
       });
-      this.webContents.executeJavaScript(`if(window.__updateAgentCursor) window.__updateAgentCursor(${Math.round(pt.x)}, ${Math.round(pt.y)}, ${label ? JSON.stringify(label) : 'undefined'});`).catch(() => {});
+      dispatched.push({ x: pt.x, y: pt.y, t: pt.timestamp });
       lastTime = pt.timestamp;
     }
+    this.emitPresence({ kind: 'move', x: targetX, y: targetY, path: dispatched, label });
     this.lastMousePos = { x: targetX, y: targetY };
   }
 
   /**
-   * Highlights an element with a glowing outline
+   * Highlights an element in the presence overlay (read-only look at its box; nothing is added to the page).
    */
   public async highlightElement(selector: string): Promise<void> {
-    await this.webContents.executeJavaScript(`if(window.__highlightElement) window.__highlightElement(${JSON.stringify(selector)});`).catch(() => {});
+    const r = await this.webContents.executeJavaScript(`(() => { let el = null; try { el = document.querySelector(${JSON.stringify(selector)}); } catch (e) {} if (!el) return null; const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height }; })()`).catch(() => null);
+    if (r && r.w > 0 && r.h > 0) this.emitPresence({ kind: 'target', x: r.x + r.w / 2, y: r.y + r.h / 2, quadRect: r });
   }
 
   /**
@@ -249,6 +282,7 @@ export class ActionExecutor {
    */
   public async scroll(deltaY: number): Promise<void> {
     await this.attachCDP();
+    this.announceScroll(deltaY > 0 ? 'down' : 'up');
     await this.webContents.debugger.sendCommand('Input.synthesizeScrollGesture', {
       x: 300,
       y: 300,
@@ -319,19 +353,35 @@ export class ActionExecutor {
     })()`);
     if (!r) return null;
     if (expectTag && r.tag !== expectTag) return null;
+    this.emitPresence({ kind: 'target', x: r.x, y: r.y, quadRect: { x: r.x - r.width / 2, y: r.y - r.height / 2, w: r.width, h: r.height } });
     return r;
+  }
+
+  /** A scroll the agent performed (done by tools.ts through the page); drawn as arrows next to the cursor. */
+  public announceScroll(direction: 'up' | 'down'): void {
+    this.emitPresence({ kind: 'scroll', x: this.lastMousePos.x, y: this.lastMousePos.y, label: direction });
+  }
+
+  /** The real mouse path of one dispatched move: from where the pointer was to where it went, with the time the dispatch took. */
+  private movePath(from: Point, to: Point, startedAt: number): Array<{ x: number; y: number; t: number }> {
+    return [{ x: from.x, y: from.y, t: 0 }, { x: to.x, y: to.y, t: Math.max(1, Date.now() - startedAt) }];
   }
 
   public async mouseMove(x: number, y: number): Promise<void> {
     await this.ensureReady();
+    const from = this.lastMousePos; const t0 = Date.now();
     await this.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
     this.lastMousePos = { x, y };
+    this.emitPresence({ kind: 'move', x, y, path: this.movePath(from, { x, y }, t0) });
   }
 
   public async clickAt(x: number, y: number, button: 'left' | 'right' = 'left'): Promise<void> {
     await this.ensureReady();
+    const from = this.lastMousePos; const t0 = Date.now();
     await this.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+    this.emitPresence({ kind: 'move', x, y, path: this.movePath(from, { x, y }, t0) });
     await this.cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button, clickCount: 1 });
+    this.emitPresence({ kind: 'click', x, y, label: button });
     await this.sleep(40);
     // A dialog opened by mousedown/click blocks the release until it is handled; never await it forever.
     await Promise.race([this.cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button, clickCount: 1 }), this.sleep(3000)]);
@@ -340,9 +390,13 @@ export class ActionExecutor {
 
   public async insertText(text: string): Promise<void> {
     await this.ensureReady();
+    const secret = await this.focusedFieldIsSecret();
+    let typed = '';
     for (const ch of text) {
       await this.cdp('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, key: ch, unmodifiedText: ch });
       await this.cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: ch });
+      typed += ch;
+      this.emitPresence({ kind: 'type', x: this.lastMousePos.x, y: this.lastMousePos.y, textPreview: maskTextPreview(typed, secret) });
     }
   }
 
@@ -377,6 +431,7 @@ export class ActionExecutor {
         const x = from.x + ((to.x - from.x) * i) / steps;
         const y = from.y + ((to.y - from.y) * i) / steps;
         await this.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'left', buttons: 1 });
+        this.emitPresence({ kind: 'move', x, y });
         await this.sleep(15);
         if (this.dragIntercepted) break;
       }

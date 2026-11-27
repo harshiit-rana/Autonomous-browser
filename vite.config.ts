@@ -6,6 +6,13 @@ export default defineConfig({
   base: './',
   build: {
     outDir: path.resolve(__dirname, 'dist/renderer'),
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      // The chrome window and the presence overlay window (#233) are two pages.
+      input: {
+        index: path.resolve(__dirname, 'src/renderer/index.html'),
+        presence: path.resolve(__dirname, 'src/renderer/presence.html')
+      }
+    }
   }
 });
