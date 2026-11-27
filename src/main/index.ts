@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, Notification, powerSaveBlocker, nativeImage, MessageChannelMain } from 'electron';
+import { app, BrowserWindow, Tray, Menu, Notification, powerSaveBlocker, nativeImage, MessageChannelMain, webContents } from 'electron';
 import { isTestMode, registerTestHooks } from './test_hooks.js';
 import path from 'node:path';
 import { ViewManager } from './view_manager.js';
@@ -12,6 +12,7 @@ import { ModelProviderFactory } from '../models/provider_factory.js';
 import { estimateStepCost } from '../models/pricing.js';
 import type { DemoHost, ReplayDemoSession } from '../models/demo/replay_player.js';
 import { SwarmCoordinator } from '../swarm/coordinator.js';
+import { registerElectronMetricsSource } from '../swarm/resource_governor.js';
 import { GlobalKillSwitch, AuditLog } from '../security/audit_log.js';
 import { initialisePersistence, registerPersistenceIPC } from './persistence.js';
 import { installProcessErrorHandlers } from './process_errors.js';
@@ -35,7 +36,10 @@ import {
   ResumeInterruptedRequest,
   LayoutReport,
   GridSourcesPayload,
-  RuntimeFlags
+  RuntimeFlags,
+  WorkerControlRequest,
+  WorkerControlResponse,
+  GovernanceMetricsPayload
 } from '../ipc/contract.js';
 
 /** Model used for the cost estimate shown after a successful "Test Key" for each provider. */
@@ -82,6 +86,10 @@ class MainApp {
 
     await app.whenReady();
     if (!initialisePersistence()) return; // database could not be opened; the user was told and the app is exiting
+    registerElectronMetricsSource({
+      getAppMetrics: () => app.getAppMetrics(),
+      getWebContentsCount: () => webContents.getAllWebContents().length
+    });
     logger.info('Electron app ready. Creating primary window...');
     this.createWindow();
     this.registerIPC();
@@ -694,13 +702,41 @@ class MainApp {
 
     registerPersistenceIPC(() => this.window);
 
-    // Global Kill Switch & Security Audit (Issue #164)
+    // Per-worker controls & Resource Governance (Issue #231 [SWX-05])
+    registerTypedHandler<WorkerControlRequest, WorkerControlResponse>(
+      IPC_CHANNELS.WORKER_PAUSE,
+      getChrome,
+      (req) => AgentRuntime.getInstance().pauseWorker(req.workerId)
+    );
+    registerTypedHandler<WorkerControlRequest, WorkerControlResponse>(
+      IPC_CHANNELS.WORKER_RESUME,
+      getChrome,
+      (req) => AgentRuntime.getInstance().resumeWorker(req.workerId)
+    );
+    registerTypedHandler<WorkerControlRequest, WorkerControlResponse>(
+      IPC_CHANNELS.WORKER_STOP,
+      getChrome,
+      (req) => AgentRuntime.getInstance().stopWorker(req.workerId)
+    );
+    registerTypedHandler<WorkerControlRequest, WorkerControlResponse>(
+      IPC_CHANNELS.WORKER_TAKEOVER,
+      getChrome,
+      (req) => AgentRuntime.getInstance().takeoverWorker(req.workerId)
+    );
+    registerTypedHandler<void, GovernanceMetricsPayload>(
+      IPC_CHANNELS.GOVERNANCE_GET_METRICS,
+      getChrome,
+      () => AgentRuntime.getInstance().getGovernanceMetrics()
+    );
+
+    // Global Kill Switch & Security Audit (Issues #164, #231)
     registerTypedHandler<{ reason?: string }, boolean>(
       IPC_CHANNELS.KILL_SWITCH_TRIGGER,
       getChrome,
       (req) => {
-        GlobalKillSwitch.getInstance().triggerKill(req?.reason || 'User triggered kill switch via UI');
-        AgentRuntime.getInstance().cancel();
+        const reason = req?.reason || 'User triggered kill switch via UI';
+        GlobalKillSwitch.getInstance().triggerKill(reason);
+        AgentRuntime.getInstance().killAll(reason);
         return true;
       }
     );

@@ -22,6 +22,7 @@ import { isLiveWorkerView, LiveWorkerView } from './worker_view_registry.js';
 import { ScheduledTask } from './scheduler.js';
 import { SharedBlackboard } from './blackboard.js';
 import { WorkerSupervisor } from './supervisor.js';
+import { PauseGate } from './worker_coordination.js';
 import {
   REPORT_FINDING_TOOL, FINISH_TASK_TOOL, WORKER_EXCLUDED_TOOLS, checkFinding, UrlClaims, adjudicateConflicts
 } from './worker_findings.js';
@@ -70,8 +71,12 @@ export interface WorkerRunDeps {
   recordEvent?: (kind: string, data: unknown) => void;
   stepDelayMs?: number;
   settleMaxMs?: number;
-  /** Lets the supervisor (or a test) stop one worker; set while its loop runs. */
+  /** Lets the supervisor or user per-worker IPC stop one worker; set while its task runs. */
   abortHandles?: Map<string, (reason: string) => void>;
+  /** Per-worker pause/takeover gates (#231). */
+  workerGates?: Map<string, PauseGate>;
+  /** Workers explicitly stopped by user (`worker:stop`), skipping automatic retry. */
+  stoppedWorkers?: Set<string>;
 }
 
 /** The loop's tab: the worker's own WebContentsView, never a tab of the user. */
@@ -121,30 +126,29 @@ async function runWorkerTaskInner(worker: IWorkerHost, task: ScheduledTask, deps
   const tab = workerTab(worker, deps.missionId);
   const name = worker.identity.name;
   const sup = deps.supervisor;
-  const beat = (taskId: string | undefined = task.id) => sup?.recordEvent(worker.id, 'model_event', taskId);
+  const beat = (taskId: string | undefined = task.id) => sup?.recordEvent(worker.id, 'step_progress', taskId);
 
-  // The worker's own page first: the loop takes its policy scope from the page it starts on.
-  if (task.url) {
-    const holder = deps.claims.claim(task.url, worker.id);
-    if (holder) throw new Error(`The page ${task.url} is already covered by worker ${holder}`);
-    await worker.navigate(task.url);
-    deps.blackboard.recordVisit(task.url, worker.id);
-  } else if (deps.startUrl) {
-    await worker.navigate(deps.startUrl);
-    deps.blackboard.recordVisit(deps.startUrl, worker.id);
-  }
-  await tab.executor.ensureReady().catch(() => { /* CDP unavailable: tools report their own errors */ });
-
-  // Own abort: mission cancel, wall-clock timeout, or a supervisor stall all end this worker's loop.
+  // Own abort and pause gate: registered BEFORE initial navigation so even a hung page load can be aborted on stall or worker:stop (#231).
   const ac = new AbortController();
-  let stopReason = null as 'timeout' | 'stalled' | 'cancelled' | null;
-  const stop = (why: 'timeout' | 'stalled' | 'cancelled') => { if (!stopReason) stopReason = why; ac.abort(); };
+  let stopReason = null as 'timeout' | 'stalled' | 'stopped' | 'cancelled' | null;
+  const stop = (why: 'timeout' | 'stalled' | 'stopped' | 'cancelled') => { if (!stopReason) stopReason = why; ac.abort(); };
   const onMissionAbort = () => stop('cancelled');
   if (deps.signal.aborted) throw new Error('Mission cancelled');
   deps.signal.addEventListener('abort', onMissionAbort, { once: true });
   const timeoutMs = deps.workerTimeoutMs ?? DEFAULT_WORKER_TIMEOUT_MS;
   const timer = setTimeout(() => stop('timeout'), timeoutMs);
-  deps.abortHandles?.set(worker.id, why => stop(why === 'stalled' ? 'stalled' : 'cancelled'));
+  deps.abortHandles?.set(worker.id, why => {
+    if (why === 'stopped') {
+      deps.stoppedWorkers?.add(worker.id);
+      stop('stopped');
+    } else if (why === 'stalled') {
+      stop('stalled');
+    } else {
+      stop('cancelled');
+    }
+  });
+  const ownGate = deps.workerGates?.get(worker.id) ?? new PauseGate();
+  sup?.registerWorker(worker.id, task.id);
 
   let findings = 0;
   let step = 0;
@@ -156,6 +160,28 @@ async function runWorkerTaskInner(worker: IWorkerHost, task: ScheduledTask, deps
     id: worker.id, workerId: worker.id, name, color: worker.identity.color, glyph: worker.identity.glyph,
     task: taskText, progress, status, step, lastAction, at: Date.now()
   });
+
+  try {
+    // The worker's own page first: the loop takes its policy scope from the page it starts on.
+    const navRace = <T>(p: Promise<T>): Promise<T> => new Promise<T>((resolve, reject) => {
+      if (ac.signal.aborted) return reject(new Error(stopReason === 'stalled' ? 'Worker stalled during navigation' : 'Worker stopped'));
+      const onAbort = () => reject(new Error(stopReason === 'stalled' ? 'Worker stalled during navigation' : stopReason === 'stopped' ? 'Worker stopped by user' : 'Worker aborted'));
+      ac.signal.addEventListener('abort', onAbort, { once: true });
+      p.then(v => { ac.signal.removeEventListener('abort', onAbort); resolve(v); }, e => { ac.signal.removeEventListener('abort', onAbort); reject(e); });
+    });
+
+    if (task.url) {
+      const holder = deps.claims.claim(task.url, worker.id);
+      if (holder) throw new Error(`The page ${task.url} is already covered by worker ${holder}`);
+      await navRace(worker.navigate(task.url));
+      deps.blackboard.recordVisit(task.url, worker.id);
+    } else if (deps.startUrl) {
+      await navRace(worker.navigate(deps.startUrl));
+      deps.blackboard.recordVisit(deps.startUrl, worker.id);
+    }
+    if (ac.signal.aborted) throw new Error('Worker aborted');
+    await tab.executor.ensureReady().catch(() => { /* CDP unavailable: tools report their own errors */ });
+    sup?.recordEvent(worker.id, 'cdp_response', task.id);
 
   const reportFinding: ExtraTool = {
     def: REPORT_FINDING_TOOL,
@@ -233,7 +259,10 @@ async function runWorkerTaskInner(worker: IWorkerHost, task: ScheduledTask, deps
     history: [],
     signal: ac.signal,
     usage,
-    waitWhilePaused: deps.waitWhilePaused,
+    waitWhilePaused: async () => {
+      if (deps.waitWhilePaused) await deps.waitWhilePaused();
+      await ownGate.wait(ac.signal);
+    },
     stepDelayMs: deps.stepDelayMs,
     settleMaxMs: deps.settleMaxMs,
     askUser: async (q: UserQuestion) => {
@@ -242,37 +271,30 @@ async function runWorkerTaskInner(worker: IWorkerHost, task: ScheduledTask, deps
         needsHuman = q.text;
         throw new Error('needs_human');
       }
-      sup?.recordEvent(worker.id, 'model_event'); // no task id = idle: waiting for the user must not look like a stall
+      sup?.pauseWorker(worker.id);
       try {
         if (!deps.askUser) throw new Error('no one to ask');
         return await deps.askUser({ ...q, id: `${worker.id}:${q.id}`, text: `${name}: ${q.text}` });
       } finally {
-        sup?.recordEvent(worker.id, 'model_event', task.id);
+        sup?.resumeWorker(worker.id);
       }
     },
     emit: {
       evidence: t => deps.emitEvidence?.(`[${name}] ${t}`),
       status: (s, m) => { if (s === 'waiting_user') emitWorker(`Waiting for you: ${m.slice(0, 80)}`, 'running', 50); },
-      worker: p => { step = p.step ?? step; emitWorker(p.task, 'running', p.progress); },
+      worker: p => { step = p.step ?? step; emitWorker(p.task, ownGate.isPaused ? 'paused' : 'running', p.progress); },
       action: (s, toolName, summary) => {
         step = s;
         lastAction = `${toolName} ${summary}`.slice(0, 120);
         sup?.recordEvent(worker.id, 'action_dispatched', task.id);
-        emitWorker(`Step ${s}: ${toolName}`, 'running', Math.min(90, s * 4));
+        emitWorker(`Step ${s}: ${toolName}`, ownGate.isPaused ? 'paused' : 'running', Math.min(90, s * 4));
       },
       event: (kind, data) => deps.recordEvent?.(`worker.${kind}`, { workerId: worker.id, taskId: task.id, data }),
       checkpoint: () => sup?.recordEvent(worker.id, 'cdp_response', task.id)
     }
   });
 
-  let outcome: LoopOutcome;
-  try {
-    outcome = await loop.run();
-  } finally {
-    clearTimeout(timer);
-    deps.signal.removeEventListener('abort', onMissionAbort);
-    deps.abortHandles?.delete(worker.id);
-  }
+  const outcome: LoopOutcome = await loop.run();
   step = outcome.steps;
 
   if (needsHuman) {
@@ -285,9 +307,20 @@ async function runWorkerTaskInner(worker: IWorkerHost, task: ScheduledTask, deps
   }
   if (stopReason === 'timeout') throw new Error(`Worker timed out after ${Math.round(timeoutMs / 1000)} s (wall-clock budget)`);
   if (stopReason === 'stalled') throw new Error('Worker stalled (no heartbeat from the supervisor window); stopped');
+  if (stopReason === 'stopped') throw new Error('Worker stopped by user');
   if (outcome.state === 'cancelled') throw new Error('Mission cancelled');
   logger.warn('Worker task failed', { workerId: worker.id, taskId: task.id, error: outcome.error });
   throw new Error(outcome.error || 'Worker task failed');
+  } finally {
+    clearTimeout(timer);
+    deps.signal.removeEventListener('abort', onMissionAbort);
+    deps.abortHandles?.delete(worker.id);
+    if (stopReason === 'stalled' && sup?.getTelemetry(worker.id)?.status === 'stalled') {
+      emitWorker('Stalled (timed out)', 'stalled', step);
+    } else if (stopReason === 'stopped') {
+      emitWorker('Stopped by user', 'stopped', step);
+    }
+  }
 }
 
 function hasEarlierFindings(task: ScheduledTask, deps: WorkerRunDeps): boolean {

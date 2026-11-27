@@ -115,6 +115,7 @@ export class SwarmCoordinator extends EventEmitter {
     this.includeUnverifiable = options.includeUnverifiable === true;
     this.supervisor.on('workerStalled', e => this.emit('workerStalled', e));
     this.supervisor.on('poisonTask', e => this.emit('poisonTask', e));
+    this.governor.on('metrics', m => this.emit('governanceMetrics', m));
   }
 
   /** Source URLs the user named in the prompt, canonical-deduplicated, in the order given. */
@@ -257,6 +258,7 @@ export class SwarmCoordinator extends EventEmitter {
     logger.info('Starting swarm mission execution', { missionId, stages: plan.stages.length, justification: plan.justification });
     this.emit('missionStarted', { missionId, plan });
     this.supervisor.start();
+    this.governor.start();
 
     try {
       for (const stage of plan.stages) {
@@ -303,9 +305,11 @@ export class SwarmCoordinator extends EventEmitter {
             }
           } catch (err: any) {
             const reason = String(err?.message ?? err);
-            if (aborted()) {
+            const userStopped = reason === 'Worker stopped by user';
+            if (aborted() || userStopped) {
               this.scheduler.failTask(task.id, reason, undefined, false);
-              this.emit('taskFailed', { workerId, identity, taskId: task.id, error: reason, cancelled: true });
+              if (userStopped) errors.push(`Task ${task.id} (${task.name}) stopped by user`);
+              this.emit('taskFailed', { workerId, identity, taskId: task.id, error: reason, cancelled: true, stoppedByUser: userStopped });
             } else {
               // First failure: one retry (with what the earlier attempt already reported). Second: poison, no more restarts.
               const poison = this.supervisor.recordTaskFailure(task.id, reason);
@@ -375,6 +379,7 @@ export class SwarmCoordinator extends EventEmitter {
       }
     } finally {
       this.supervisor.stop();
+      this.governor.stop();
     }
 
     // Conflicts nobody could settle stay open and are reported as such: no confidence-based guess is made here.
