@@ -39,8 +39,8 @@ test.describe('irreversible submit needs approval: Approve', () => {
     await startMission(app, BRIEF);
 
     // The loop reached the submit and asked; the mission is waiting for the user.
-    const asked = await waitForStatus(app, ['waiting_user', 'completed', 'failed']);
-    expect(asked.status, asked.message).toBe('waiting_user');
+    const asked = await waitForStatus(app, ['waiting_approval', 'completed', 'failed']);
+    expect(asked.status, asked.message).toBe('waiting_approval');
     const card = app.chromePage.locator('#question-card');
     await expect(card).not.toHaveClass(/hidden/);
     await expect(card.locator('#question-kind')).toHaveText('Approval needed');
@@ -99,8 +99,8 @@ test.describe('irreversible submit needs approval: Deny', () => {
     await openUrl(app, `${app.arena.baseUrl}/forms`);
     await startMission(app, BRIEF);
 
-    const asked = await waitForStatus(app, ['waiting_user', 'completed', 'failed']);
-    expect(asked.status, asked.message).toBe('waiting_user');
+    const asked = await waitForStatus(app, ['waiting_approval', 'completed', 'failed']);
+    expect(asked.status, asked.message).toBe('waiting_approval');
     await deny(app);
 
     const done = await waitForStatus(app, ['completed', 'completed_unverified', 'failed', 'cancelled']);

@@ -14,6 +14,7 @@ import type { DemoHost, ReplayDemoSession } from '../models/demo/replay_player.j
 import { SwarmCoordinator } from '../swarm/coordinator.js';
 import { GlobalKillSwitch, AuditLog } from '../security/audit_log.js';
 import { initialisePersistence, registerPersistenceIPC } from './persistence.js';
+import { installProcessErrorHandlers } from './process_errors.js';
 import { ContentBlocker } from '../browser/content_blocker.js';
 import { BrowserUXManager } from '../browser/browser_ux.js';
 import {
@@ -30,6 +31,8 @@ import {
   DemoStartResponse,
   MissionAnswerRequest,
   MODEL_NOT_CONFIGURED,
+  MISSION_ACTIVE,
+  ResumeInterruptedRequest,
   LayoutReport,
   GridSourcesPayload,
   RuntimeFlags
@@ -107,13 +110,7 @@ class MainApp {
   }
 
   private registerProcessErrorHandlers(): void {
-    process.on('uncaughtException', (err: Error) => {
-      logger.error('Uncaught Exception in main process', err);
-    });
-
-    process.on('unhandledRejection', (reason: any) => {
-      logger.error('Unhandled Promise Rejection in main process', undefined, { reason });
-    });
+    installProcessErrorHandlers(process, logger);
 
     app.on('render-process-gone', (_, webContents, details) => {
       logger.error('Render process gone', undefined, {
@@ -525,6 +522,11 @@ class MainApp {
             logger.info('Mission not started: model not configured', { provider: modelCheck.provider });
             return { started: false, code: MODEL_NOT_CONFIGURED, provider: modelCheck.provider, message: modelCheck.message };
           }
+          // Single-mission rule (#226): refuse before any side effect (power blocker, tab) when one is still live.
+          const live = AgentRuntime.getInstance();
+          if (!live.isIdle()) {
+            return { started: false, code: MISSION_ACTIVE, message: 'A mission is already running. Cancel it or wait for it to finish before starting another.' };
+          }
           if (this.powerSaveBlockerId === null) {
             this.powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
             logger.info('PowerSaveBlocker activated for background mission', { blockerId: this.powerSaveBlockerId });
@@ -534,7 +536,7 @@ class MainApp {
           return {
             started: result.ok,
             missionId: result.missionId,
-            code: result.code,
+            code: result.code === 'MISSION_ACTIVE' ? MISSION_ACTIVE : result.code,
             provider: result.provider,
             message: result.error
           };
@@ -596,6 +598,19 @@ class MainApp {
       IPC_CHANNELS.MISSION_ANSWER,
       getChrome,
       (req) => AgentRuntime.getInstance().answerQuestion(String(req?.missionId), String(req?.questionId), String(req?.answer ?? ''))
+    );
+
+    // Interrupted-mission recovery (#226 step 6)
+    registerTypedHandler(IPC_CHANNELS.MISSION_INTERRUPTED, getChrome, () => AgentRuntime.getInstance().getInterruptedMission());
+    registerTypedHandler<ResumeInterruptedRequest, { started: boolean; missionId?: string; message?: string }>(
+      IPC_CHANNELS.MISSION_RESUME_INTERRUPTED,
+      getChrome,
+      async (req) => {
+        const runtime = AgentRuntime.getInstance();
+        if (req?.discard) { runtime.discardInterrupted(String(req.missionId)); return { started: false }; }
+        const r = await runtime.resumeInterrupted(String(req?.missionId));
+        return { started: r.ok, missionId: r.missionId, message: r.error };
+      }
     );
 
     // Settings

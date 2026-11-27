@@ -9,6 +9,12 @@ import { rootLogger } from '../infrastructure/logger.js';
 
 const logger = rootLogger.child('model-governor');
 
+function abortError(): Error {
+  const e = new Error('Request aborted');
+  e.name = 'AbortError';
+  return e;
+}
+
 export type ErrorPolicy = 'retry' | 'fix_and_retry' | 'failover' | 'fail_fast';
 
 export interface CircuitBreakerState {
@@ -125,6 +131,7 @@ interface QueuedTask<T> {
   resolve: (value: T) => void;
   reject: (err: any) => void;
   priority: number; // Higher number = higher priority
+  signal?: AbortSignal;
 }
 
 export class ConcurrencyGovernor {
@@ -155,8 +162,10 @@ export class ConcurrencyGovernor {
   public async schedule<T>(
     providerName: string,
     fn: () => Promise<T>,
-    priority: number = 10
+    priority: number = 10,
+    signal?: AbortSignal
   ): Promise<T> {
+    if (signal?.aborted) throw abortError();
     const cb = this.getCircuitBreaker(providerName);
     if (!cb.isAvailable()) {
       throw new Error(`Circuit breaker is OPEN for provider '${providerName}'. Model is temporarily unavailable.`);
@@ -164,11 +173,23 @@ export class ConcurrencyGovernor {
 
     if (this.activeCount < this.maxConcurrency) {
       this.activeCount++;
-      return this.executeWithRetry(providerName, fn);
+      return this.executeWithRetry(providerName, fn, signal);
     }
 
     return new Promise<T>((resolve, reject) => {
-      this.queue.push({ providerName, fn, resolve, reject, priority });
+      const task: QueuedTask<T> = { providerName, fn, resolve, reject, priority, signal };
+      // A cancelled mission must not wait for a slot (or start a request) after it was cancelled.
+      const onAbort = () => {
+        const i = this.queue.indexOf(task);
+        if (i >= 0) { this.queue.splice(i, 1); reject(abortError()); }
+      };
+      signal?.addEventListener('abort', onAbort, { once: true });
+      task.fn = async () => {
+        signal?.removeEventListener('abort', onAbort);
+        if (signal?.aborted) throw abortError();
+        return fn();
+      };
+      this.queue.push(task);
       // Sort priority descending (foreground higher than background)
       this.queue.sort((a, b) => b.priority - a.priority);
     });
@@ -181,7 +202,8 @@ export class ConcurrencyGovernor {
    */
   private async executeWithRetry<T>(
     providerName: string,
-    fn: () => Promise<T>
+    fn: () => Promise<T>,
+    signal?: AbortSignal
   ): Promise<T> {
     const cb = this.getCircuitBreaker(providerName);
     try {
@@ -191,6 +213,8 @@ export class ConcurrencyGovernor {
           cb.recordSuccess();
           return result;
         } catch (err: any) {
+          // The caller gave up (mission cancelled): never retry, never count it against the provider.
+          if (signal?.aborted) throw err;
           cb.recordFailure();
 
           const { policy, retryAfterMs, reason } = ErrorClassifier.classify(err);
@@ -208,7 +232,11 @@ export class ConcurrencyGovernor {
             );
 
             logger.warn(`Model request failed (${reason}), retrying in ${Math.round(delay)}ms (attempt ${attempt}/${this.maxRetries})`);
-            await new Promise(r => setTimeout(r, delay));
+            await new Promise<void>((resolve, reject) => {
+              const t = setTimeout(() => { signal?.removeEventListener('abort', onAbort); resolve(); }, delay);
+              const onAbort = () => { clearTimeout(t); reject(abortError()); };
+              signal?.addEventListener('abort', onAbort, { once: true });
+            });
             continue;
           }
 
@@ -227,7 +255,7 @@ export class ConcurrencyGovernor {
       if (nextTask) {
         this.activeCount++;
         // A queued request gets the same retry and circuit-breaker handling as one that did not have to wait.
-        this.executeWithRetry(nextTask.providerName, nextTask.fn).then(nextTask.resolve, nextTask.reject);
+        this.executeWithRetry(nextTask.providerName, nextTask.fn, nextTask.signal).then(nextTask.resolve, nextTask.reject);
       }
     }
   }
@@ -258,7 +286,7 @@ export class ConcurrencyGovernor {
       }
 
       return response;
-    }, priority);
+    }, priority, request.abortSignal);
   }
 }
 

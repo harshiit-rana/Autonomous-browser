@@ -8,6 +8,14 @@
     "isReachable": true
   },
   {
+    "path": "agent/mission_checkpoint.ts",
+    "isReachable": true
+  },
+  {
+    "path": "agent/mission_state.ts",
+    "isReachable": true
+  },
+  {
     "path": "agent/perception.ts",
     "isReachable": true
   },
@@ -277,6 +285,10 @@
   },
   {
     "path": "main/preload.ts",
+    "isReachable": true
+  },
+  {
+    "path": "main/process_errors.ts",
     "isReachable": true
   },
   {

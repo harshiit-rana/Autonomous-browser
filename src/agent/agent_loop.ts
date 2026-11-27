@@ -68,7 +68,9 @@ export interface UserQuestion {
 
 export interface AgentLoopEmitter {
   evidence(text: string): void;
-  status(state: 'running' | 'waiting_user' | 'paused', message: string): void;
+  status(state: 'running' | 'waiting_user' | 'waiting_approval' | 'paused', message: string): void;
+  /** A tool is about to run (phase 'start': it may or may not complete if the app dies) or has finished ('end'). Feeds the resume checkpoint. */
+  toolPhase?(a: { step: number; tool: string; args: Record<string, any>; phase: 'start' | 'end'; ok?: boolean; label?: string }): void;
   telemetry?(p: { tokensTotal: number; costTotal: number; stepTokens: number; stepCost: number }): void;
   worker?(p: { task: string; progress: number; step?: number }): void;
   /** The tool call about to run (#227: swarm workers report their last action). */
@@ -115,6 +117,8 @@ export interface AgentLoopDeps {
   drainSteering?: () => string[];
   /** Resolves when the mission is not paused. */
   waitWhilePaused?: () => Promise<void>;
+  /** Set when this mission resumes an interrupted one: appended to the goal message (what was already done). */
+  resumeNote?: string;
   /** Defaults: 600 ms between steps, real page settle with an 8 s cap. */
   stepDelayMs?: number;
   settleMaxMs?: number;
@@ -140,6 +144,23 @@ const VERDICT_TOOL: ToolDefinition = {
 const OBS_MARK = '[Page State - Isolated Data Channel]';
 
 class Cancelled extends Error {}
+
+/** Rejects with Cancelled as soon as the signal aborts, even while `p` (a CDP wait, a page settle, a tool) is pending. */
+function raceAbort<T>(p: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) { p.catch(() => {}); return Promise.reject(new Cancelled()); }
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new Cancelled());
+    signal.addEventListener('abort', onAbort, { once: true });
+    p.then(
+      v => { signal.removeEventListener('abort', onAbort); resolve(v); },
+      e => { signal.removeEventListener('abort', onAbort); reject(e); }
+    );
+  });
+}
+
+function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {
+  return raceAbort(new Promise<void>(r => setTimeout(r, ms)), signal);
+}
 
 export class AgentLoop {
   public readonly history: CanonicalMessage[];
@@ -228,7 +249,7 @@ export class AgentLoop {
     if (!this.seeded) {
       this.seeded = true;
       const criteria = this.deps.brief?.successCriteria?.length ? `\nSuccess criteria:\n${this.deps.brief.successCriteria.map(c => `- ${c}`).join('\n')}` : '';
-      this.history.push({ role: 'user', content: `User Goal: ${this.deps.goal}${criteria}` });
+      this.history.push({ role: 'user', content: `User Goal: ${this.deps.goal}${criteria}${this.deps.resumeNote ? `\n\n${this.deps.resumeNote}` : ''}` });
     }
 
     // Budgets (step 7)
@@ -253,11 +274,11 @@ export class AgentLoop {
 
     // Observe
     const wc = this.tab.view.webContents;
-    await settlePage(wc, null, { maxMs: this.deps.settleMaxMs ?? 8000 });
+    await raceAbort(settlePage(wc, null, { maxMs: this.deps.settleMaxMs ?? 8000 }), this.deps.signal);
     this.checkAbort();
     this.pruneHistory();
     const tabNote = this.adoptNewTabs();
-    let snapshot = await PerceptionEngine.captureSnapshot(this.tab.view.webContents, false);
+    let snapshot = await raceAbort(PerceptionEngine.captureSnapshot(this.tab.view.webContents, false), this.deps.signal);
     this.checkAbort();
 
     // A mission that started before its tab committed a URL gets its scope from the first real page.
@@ -289,7 +310,7 @@ export class AgentLoop {
       emit.evidence(`[Roadblock Detected] ${msg}`);
       await this.ask({ kind: 'handoff', text: `${msg} Answer when you are done.`, options: ['Done'] });
       this.history.push({ role: 'user', content: '[Operator] The user handled the roadblock in the browser.' });
-      snapshot = await PerceptionEngine.captureSnapshot(this.tab.view.webContents, false);
+      snapshot = await raceAbort(PerceptionEngine.captureSnapshot(this.tab.view.webContents, false), this.deps.signal);
     }
 
     const observation = this.observationText(snapshot, tabNote);
@@ -298,6 +319,7 @@ export class AgentLoop {
     if (this.recentObservations.length > 3) this.recentObservations.shift();
     this.history.push({ role: 'user', content: observation });
     emit.evidence(`[Step ${step}] Observing: "${snapshot.title}" (${snapshot.elements.size} elements)`);
+    emit.checkpoint?.(); // the page the model is about to be asked about is what a resume re-opens
 
     // Decide
     let response: ModelResponse;
@@ -315,6 +337,9 @@ export class AgentLoop {
       emit.evidence(`[Error] Model invocation failed: ${err.message}`);
       return this.end('failed', { error: `Model error: ${err.message}` });
     }
+    this.checkAbort();
+    // Paused while the model call was in flight: the answer waits, nothing is executed until the user resumes.
+    if (this.deps.waitWhilePaused) await this.deps.waitWhilePaused();
     this.checkAbort();
     this.recordUsage(response);
 
@@ -351,6 +376,8 @@ export class AgentLoop {
         this.toolResult(call.id, call.name, 'Skipped: an earlier tool call in this turn failed. Look at the new observation first.', true);
         continue;
       }
+      // Pause/takeover apply to every call of a multi-call reply, not only to the first one.
+      if (this.deps.waitWhilePaused) await this.deps.waitWhilePaused();
       this.checkAbort();
       if (GlobalKillSwitch.getInstance().isTriggered()) return this.end('cancelled', { error: 'Mission halted by Emergency Kill Switch' });
       const outcome = await this.runToolCall(call, snapshot, step);
@@ -359,7 +386,7 @@ export class AgentLoop {
     }
 
     emit.checkpoint?.();
-    if (this.deps.stepDelayMs !== 0) await new Promise(r => setTimeout(r, this.deps.stepDelayMs ?? 600));
+    if (this.deps.stepDelayMs !== 0) await abortableSleep(this.deps.stepDelayMs ?? 600, this.deps.signal);
     return null;
   }
 
@@ -457,7 +484,8 @@ export class AgentLoop {
 
     if (call.name === 'done') return this.finishWithVerification(call, args);
 
-    const exec: ToolExecutionResult = await ToolExecutor.execute(call.name, args, {
+    emit.toolPhase?.({ step, tool: call.name, args, phase: 'start', label: target?.name });
+    const exec: ToolExecutionResult = await raceAbort(ToolExecutor.execute(call.name, args, {
       tab: this.tab,
       snapshot,
       tabs: this.deps.tabs,
@@ -465,7 +493,8 @@ export class AgentLoop {
       startTabId: this.startTabId,
       missionDir: this.deps.missionDir,
       extractions: this.extractions
-    });
+    }), this.deps.signal);
+    emit.toolPhase?.({ step, tool: call.name, args, phase: 'end', ok: exec.ok });
     this.deps.actionLedger?.record(step, call.name, args, this.tab.id);
 
     let output = exec.output;
@@ -582,8 +611,11 @@ export class AgentLoop {
   }
 
   private async ask(q: Omit<UserQuestion, 'id'>): Promise<string> {
+    // A question while paused/in takeover would be an illegal waiting_* transition (and a stuck pause flag): wait first.
+    if (this.deps.waitWhilePaused) await this.deps.waitWhilePaused();
+    this.checkAbort();
     const question: UserQuestion = { ...q, id: `q${++this.questionSeq}` };
-    this.deps.emit.status('waiting_user', `Waiting for you: ${q.text.slice(0, 140)}`);
+    this.deps.emit.status(q.kind === 'approval' ? 'waiting_approval' : 'waiting_user', `Waiting for you: ${q.text.slice(0, 140)}`);
     this.deps.emit.event?.('question', question);
     this.deps.emit.evidence(`[Question] ${q.text}`);
     let answer: string;

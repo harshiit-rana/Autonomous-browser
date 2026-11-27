@@ -1,0 +1,12 @@
+[
+  "[Mission Finished] Mission succeeded (verifier: pass): The order was confirmed (resumed after the app was killed)",
+  "[Status] completed (loop_finished)",
+  "[Evidence] Order confirmed",
+  "[Verifier] pass: The page shows Order confirmed",
+  "[Action] done({\"result\":\"The order was confirmed (resumed after the app was killed)\",\"evidence\":[\"Order confirmed\")",
+  "[Step 1] Observing: \"Order confirmed\" (1 elements)",
+  "[Mission] Resumed interrupted mission \"Buy Widget Pro at http://127.0.0.1:52417/shop and report the\"",
+  "[Status] running (loop_started)",
+  "[Mission m_1795499684772_jv72] Initialized with goal: \"Buy Widget Pro at http://127.0.0.1:52417/shop and report the confirmation\"",
+  "[Status] planning (mission_resumed)"
+]

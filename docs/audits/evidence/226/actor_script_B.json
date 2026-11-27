@@ -1,0 +1,16 @@
+[
+  {
+    "toolCalls": [
+      {
+        "id": "c_oo4ick",
+        "name": "done",
+        "arguments": {
+          "result": "The order was confirmed (resumed after the app was killed)",
+          "evidence": [
+            "Order confirmed"
+          ]
+        }
+      }
+    ]
+  }
+]
