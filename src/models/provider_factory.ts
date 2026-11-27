@@ -210,4 +210,18 @@ export class ModelProviderFactory {
     if (verifierModel) logger.warn('Verifier model is not configured; using the mission model', { verifierModel, missionModel });
     return ModelProviderFactory.createProvider(missionModel);
   }
+
+  /**
+   * Provider for the mission orchestrator (#228): decides single vs swarm mode and decomposes tasks.
+   */
+  public static async createOrchestratorProvider(missionModel: string, orchestratorModel?: string): Promise<IModelProvider> {
+    if (process.env.AEGIS_E2E_MODEL_MODE === 'scripted') {
+      const e2e = await import('./demo/e2e_scripted.js');
+      return e2e.createE2EScriptedOrchestrator();
+    }
+    if (orchestratorModel && ModelProviderFactory.inspect(orchestratorModel).configured) {
+      return ModelProviderFactory.createProvider(orchestratorModel);
+    }
+    return ModelProviderFactory.createProvider(missionModel);
+  }
 }

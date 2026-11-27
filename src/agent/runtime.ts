@@ -17,7 +17,8 @@ import {
   ActionLedger,
   SteeringClass
 } from './steering_and_reversibility.js';
-import { SwarmCoordinator } from '../swarm/coordinator.js';
+import { SwarmCoordinator, MissionDecompositionPlan } from '../swarm/coordinator.js';
+import { planWithOrchestrator, validateOrchestratorPlan } from '../swarm/orchestrator.js';
 import { SwarmManager } from '../swarm/swarm_manager.js';
 import { SharedBlackboard } from '../swarm/blackboard.js';
 import { WorkerSupervisor, DEFAULT_STALL_THRESHOLD_MS } from '../swarm/supervisor.js';
@@ -43,6 +44,9 @@ export interface Mission {
   prompt: string;
   model: string;
   state: MissionState;
+  mode?: 'single' | 'swarm';
+  approvedPlan?: MissionDecompositionPlan;
+  approvedMode?: 'single' | 'swarm';
   stepCount: number;
   maxSteps: number;
   history: CanonicalMessage[];
@@ -58,6 +62,7 @@ export interface Mission {
 export interface RuntimeDeps {
   createProvider?: (model: string) => Promise<IModelProvider>;
   createVerifierProvider?: (model: string, verifierModel?: string) => Promise<IModelProvider>;
+  createOrchestratorProvider?: (model: string, orchestratorModel?: string) => Promise<IModelProvider>;
   inspect?: (model: string) => { configured: boolean; message?: string; provider?: ModelProviderId };
   userDataDir?: () => string;
   /** Illegal state transitions throw (true) or are logged and ignored (false). Default: throw unless the app is packaged. */
@@ -80,6 +85,8 @@ function governed(p: IModelProvider): IModelProvider {
 
 interface LaunchOptions {
   resume?: MissionCheckpoint;
+  approvedPlan?: MissionDecompositionPlan;
+  approvedMode?: 'single' | 'swarm';
 }
 
 /**
@@ -205,8 +212,13 @@ export class AgentRuntime {
     });
   }
 
-  public async startMission(prompt: string, modelName?: string, brief?: MissionBrief): Promise<{ ok: boolean; missionId?: string; error?: string; code?: 'MODEL_NOT_CONFIGURED' | 'MISSION_ACTIVE'; provider?: ModelProviderId }> {
-    return this.launch(prompt, modelName, brief);
+  public async startMission(
+    prompt: string,
+    modelName?: string,
+    brief?: MissionBrief,
+    options?: { approvedPlan?: MissionDecompositionPlan; approvedMode?: 'single' | 'swarm' }
+  ): Promise<{ ok: boolean; missionId?: string; error?: string; code?: 'MODEL_NOT_CONFIGURED' | 'MISSION_ACTIVE'; provider?: ModelProviderId }> {
+    return this.launch(prompt, modelName, brief, { approvedPlan: options?.approvedPlan, approvedMode: options?.approvedMode });
   }
 
   private async launch(prompt: string, modelName: string | undefined, brief: MissionBrief | undefined, opts: LaunchOptions = {}): Promise<{ ok: boolean; missionId?: string; error?: string; code?: 'MODEL_NOT_CONFIGURED' | 'MISSION_ACTIVE'; provider?: ModelProviderId }> {
@@ -256,6 +268,9 @@ export class AgentRuntime {
       prompt,
       model: targetModel,
       state: 'idle',
+      mode: opts.approvedMode,
+      approvedPlan: opts.approvedPlan,
+      approvedMode: opts.approvedMode,
       stepCount: 0,
       maxSteps: Math.min(brief?.maxSteps ?? settings.maxSteps, settings.maxSteps),
       history: [],
@@ -656,7 +671,7 @@ export class AgentRuntime {
   }
 
   // ------------------------------------------------------------------------------------------- swarm
-  private async runSwarmLoop(mission: Mission): Promise<void> {
+  private async runSwarmLoop(mission: Mission, plan: MissionDecompositionPlan, getOrchestratorProvider: () => Promise<IModelProvider>): Promise<void> {
     const settings = getSettings();
     const maxWorkers = clampMaxWorkers(settings.maxWorkers);
     const signal = this.abortController!.signal;
@@ -691,6 +706,9 @@ export class AgentRuntime {
     });
     coordinator.on('governanceMetrics', (m: any) => {
       this.emitGovernanceMetrics(m);
+    });
+    coordinator.on('planUpdated', (ev: any) => {
+      this.emitEvidence(`[Replan ${ev.attempt}] ${ev.justification} (${(ev.diff || []).join(' | ')})`);
     });
 
     // The coordinator's own verifier/summariser tasks have no view: they are log lines, not a worker in the Grid.
@@ -775,7 +793,25 @@ export class AgentRuntime {
         mission.id,
         mission.prompt,
         (worker, task) => runWorkerTask(worker, task, runDeps),
-        { inlineExecutorFn: task => runNonBrowserTask(task, runDeps), signal }
+        {
+          plan,
+          inlineExecutorFn: task => runNonBrowserTask(task, runDeps),
+          signal,
+          replanFn: async (_currentPlan, failureSummary) => {
+            const next = await planWithOrchestrator({
+              provider: await getOrchestratorProvider(),
+              missionId: mission.id,
+              goal: mission.prompt,
+              model: mission.model,
+              maxWorkers,
+              brief: mission.brief,
+              forceSwarm: true,
+              failureSummary,
+              signal
+            });
+            return next.plan;
+          }
+        }
       );
     } catch (err) {
       // Cancelling shuts the swarm down underneath the coordinator ("Swarm is shut down"): expected, not a failure.
@@ -846,8 +882,50 @@ export class AgentRuntime {
     const signal = this.abortController!.signal;
     this.transition('running', 'loop_started', 'Mission running');
 
-    if (mission.prompt.startsWith('/swarm') || mission.prompt.startsWith('/research') || /compare.*across/i.test(mission.prompt)) {
-      await this.runSwarmLoop(mission);
+    const settings = getSettings();
+    const maxWorkers = clampMaxWorkers(settings.maxWorkers);
+    // Only explicit `/swarm` is preserved as a user override; regex routing and hardcoded keyword heuristics are removed (#228).
+    const forceSwarm = mission.prompt.trim().startsWith('/swarm');
+    const createOrch = this.deps.createOrchestratorProvider ?? ((m: string, o?: string) => ModelProviderFactory.createOrchestratorProvider(m, o));
+    let cachedOrch: IModelProvider | undefined;
+    const getOrch = async (): Promise<IModelProvider> => {
+      if (!cachedOrch) cachedOrch = governed(await createOrch(mission.model));
+      return cachedOrch;
+    };
+
+    let chosenMode: 'single' | 'swarm' = 'single';
+    let chosenPlan: MissionDecompositionPlan | undefined = mission.approvedPlan;
+    if (!resume) {
+      if (chosenPlan) {
+        chosenMode = forceSwarm ? 'swarm' : (mission.approvedMode ?? 'single');
+        mission.mode = chosenMode;
+        this.emitEvidence(`[Orchestrator Plan] Mode=${chosenMode} (approved preview): ${chosenPlan.justification}`);
+      } else {
+        const decision = await planWithOrchestrator({
+          provider: await getOrch(),
+          missionId: mission.id,
+          goal: mission.prompt,
+          model: mission.model,
+          maxWorkers,
+          brief: mission.brief,
+          forceSwarm,
+          signal
+        });
+        if (signal.aborted || this.activeMission !== mission) return;
+        chosenMode = decision.mode;
+        chosenPlan = decision.plan;
+        mission.mode = chosenMode;
+        this.emitEvidence(`[Orchestrator Plan] Mode=${chosenMode} (${decision.plan.stages.length} stage(s)): ${decision.justification}`);
+        MissionRecorder.event(mission.id, 'orchestrator.plan', {
+          mode: chosenMode,
+          justification: decision.justification,
+          stages: decision.plan.stages
+        });
+      }
+    }
+
+    if (chosenMode === 'swarm' && chosenPlan) {
+      await this.runSwarmLoop(mission, chosenPlan, getOrch);
       return;
     }
 
@@ -859,15 +937,15 @@ export class AgentRuntime {
       await tab.executor.ensureReady();
     } catch { /* CDP unavailable: tools report their own errors */ }
 
-    const settings = getSettings();
     const provider = governed(await (this.deps.createProvider ?? ((m: string) => ModelProviderFactory.createProvider(m)))(mission.model));
     const verifier = governed(await (this.deps.createVerifierProvider ?? ((m: string, v?: string) => ModelProviderFactory.createVerifierProvider(m, v)))(mission.model, settings.verifierModel));
     if (signal.aborted || this.activeMission !== mission) return; // cancelled while the provider was being created
     const live = () => this.activeMission === mission && !isTerminal(mission.state);
 
+    const effectiveGoal = chosenPlan?.stages?.[0]?.tasks?.[0]?.instruction || mission.prompt;
     const loop = new AgentLoop({
       missionId: mission.id,
-      goal: mission.prompt,
+      goal: effectiveGoal,
       model: mission.model,
       tab,
       provider,
@@ -955,7 +1033,7 @@ export class AgentRuntime {
   // ------------------------------------------------------------------------------------------- checkpoint & resume (#226 step 6)
   /** Best effort: a full disk or a locked file must never stop the mission. Written under the app data dir, not the cwd. */
   private persistCheckpoint(mission: Mission, loop?: AgentLoop): void {
-    if (mission.prompt.startsWith('/swarm') || mission.prompt.startsWith('/research')) return; // a swarm has no resumable single-tab state
+    if (mission.mode === 'swarm' || mission.prompt.trim().startsWith('/swarm')) return; // a swarm has no resumable single-tab state
     try {
       const l = loop ?? this.activeLoop;
       let url: string | undefined;

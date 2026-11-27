@@ -36,7 +36,7 @@ console.log('--- #225 RUN-03: single-agent loop ---');
   const s = SettingsManager.getInstance().attachRepo(repo as any);
   assert.equal(s.privacyMode, 'Local-only');
   assert.deepEqual(s.policyRules, []);
-  assert.equal(rows.version, 2);
+  assert.equal(rows.version, CURRENT_SETTINGS_VERSION);
   assert.equal(writes.length, 1);
   SettingsManager.getInstance().attachRepo(repo as any);
   assert.equal(writes.length, 1, 'already migrated rows are not rewritten');

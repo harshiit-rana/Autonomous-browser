@@ -4,15 +4,15 @@ import path from 'node:path';
 import { ViewManager } from './view_manager.js';
 import { initializeAppPaths, getAppPaths } from '../infrastructure/paths.js';
 import { rootLogger } from '../infrastructure/logger.js';
-import { getSettings, updateSettings } from '../infrastructure/settings.js';
+import { getSettings, updateSettings, clampMaxWorkers } from '../infrastructure/settings.js';
 import { credentialVault } from '../infrastructure/credentials.js';
 import { registerTypedHandler } from '../ipc/main_handler.js';
 import { AgentRuntime } from '../agent/runtime.js';
 import { ModelProviderFactory } from '../models/provider_factory.js';
 import { estimateStepCost } from '../models/pricing.js';
 import type { DemoHost, ReplayDemoSession } from '../models/demo/replay_player.js';
-import { SwarmCoordinator } from '../swarm/coordinator.js';
 import { registerElectronMetricsSource } from '../swarm/resource_governor.js';
+import { planWithOrchestrator } from '../swarm/orchestrator.js';
 import { GlobalKillSwitch, AuditLog } from '../security/audit_log.js';
 import { initialisePersistence, registerPersistenceIPC } from './persistence.js';
 import { installProcessErrorHandlers } from './process_errors.js';
@@ -455,61 +455,44 @@ class MainApp {
       return true;
     });
 
-    // Plan Preview (Issue #140, #147)
+    // Plan Preview (Issue #140, #228 - model-driven orchestrator)
     registerTypedHandler<{ prompt: string; model?: string }, any>(
       IPC_CHANNELS.MISSION_PLAN_PREVIEW,
       getChrome,
       async (req) => {
         const prompt = req.prompt.trim();
-
-        if (prompt.startsWith('/swarm') || prompt.startsWith('/research') || /compare.*across/i.test(prompt)) {
-          const coordinator = new SwarmCoordinator();
-          const swarmPlan = coordinator.planMission('preview', prompt);
-          const steps = swarmPlan.stages.flatMap((s, sIdx) => 
-            s.tasks.map((t, tIdx) => ({
-              stepNumber: sIdx * 10 + tIdx + 1,
-              title: `[${s.stageName}] ${t.name}`,
-              description: t.instruction,
-              toolHint: `${t.role} (${t.effectClass})`
-            }))
-          );
-
-          return {
-            goal: prompt,
-            justification: swarmPlan.justification,
-            steps,
-            estimatedCostUSD: 0.0075,
-            estimatedDurationSec: 25
-          };
-        }
-
-        const steps = [
-          {
-            stepNumber: 1,
-            title: 'Target Navigation & Domain Discovery',
-            description: `Inspect active tab or navigate to primary domain for: "${prompt.slice(0, 50)}"`,
-            toolHint: 'navigate / observe'
-          },
-          {
-            stepNumber: 2,
-            title: 'Perception & Action Dispatch',
-            description: 'Extract interactive element refs ([e1], [e2]), compute center quad targets, and execute CDP actions',
-            toolHint: 'click / type / scroll'
-          },
-          {
-            stepNumber: 3,
-            title: 'Evidence Extraction & Verification',
-            description: 'Validate extracted facts against goal criteria and generate structured markdown deliverable',
-            toolHint: 'done'
-          }
-        ];
-
-        return {
+        const settings = getSettings();
+        const targetModel = req.model || settings.modelName || 'gemini-2.0-flash';
+        const forceSwarm = prompt.startsWith('/swarm');
+        const provider = await ModelProviderFactory.createOrchestratorProvider(targetModel);
+        const decision = await planWithOrchestrator({
+          provider,
+          missionId: 'preview',
           goal: prompt,
-          justification: 'Single linear task execution using dedicated operator agent.',
+          model: targetModel,
+          maxWorkers: clampMaxWorkers(settings.maxWorkers),
+          forceSwarm
+        });
+        const steps = decision.plan.stages.flatMap((s, sIdx) =>
+          s.tasks.map((t, tIdx) => ({
+            stepNumber: sIdx * 10 + tIdx + 1,
+            title: `[${s.stageName}] ${t.name}`,
+            description: t.instruction,
+            toolHint: `${t.role} (${t.effectClass})`
+          }))
+        );
+        const allReadOnly = decision.plan.stages.every(s => s.tasks.every(t => t.effectClass === 'read'));
+        return {
+          ok: true,
+          goal: prompt,
+          mode: decision.mode,
+          justification: decision.justification,
+          stages: decision.plan.stages,
           steps,
-          estimatedCostUSD: 0.0035,
-          estimatedDurationSec: 12
+          estimatedCostUSD: decision.estimatedCostUSD,
+          estimatedDurationSec: decision.estimatedDurationSec,
+          warnings: decision.warnings,
+          skipPreview: Boolean(settings.skipLowRiskPlanPreview && decision.mode === 'single' && allReadOnly)
         };
       }
     );
@@ -540,7 +523,7 @@ class MainApp {
             logger.info('PowerSaveBlocker activated for background mission', { blockerId: this.powerSaveBlockerId });
           }
           const runtime = AgentRuntime.getInstance();
-          const result = await runtime.startMission(req.prompt, req.model);
+          const result = await runtime.startMission(req.prompt, req.model, undefined, req.options as any);
           return {
             started: result.ok,
             missionId: result.missionId,

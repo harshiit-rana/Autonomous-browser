@@ -62,6 +62,8 @@ interface TestOptions {
   modelMode: ModelMode;
   /** Scripted mode: the model's answers, built once the arena port is known. */
   script: ScriptSpec | undefined;
+  /** Scripted mode: the orchestrator's `submit_plan` answers (`AEGIS_E2E_ORCHESTRATOR_SCRIPT`). Omit for default single-agent plan. */
+  orchestratorScript: ScriptSpec | undefined;
   /** Scripted mode: the independent completion verifier's answers (`report_verdict`). Empty means any verifier call is a deviation. */
   verifierScript: ScriptSpec | undefined;
   /** Replay mode: path of a recording (record new misses with AEGIS_E2E_RECORD=1 and a live key). */
@@ -77,6 +79,7 @@ interface TestOptions {
 export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: ArenaHandle }>({
   modelMode: ['scripted', { option: true }],
   script: [undefined, { option: true }],
+  orchestratorScript: [undefined, { option: true }],
   verifierScript: [undefined, { option: true }],
   replayFile: [undefined, { option: true }],
   allowDeviations: [false, { option: true }],
@@ -99,7 +102,7 @@ export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: Arena
     { scope: 'worker' }
   ],
 
-  app: async ({ arena, modelMode, script, verifierScript, replayFile, allowDeviations, allowUnconsumedScript, extraArgs }, use, testInfo) => {
+  app: async ({ arena, modelMode, script, orchestratorScript, verifierScript, replayFile, allowDeviations, allowUnconsumedScript, extraArgs }, use, testInfo) => {
     await arena.reset();
     if (modelMode === 'live' && !process.env.AEGIS_E2E_MAX_COST_USD) {
       throw new Error('modelMode "live" requires AEGIS_E2E_MAX_COST_USD (hard cost cap in USD)');
@@ -131,6 +134,11 @@ export const test = base.extend<{ app: AppHandle } & TestOptions, { arena: Arena
       const verifierFile = path.join(tmp, 'verifier_script.json');
       fs.writeFileSync(verifierFile, JSON.stringify(verifierScript ? verifierScript.build({ arenaUrl: arena.baseUrl }) : [], null, 2));
       env.AEGIS_E2E_VERIFIER_SCRIPT = verifierFile;
+      if (orchestratorScript) {
+        const orchFile = path.join(tmp, 'orchestrator_script.json');
+        fs.writeFileSync(orchFile, JSON.stringify(orchestratorScript.build({ arenaUrl: arena.baseUrl }), null, 2));
+        env.AEGIS_E2E_ORCHESTRATOR_SCRIPT = orchFile;
+      }
     } else if (modelMode === 'replay') {
       if (!replayFile) throw new Error('replay mode needs test.use({ replayFile })');
       env.AEGIS_E2E_REPLAY = path.resolve(ROOT, replayFile);

@@ -309,10 +309,30 @@ export interface PlanPreviewRequest {
 }
 
 export interface PlanPreviewResponse {
+  ok?: boolean;
+  error?: string;
   goal: string;
+  mode: 'single' | 'swarm';
+  justification: string;
+  stages: Array<{
+    stageName: string;
+    parallelism: number;
+    tasks: Array<{
+      id: string;
+      name: string;
+      role: string;
+      url?: string;
+      instruction: string;
+      effectClass: string;
+      dependencies: string[];
+      requiresApproval?: boolean;
+    }>;
+  }>;
   steps: Array<{ stepNumber: number; title: string; description: string; toolHint: string }>;
-  estimatedCostUSD: number;
+  estimatedCostUSD: number | null;
   estimatedDurationSec: number;
+  warnings?: string[];
+  skipPreview?: boolean;
 }
 
 export interface MissionHistoryItem {

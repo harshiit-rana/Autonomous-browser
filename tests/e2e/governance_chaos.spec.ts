@@ -67,6 +67,65 @@ test.afterAll(async () => {
 test.describe('chaos stall supervision & real governance metrics', () => {
   test.use({
     extraArgs: [],
+    orchestratorScript: {
+      build: () => [{
+        expectTools: ['submit_plan'],
+        respond: {
+          tool: 'submit_plan',
+          args: {
+            mode: 'swarm',
+            justification: 'Two distinct shop endpoints justify parallel extraction.',
+            stages: [{
+              name: 'extract',
+              parallelism: 2,
+              tasks: [
+                {
+                  id: 'healthy_1',
+                  name: `${healthyShop.name} extractor`,
+                  role: 'extractor',
+                  goal: `Find price and quote for ${PRODUCT} on ${healthyShop.name}.`,
+                  startUrl: healthyShop.productUrl,
+                  dependsOn: [],
+                  effectClass: 'read'
+                },
+                {
+                  id: 'hang_2',
+                  name: 'Hanging shop extractor',
+                  role: 'extractor',
+                  goal: `Find price and quote for ${PRODUCT} on hanging shop.`,
+                  startUrl: hangingShop.url,
+                  dependsOn: [],
+                  effectClass: 'read'
+                }
+              ]
+            }]
+          }
+        }
+      },
+      // Re-plan step when the hung source is quarantined as permanently stalled (#228 + #231 integration)
+      {
+        expectTools: ['submit_plan'],
+        respond: {
+          tool: 'submit_plan',
+          args: {
+            mode: 'swarm',
+            justification: 'Proceed with surviving verified healthy source results after stalled worker quarantine.',
+            stages: [{
+              name: 'summarise',
+              parallelism: 1,
+              tasks: [{
+                id: 'summary_after_stall',
+                name: 'Summarize surviving evidence',
+                role: 'summariser',
+                goal: 'Assemble report from healthy workers.',
+                dependsOn: [],
+                effectClass: 'read'
+              }]
+            }]
+          }
+        }
+      }]
+    },
     script: {
       build: () => [
         {

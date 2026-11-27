@@ -23,6 +23,7 @@ import { HazardLockManager } from './hazards_and_locks.js';
 import { SwarmStageBarrier } from './barrier.js';
 import { ResourceGovernor } from './resource_governor.js';
 import { WorkerSupervisor } from './supervisor.js';
+import { diffPlans } from './orchestrator.js';
 import { clampMaxWorkers } from '../infrastructure/settings.js';
 import { logger } from '../infrastructure/logger.js';
 
@@ -44,6 +45,7 @@ export interface MissionDecompositionPlan {
       instruction: string;
       effectClass: TaskEffectClass;
       dependencies: string[];
+      requiresApproval?: boolean;
       outputSchema?: Record<string, string>;
     }>;
   }>;
@@ -72,8 +74,13 @@ const THROTTLE_GIVE_UP_MS = 30_000;
 const THROTTLE_POLL_MS = 100;
 
 export interface ExecuteOptions {
+  /** Pre-computed / model-driven plan (#228). When omitted, falls back to structural URL splitting (1 task per explicit URL, else single linear task). */
+  plan?: MissionDecompositionPlan;
   /** Runs verifier/summariser tasks without a browser view. When absent they run on a worker like any other task. */
   inlineExecutorFn?: (task: ScheduledTask) => Promise<any>;
+  /** Called at most `maxReplans` (default 2) times when a stage fails or unresolved conflicts arise (#228). */
+  replanFn?: (currentPlan: MissionDecompositionPlan, failureSummary: string, attempt: number) => Promise<MissionDecompositionPlan | null>;
+  maxReplans?: number;
   /** Mission abort (user cancel): workers stop taking tasks. */
   signal?: AbortSignal;
 }
@@ -134,35 +141,26 @@ export class SwarmCoordinator extends EventEmitter {
   }
 
   /**
-   * Decomposes a high-level mission into an executable task DAG:
-   * Identifies if parallelism is justified (e.g. multi-site comparison or research).
-   * If single linear task, width = 1. A prompt that names source URLs gets one researcher task per URL.
+   * Structural URL decomposition helper (replaces legacy regex keyword routing, #228):
+   * Splits into parallel researcher tasks ONLY when the user explicitly supplied >= 2 distinct URLs;
+   * otherwise builds a single linear task. Model-driven missions use `planWithOrchestrator()` instead.
    */
   public planMission(missionId: string, prompt: string): MissionDecompositionPlan {
     const trimmed = prompt.trim();
-    const isComparison = /compare|vs|across|multiple|shops?|stores?|prices/i.test(trimmed);
-    const isMultiSiteResearch = /research|find\s+(several|top|different|3|5)/i.test(trimmed);
     const urls = SwarmCoordinator.extractSourceUrls(trimmed);
-    // The URLs are each worker's own start page; the mission text each worker sees does not repeat all of them.
     const missionText = urls.length ? trimmed.replace(/https?:\/\/[^\s"'<>)\]]+/gi, '').replace(/\s+/g, ' ').trim() : trimmed;
 
-    // 1. Parallel Research & Comparison Plan
-    if (isComparison || isMultiSiteResearch) {
-      const sources: Array<{ name: string; url?: string; instruction: string }> = urls.length >= 2
-        ? urls.map((url, i) => ({
-            name: `Read source ${i + 1} (${new URL(url).host})`,
-            url,
-            instruction: `Mission: "${missionText}". Your sub-goal: read ONLY ${url} and report, with exact quotes, every fact the mission asks for.`
-          }))
-        : ['A', 'B', 'C'].map((letter, i) => ({
-            name: `Query ${['Primary', 'Alternative', 'Benchmark'][i]} Source ${letter}`,
-            instruction: `Mission: "${trimmed}". Your sub-goal: find ONE independent source (${['first', 'second', 'third'][i]} choice; other workers cover the others, do not reuse a site another worker already took) and report, with exact quotes from its page, every fact the mission asks for. Name the site in each entity.`
-          }));
+    if (urls.length >= 2) {
+      const sources = urls.map((url, i) => ({
+        name: `Read source ${i + 1} (${new URL(url).host})`,
+        url,
+        instruction: `Mission: "${missionText}". Your sub-goal: read ONLY ${url} and report, with exact quotes, every fact the mission asks for.`
+      }));
       const t = (i: number) => `${missionId}_t${i + 1}`;
       return {
         missionId,
         goal: trimmed,
-        justification: 'Parallel multi-origin search and extraction justified to compare sources simultaneously without serial latency.',
+        justification: `Parallel multi-origin extraction across ${sources.length} explicit source URLs.`,
         stages: [
           {
             stageName: 'Discovery & Extraction',
@@ -187,8 +185,6 @@ export class SwarmCoordinator extends EventEmitter {
                 role: 'verifier',
                 instruction: 'Inspect evidence blackboard, resolve conflicting claims by comparing their quotes',
                 effectClass: 'read',
-                // Stages already run in order. No task dependency here: a source that failed must not cancel the verifier and the
-                // report of the sources that worked.
                 dependencies: []
               }
             ]
@@ -211,11 +207,11 @@ export class SwarmCoordinator extends EventEmitter {
       };
     }
 
-    // 2. Linear Single-Worker Plan (Default for specific URL or single action)
+    // Default single linear task
     return {
       missionId,
       goal: trimmed,
-      justification: 'Single linear objective does not warrant swarm fan-out; executed with one scoped worker.',
+      justification: 'Single linear objective executed with one scoped worker.',
       stages: [
         {
           stageName: 'Target Execution',
@@ -227,7 +223,7 @@ export class SwarmCoordinator extends EventEmitter {
               role: 'researcher',
               url: urls[0],
               instruction: trimmed,
-              effectClass: /buy|purchase|submit|sign\s*up|login/i.test(trimmed) ? 'write-non-idempotent' : 'read',
+              effectClass: 'read',
               dependencies: []
             }
           ]
@@ -238,7 +234,7 @@ export class SwarmCoordinator extends EventEmitter {
 
   /**
    * Executes a multi-stage swarm mission. `workerExecutorFn` runs one browser task on one worker
-   * (worker_task_runner.ts `runWorkerTask` in the app).
+   * (worker_task_runner.ts `runWorkerTask` in the app). Supports model-driven plans and up to 2 replans on stage failures.
    */
   public async executeMission(
     missionId: string,
@@ -247,12 +243,15 @@ export class SwarmCoordinator extends EventEmitter {
     options: ExecuteOptions = {}
   ): Promise<SwarmMissionResult> {
     const startTime = Date.now();
-    const plan = this.planMission(missionId, prompt);
+    let plan = options.plan ?? this.planMission(missionId, prompt);
     const errors: string[] = [];
     const needsHuman: SwarmMissionResult['needsHuman'] = [];
     let completedTasks = 0;
     let browserTasksCompleted = 0;
     let totalTasks = 0;
+    let replans = 0;
+    const maxReplans = Math.min(2, Math.max(0, options.maxReplans ?? 2));
+    const completedIds = new Set<string>();
     const aborted = () => options.signal?.aborted === true;
 
     logger.info('Starting swarm mission execution', { missionId, stages: plan.stages.length, justification: plan.justification });
@@ -260,14 +259,21 @@ export class SwarmCoordinator extends EventEmitter {
     this.supervisor.start();
     this.governor.start();
 
-    try {
-      for (const stage of plan.stages) {
-        if (aborted()) break;
-        totalTasks += stage.tasks.length;
-        logger.info('Starting swarm stage', { stageName: stage.stageName, taskCount: stage.tasks.length });
-        this.emit('stageStarted', { stageName: stage.stageName, taskCount: stage.tasks.length });
+    const stageQueue = [...plan.stages];
 
-        for (const t of stage.tasks) {
+    try {
+      while (stageQueue.length > 0) {
+        if (aborted()) break;
+        const stage = stageQueue.shift()!;
+        const freshTasks = stage.tasks.filter(t => !completedIds.has(t.id));
+        if (freshTasks.length === 0) continue;
+
+        totalTasks += freshTasks.length;
+        const stageErrors: string[] = [];
+        logger.info('Starting swarm stage', { stageName: stage.stageName, taskCount: freshTasks.length });
+        this.emit('stageStarted', { stageName: stage.stageName, taskCount: freshTasks.length });
+
+        for (const t of freshTasks) {
           this.scheduler.addTask({
             id: t.id,
             missionId,
@@ -276,15 +282,14 @@ export class SwarmCoordinator extends EventEmitter {
             url: t.url,
             instruction: t.instruction,
             priority: 10,
-            dependencies: t.dependencies,
+            dependencies: t.dependencies.filter(d => !completedIds.has(d) || this.scheduler.getTask(d)?.status === 'completed' ? true : false),
             effectClass: t.effectClass,
             maxRetries: 1
           });
         }
-        const stageIds = new Set(stage.tasks.map(t => t.id));
-        const stageBarrier = new SwarmStageBarrier(stage.stageName, stage.tasks.length, stage.tasks.length);
+        const stageIds = new Set(freshTasks.map(t => t.id));
+        const stageBarrier = new SwarmStageBarrier(stage.stageName, freshTasks.length, freshTasks.length);
 
-        // One finished (or failed, or parked) task = one arrival, so the barrier never waits on work that will not come.
         const finishTask = async (workerId: string, identity: any, task: ScheduledTask, run: () => Promise<any>) => {
           this.emit('taskStarted', { workerId, identity, taskId: task.id, role: task.role, name: task.name });
           try {
@@ -299,6 +304,7 @@ export class SwarmCoordinator extends EventEmitter {
               this.emit('taskNeedsHuman', { workerId, identity, taskId: task.id, reason: taskResult.reason });
             } else {
               this.scheduler.completeTask(task.id, taskResult);
+              completedIds.add(task.id);
               completedTasks++;
               if (BROWSER_ROLES.includes(task.role)) browserTasksCompleted++;
               this.emit('taskCompleted', { workerId, identity, taskId: task.id, result: taskResult });
@@ -311,11 +317,14 @@ export class SwarmCoordinator extends EventEmitter {
               if (userStopped) errors.push(`Task ${task.id} (${task.name}) stopped by user`);
               this.emit('taskFailed', { workerId, identity, taskId: task.id, error: reason, cancelled: true, stoppedByUser: userStopped });
             } else {
-              // First failure: one retry (with what the earlier attempt already reported). Second: poison, no more restarts.
               const poison = this.supervisor.recordTaskFailure(task.id, reason);
               this.scheduler.failTask(task.id, reason, undefined, !poison);
               const permanent = this.scheduler.getTask(task.id)?.status === 'failed';
-              if (permanent) errors.push(`Task ${task.id} (${task.name}) failed${poison ? ' and was quarantined' : ''}: ${reason}`);
+              if (permanent) {
+                const msg = `Task ${task.id} (${task.name}) failed${poison ? ' and was quarantined' : ''}: ${reason}`;
+                errors.push(msg);
+                stageErrors.push(msg);
+              }
               this.emit(permanent ? 'taskFailed' : 'taskRetry', { workerId, identity, taskId: task.id, error: reason, poison });
             }
           } finally {
@@ -326,16 +335,14 @@ export class SwarmCoordinator extends EventEmitter {
           }
         };
 
-        const browserStage = stage.tasks.some(t => BROWSER_ROLES.includes(t.role));
+        const browserStage = freshTasks.some(t => BROWSER_ROLES.includes(t.role));
         if (!browserStage && options.inlineExecutorFn) {
-          // Verifier / summariser: no browser view, so no extra tab appears for them.
-          for (const t of stage.tasks) {
+          for (const _t of freshTasks) {
             const task = this.scheduler.getNextTask('coordinator');
             if (!task || aborted()) break;
             await finishTask('coordinator', { name: 'Coordinator', color: '#888888', glyph: 'C' }, task, () => options.inlineExecutorFn!(task));
           }
         } else {
-          // Width: the stage's parallelism, what the machine recommends right now, and settings.maxWorkers.
           const metrics = this.governor.getMetrics();
           const width = Math.max(1, Math.min(stage.parallelism, metrics.recommendedConcurrency, this.maxWorkers));
           const activeWorkers = await this.swarm.spawnSwarm(width, 'swarm_worker');
@@ -346,15 +353,16 @@ export class SwarmCoordinator extends EventEmitter {
             while (!aborted()) {
               const task = this.scheduler.getNextTask(worker.id);
               if (!task) {
-                // Nothing handed out. If tasks of this stage are only held back by politeness (or a retry is pending), wait for them.
                 const ready = this.scheduler.getAllTasks().filter(t => stageIds.has(t.id) && t.status === 'ready' && !t.assignedWorkerId);
                 if (ready.length === 0) break;
                 blockedSince = blockedSince || Date.now();
                 if (Date.now() - blockedSince > THROTTLE_GIVE_UP_MS) {
                   for (const r of ready) {
                     const why = this.scheduler.getBlockReason(r.id) || 'not scheduled';
+                    const msg = `Task ${r.id} (${r.name}) never started: ${why}`;
                     this.scheduler.failTask(r.id, `Never started: ${why}`, undefined, false);
-                    errors.push(`Task ${r.id} (${r.name}) never started: ${why}`);
+                    errors.push(msg);
+                    stageErrors.push(msg);
                     stageBarrier.arrive(`${r.id}#blocked`, { status: 'failed' });
                   }
                   break;
@@ -368,7 +376,7 @@ export class SwarmCoordinator extends EventEmitter {
           });
 
           await Promise.all(workerPromises);
-          await stageBarrier.await(2000).catch(() => undefined); // every task of the stage has arrived by now
+          await stageBarrier.await(2000).catch(() => undefined);
           for (const w of activeWorkers) {
             this.supervisor.unregisterWorker(w.id);
             await this.swarm.retireWorker(w.id, true);
@@ -376,6 +384,33 @@ export class SwarmCoordinator extends EventEmitter {
         }
 
         this.emit('stageCompleted', { stageName: stage.stageName });
+
+        // Re-plan on stage failure or unaddressed conflicts (excluding needs_human, which only a person can settle) (max 2 replans, #228 Step 5)
+        const unresolvedNow = this.blackboard.getUnresolvedConflicts().filter(c => c.verdict !== 'needs_human');
+        const shouldReplan = (stageErrors.length > 0 || (stageQueue.length === 0 && unresolvedNow.length > 0))
+          && !aborted()
+          && Boolean(options.replanFn)
+          && replans < maxReplans;
+
+        if (shouldReplan && options.replanFn) {
+          replans += 1;
+          const summaryParts: string[] = [];
+          if (stageErrors.length) summaryParts.push(`Stage "${stage.stageName}" failures: ${stageErrors.join('; ')}`);
+          if (unresolvedNow.length) summaryParts.push(`Unresolved conflicts: ${unresolvedNow.map(c => `${c.entity}/${c.attribute}`).join(', ')}`);
+          const summary = summaryParts.join(' | ');
+          try {
+            const revised = await options.replanFn(plan, summary, replans);
+            if (revised && revised.stages.length > 0) {
+              const diff = diffPlans(plan, revised);
+              plan = revised;
+              stageQueue.length = 0;
+              stageQueue.push(...revised.stages);
+              this.emit('planUpdated', { attempt: replans, diff, justification: revised.justification, plan: revised });
+            }
+          } catch (err: any) {
+            errors.push(`Replan attempt ${replans} failed: ${String(err?.message ?? err)}`);
+          }
+        }
       }
     } finally {
       this.supervisor.stop();

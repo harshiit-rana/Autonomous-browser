@@ -197,6 +197,17 @@ Design and formula: `docs/swarm/evidence.md`. Proof: `tests/test_evidence_truth.
 | Unsupported-claim check on free text | `VerifiedReportSynthesizer.synthesizeReport` (free-text sections with citations) is still unused by the swarm: the swarm report has no model-written prose. The grounding assertion (`assertGrounded`) and the findings table are wired. | #251. |
 | Verifier-stage tests in the app | The e2e covers `needs_human`; `winner` and `both_valid` are covered by unit tests only. | Time. |
 
+## Orchestrator (#228 SWX-02)
+
+Model-driven mission planning via `planWithOrchestrator()` + `submit_plan` tool (`src/swarm/orchestrator.ts`) replaced the hardcoded comparison/research regex router (`isComparison`, `isMultiSiteResearch`, `/research` auto-swarm). Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| Real model planning quality | **Not verified.** Both `test_orchestrator.ts` and `orchestrator.spec.ts` validate schema guards, single repair turn, and UI flows against deterministic scripted model responses; no real API key was available. | Live evals belong to #256 / #257. |
+| `SwarmCoordinator.planMission()` URL helper | Retained for explicit multi-URL extraction helpers and unit tests when >= 2 explicit `http(s)://` URLs are passed (`extractSourceUrls`); keyword/comparison regexes (`isComparison`, `isMultiSiteResearch`) were removed. | Product missions go through `planWithOrchestrator()`. |
+| Mid-run replanning in real Electron E2E | `replanFn` and `diffPlans` (max 2 replans on stage failure or unaddressed conflicts) are covered end-to-end against `SwarmManager` + `FakeWorkerHost` in `tests/test_orchestrator.ts`; not exercised separately in Playwright E2E. | Re-planning on swarm stage failure is wired in `AgentRuntime.runSwarmLoop()`. |
+| Drag-reorder of plan steps in preview modal | Preview modal supports inline editing of task instructions, task removal, and `Switch to Single-Agent`, not drag-and-drop stage reordering. | Simplicity and DAG dependency safety. |
+
 ## Agent presence layer (#233 LIV-02)
 
 Design and measurements: `docs/adr/0011-presence-layer.md`. Proof: `tests/test_presence_layer.ts` (mapping, coalescing, window tracking, executor emission, masking) and `tests/e2e/presence.spec.ts` (real app, real OS screenshots and a real OS click, evidence in `docs/audits/evidence/233/`). Windows only. Not done, or only partly:
@@ -219,3 +230,14 @@ Design and measurements: `docs/adr/0011-presence-layer.md`. Proof: `tests/test_p
 | Focus | The overlay is `focusable: false`; the harness's own OS helpers activate windows, so page-visible focus events are inconclusive (ADR 0011). | |
 | Screen recorders | Whether a recorder or remote desktop captures the click-through window was not tested. Model screenshots (`capturePage`, CDP) never contain it (tested). | |
 | Layer lifetime | The cursor stays drawn (dimmed after 30 s) until its view is hidden or removed; there is no "agent finished" fade. | Needs the mission lifecycle (#226). |
+
+## Resource governance & supervision (#231 SWX-05)
+
+Live process/OS governance metrics, monotonic sleep-safe supervisor stall detection, per-worker IPC/UI controls, global kill switch, and `TabHibernationDaemon` wiring (`ResourceGovernor`, `WorkerSupervisor`, `AgentRuntime`, `ViewManager`). Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| Sustained CPU > 85% / free RAM < 1 GB in live CI container | **Unit-tested with metric overrides; live Chromium metrics read in E2E.** `ResourceGovernor` hysteresis, CPU/memory/event-loop throttling, and UI limit-reason string (`"N workers (limited by ...)"`) are verified via unit overrides (`tests/test_governance_supervision.ts`); Electron `app.getAppMetrics()` + `webContents` count are verified over IPC in `tests/e2e/governance_chaos.spec.ts`. | Synthetically exhausting CI runner RAM/CPU in Electron risks crashing the shared runner. |
+| Hibernation trigger frequency in long sessions | `TabHibernationDaemon` is wired into `ViewManager` (registers user tabs, wakes on activation, and hibernates eligible idle background user tabs on `ResourceGovernor` `throttle` events). Active agent tabs and audible tabs are always excluded (`canHibernateTab`). | 5-minute idle threshold not waited out inside fast Playwright E2E. |
+| OS suspend/sleep event | Sleep clock-jump immunity (`wallDelta` vs `monoDelta` skew rebase) and paused-worker exclusion are unit-tested via injected clocks in `tests/test_governance_supervision.ts`. | Hardware sleep is not triggered in CI. |
+| Default 60 s stall timeout in chaos E2E | Production default is `60_000 ms` (`DEFAULT_STALL_THRESHOLD_MS`); chaos E2E sets `AEGIS_WORKER_STALL_MS=2200` against a 12 s hung HTTP server so the full retry + stalled flow finishes inside 10 s. | Fast CI turn-around. |
