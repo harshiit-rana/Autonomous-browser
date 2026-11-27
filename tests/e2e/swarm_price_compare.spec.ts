@@ -16,6 +16,33 @@ test.afterAll(async () => { await Promise.all(shops.map(s => s.stop())); });
 
 test.describe('swarm price-compare', () => {
   test.use({
+    orchestratorScript: {
+      build: () => [{
+        expectTools: ['submit_plan'],
+        respond: {
+          tool: 'submit_plan',
+          args: {
+            mode: 'swarm',
+            justification: 'Three distinct shop URLs benefit from parallel extraction across isolated worker views.',
+            stages: [
+              {
+                name: 'extract',
+                parallelism: 3,
+                tasks: shops.map((shop, i) => ({
+                  id: `shop_${i + 1}`,
+                  name: `${shop.name} extractor`,
+                  role: 'extractor',
+                  goal: `Find price and quote for ${PRODUCT} on ${shop.name}.`,
+                  startUrl: shop.productUrl,
+                  dependsOn: [],
+                  effectClass: 'read'
+                }))
+              }
+            ]
+          }
+        }
+      }]
+    },
     script: {
       // Each worker has its own two steps, tied to the page it starts on (the "Start page:" line of its goal).
       build: () => shops.flatMap(shop => [

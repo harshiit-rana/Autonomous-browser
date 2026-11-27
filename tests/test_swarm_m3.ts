@@ -419,13 +419,13 @@ async function runSwarmTests() {
   assert.strictEqual(linearPlan.stages[0].parallelism, 1);
   assert(linearPlan.justification.includes('Single linear objective'), 'Linear plan justification mismatch');
 
-  // Test 2: Comparison mission -> Parallel swarm justified
-  const swarmPlan = coordinator.planMission('m_swarm', 'Compare prices of Sony WH-1000XM5 across 3 shops');
-  assert(swarmPlan.stages.length >= 2, 'Swarm comparison plan must have multiple stages (extract, verify, synthesize)');
+  // Test 2: Explicit multi-URL extraction -> parallel stages without regex routing (#228)
+  const swarmPlan = coordinator.planMission('m_swarm', 'Extract prices from https://shop-a.com/p and https://shop-b.com/p and https://shop-c.com/p');
+  assert(swarmPlan.stages.length >= 2, 'Multi-URL plan must have multiple stages (extract, verify, synthesize)');
   assert.strictEqual(swarmPlan.stages[0].parallelism, 3, 'Extraction stage must have parallelism = 3');
-  assert(swarmPlan.justification.includes('Parallel multi-origin search and extraction justified'), 'Swarm justification mismatch');
+  assert(swarmPlan.justification.includes('Parallel multi-origin extraction across 3 explicit source URLs'), 'Swarm justification mismatch');
 
-  // Test 3: End-to-end execution with simulated workers
+  // Test 3: End-to-end execution with simulated workers driven by explicit decomposition plan
   const execResult = await coordinator.executeMission('m_test_exec', 'Compare prices across shops', async (worker, task) => {
     // Simulated worker action
     if (task.role === 'researcher') {
@@ -442,6 +442,23 @@ async function runSwarmTests() {
       return { found: true };
     }
     return { verified: true };
+  }, {
+    plan: {
+      missionId: 'm_test_exec',
+      goal: 'Compare prices across shops',
+      justification: 'Parallel three-shop extraction.',
+      stages: [
+        {
+          stageName: 'extract',
+          parallelism: 3,
+          tasks: [
+            { id: 't1', name: 'Shop 1', role: 'researcher', instruction: 'Read shop 1', effectClass: 'read', dependencies: [] },
+            { id: 't2', name: 'Shop 2', role: 'researcher', instruction: 'Read shop 2', effectClass: 'read', dependencies: [] },
+            { id: 't3', name: 'Shop 3', role: 'researcher', instruction: 'Read shop 3', effectClass: 'read', dependencies: [] }
+          ]
+        }
+      ]
+    }
   });
 
   assert(execResult.success, 'Swarm execution should complete successfully');

@@ -64,9 +64,9 @@ contextBridge.exposeInMainWorld('aegis', {
   testWorkerAction: (action: string, id?: string, x?: number, y?: number) =>
     ipcRenderer.invoke(IPC_CHANNELS.TEST_WORKER_ACTION, { action, id, x, y }),
 
-  // Mission execution & steering (Issues #140, #211, #214)
-  startMission: (prompt: string, model?: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.MISSION_START, { prompt, model } as MissionStartRequest),
+  // Mission execution & steering (Issues #140, #211, #214, #228)
+  startMission: (prompt: string, model?: string, options?: MissionStartRequest['options']) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MISSION_START, { prompt, model, options } as MissionStartRequest),
   previewPlan: (prompt: string, model?: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_PLAN_PREVIEW, { prompt, model }),
   pauseMission: () =>

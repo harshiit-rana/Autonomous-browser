@@ -28,6 +28,8 @@ export interface AppSettings {
   verifierModel: string;
   /** Swarm workers that run at the same time (#227). Default 3; consumers clamp to 1..8 with `clampMaxWorkers`. */
   maxWorkers: number;
+  /** Skip the plan-preview confirmation dialog for single-agent read-only missions (#228). Default false. */
+  skipLowRiskPlanPreview: boolean;
 }
 
 export const MAX_WORKERS_HARD_LIMIT = 8;
@@ -39,11 +41,11 @@ export function clampMaxWorkers(v: unknown): number {
   return Math.max(1, Math.min(MAX_WORKERS_HARD_LIMIT, n));
 }
 
-export const CURRENT_SETTINGS_VERSION = 2;
+export const CURRENT_SETTINGS_VERSION = 3;
 
 /**
  * Settings migrations, applied in order to the stored rows on load. Each takes the stored object (from version
- * `from`) and returns the fields to write. v1 -> v2 (#225): agent loop keys with safe defaults.
+ * `from`) and returns the fields to write. v1 -> v2 (#225): agent loop keys; v2 -> v3 (#228): skipLowRiskPlanPreview.
  */
 export const SETTINGS_MIGRATIONS: Array<{ from: number; to: number; migrate: (stored: Record<string, unknown>) => Record<string, unknown> }> = [
   {
@@ -55,6 +57,13 @@ export const SETTINGS_MIGRATIONS: Array<{ from: number; to: number; migrate: (st
       maxSteps: typeof stored.maxSteps === 'number' ? stored.maxSteps : 25,
       maxCostUSD: typeof stored.maxCostUSD === 'number' ? stored.maxCostUSD : 1,
       verifierModel: typeof stored.verifierModel === 'string' ? stored.verifierModel : ''
+    })
+  },
+  {
+    from: 2,
+    to: 3,
+    migrate: stored => ({
+      skipLowRiskPlanPreview: typeof stored.skipLowRiskPlanPreview === 'boolean' ? stored.skipLowRiskPlanPreview : false
     })
   }
 ];
@@ -88,7 +97,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   maxSteps: 25,
   maxCostUSD: 1,
   verifierModel: '',
-  maxWorkers: DEFAULT_MAX_WORKERS
+  maxWorkers: DEFAULT_MAX_WORKERS,
+  skipLowRiskPlanPreview: false
 };
 
 const logger = rootLogger.child('settings');

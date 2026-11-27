@@ -196,3 +196,14 @@ Design and formula: `docs/swarm/evidence.md`. Proof: `tests/test_evidence_truth.
 | Auto-adjudication | The credibility-weight rule and "official source wins" were removed from the blackboard; only a head count of independent verified sites (>= 2, >= 65%) settles a conflict without the verifier. | Issue: never decide by confidence alone. |
 | Unsupported-claim check on free text | `VerifiedReportSynthesizer.synthesizeReport` (free-text sections with citations) is still unused by the swarm: the swarm report has no model-written prose. The grounding assertion (`assertGrounded`) and the findings table are wired. | #251. |
 | Verifier-stage tests in the app | The e2e covers `needs_human`; `winner` and `both_valid` are covered by unit tests only. | Time. |
+
+## Orchestrator (#228 SWX-02)
+
+Model-driven mission planning via `planWithOrchestrator()` + `submit_plan` tool (`src/swarm/orchestrator.ts`) replaced the hardcoded comparison/research regex router (`isComparison`, `isMultiSiteResearch`, `/research` auto-swarm). Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| Real model planning quality | **Not verified.** Both `test_orchestrator.ts` and `orchestrator.spec.ts` validate schema guards, single repair turn, and UI flows against deterministic scripted model responses; no real API key was available. | Live evals belong to #256 / #257. |
+| `SwarmCoordinator.planMission()` URL helper | Retained for explicit multi-URL extraction helpers and unit tests when >= 2 explicit `http(s)://` URLs are passed (`extractSourceUrls`); keyword/comparison regexes (`isComparison`, `isMultiSiteResearch`) were removed. | Product missions go through `planWithOrchestrator()`. |
+| Mid-run replanning in real Electron E2E | `replanFn` and `diffPlans` (max 2 replans on stage failure or unaddressed conflicts) are covered end-to-end against `SwarmManager` + `FakeWorkerHost` in `tests/test_orchestrator.ts`; not exercised separately in Playwright E2E. | Re-planning on swarm stage failure is wired in `AgentRuntime.runSwarmLoop()`. |
+| Drag-reorder of plan steps in preview modal | Preview modal supports inline editing of task instructions, task removal, and `Switch to Single-Agent`, not drag-and-drop stage reordering. | Simplicity and DAG dependency safety. |
