@@ -556,6 +556,10 @@
     "isReachable": true
   },
   {
+    "path": "swarm/orchestrator.ts",
+    "isReachable": true
+  },
+  {
     "path": "swarm/page_settle.ts",
     "isReachable": true
   },
