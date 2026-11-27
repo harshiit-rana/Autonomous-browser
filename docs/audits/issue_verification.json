@@ -566,7 +566,7 @@
         {
           "path": "src/planning/state_snapshotter.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         },
         {
           "path": "src/swarm/coordinator.ts",
@@ -694,7 +694,7 @@
         {
           "path": "src/planning/state_snapshotter.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         }
       ],
       "gap": "saveCheckpoint exists; crash-recovery resume not exercised.",
@@ -1294,7 +1294,7 @@
         {
           "path": "src/session/hibernation_daemon.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         }
       ],
       "gap": "hibernation_daemon is orphaned.",
