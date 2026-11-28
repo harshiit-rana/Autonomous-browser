@@ -27,6 +27,7 @@ import { runWorkerTask, runNonBrowserTask, WorkerRunDeps, DEFAULT_WORKER_MAX_STE
 import { UrlClaims } from '../swarm/worker_findings.js';
 import { PauseGate, QuestionQueue } from '../swarm/worker_coordination.js';
 import { MissionRecorder } from '../infrastructure/mission_recorder.js';
+import { EventLog } from './event_log.js';
 import { AgentLoop, MissionBrief, UserQuestion, VerificationOutcome, LoopOutcome } from './agent_loop.js';
 import { AgentTabHost } from './tools.js';
 import { MissionState, MissionStateMachine, MissionStatusEvent, isTerminal } from './mission_state.js';
@@ -721,6 +722,14 @@ export class AgentRuntime {
         this.workerGates.set(ev.workerId, new PauseGate());
       }
       workerEvent(ev, `Starting: ${ev.name ?? ev.taskId}`, 'running', 5);
+      if (ev.workerId !== 'coordinator') {
+        this.ensureEventLog(mission.id).emit('step_started', {
+          name: ev.identity?.name ?? ev.workerId,
+          color: ev.identity?.color,
+          glyph: ev.identity?.glyph,
+          task: ev.name ?? ev.taskId
+        }, { workerId: ev.workerId, stepId: ev.taskId });
+      }
     });
     coordinator.on('taskRetry', (ev: any) => workerEvent(ev, `Retrying after: ${String(ev.error).slice(0, 80)}`, 'running', 5));
     coordinator.on('taskFailed', (ev: any) => {
@@ -787,7 +796,16 @@ export class AgentRuntime {
         askUser: q => questions.ask(() => this.askUser(mission, q), signal),
         emitWorker: p => this.emitWorkerEvent(p),
         emitEvidence: t => this.emitEvidence(t),
-        recordEvent: (kind, data) => MissionRecorder.event(mission.id, kind, data)
+        recordEvent: (kind, data) => {
+          const d = (data && typeof data === 'object') ? data as Record<string, any> : { value: data };
+          const rawWorkerId = typeof d.workerId === 'string' ? d.workerId : undefined;
+          const rawStepId = typeof d.taskId === 'string' ? d.taskId : undefined;
+          const inner = (d.data && typeof d.data === 'object') ? d.data as Record<string, any> : d;
+          const mappedKind = kind.startsWith('worker.') ? kind.slice('worker.'.length) : kind;
+          const meta = rawWorkerId ? this.workerMeta.get(rawWorkerId) : undefined;
+          const payload = meta ? { ...inner, workerName: meta.name, color: meta.color, glyph: meta.glyph } : inner;
+          this.ensureEventLog(mission.id).emit(mappedKind, payload, { workerId: rawWorkerId, stepId: rawStepId });
+        }
       };
       result = await coordinator.executeMission(
         mission.id,
@@ -981,7 +999,10 @@ export class AgentRuntime {
         },
         telemetry: p => { if (live()) this.emitTelemetry(p); },
         worker: p => { if (live()) this.emitWorkerEvent({ id: 'worker-agent-1', name: 'Agent [Operator]', task: p.task, progress: p.progress, status: 'running' }); },
-        event: (kind, data) => MissionRecorder.event(mission.id, kind, data),
+        event: (kind, data) => {
+          const d = (data && typeof data === 'object') ? data as Record<string, any> : { value: data };
+          this.ensureEventLog(mission.id).emit(kind, d, { workerId: 'worker-agent-1', stepId: typeof d.step === 'number' ? `step_${d.step}` : undefined });
+        },
         toolPhase: a => {
           if (!live()) return;
           const url = (() => { try { return loop.tab.view.webContents.getURL(); } catch { return undefined; } })();
@@ -1225,6 +1246,27 @@ export class AgentRuntime {
     } catch {}
   }
 
+  private activeEventLog: EventLog | null = null;
+
+  private ensureEventLog(missionId: string): EventLog {
+    if (!this.activeEventLog || (this.activeEventLog as any).missionId !== missionId) {
+      this.activeEventLog = new EventLog(missionId, {
+        privacyMode: getSettings().privacyMode,
+        persist: ev => MissionRecorder.event(ev.missionId, ev.kind, {
+          ...ev.data,
+          ...(ev.workerId ? { workerId: ev.workerId } : {}),
+          ...(ev.stepId ? { stepId: ev.stepId } : {})
+        }),
+        forward: ev => {
+          if (!this.window.isDestroyed()) {
+            this.window.webContents.send(IPC_CHANNELS.EVENT_MISSION_EVENT, ev);
+          }
+        }
+      });
+    }
+    return this.activeEventLog;
+  }
+
   private emitEvidence(text: string): void {
     try {
       const payload: EvidenceEventPayload = {
@@ -1233,8 +1275,20 @@ export class AgentRuntime {
       };
       this.events.emit('evidence', payload);
       if (!this.window.isDestroyed()) {
-        MissionRecorder.event(this.activeMission?.id, 'evidence', payload);
         this.window.webContents.send(IPC_CHANNELS.EVENT_EVIDENCE, payload);
+      }
+      if (this.activeMission?.id) {
+        const lower = text.toLowerCase();
+        const kind = lower.includes('[blackboard evidence]') || lower.includes('[evidence]')
+          ? 'evidence'
+          : lower.includes('[blackboard conflict')
+            ? 'conflict'
+            : lower.includes('[error') || lower.includes('[roadblock')
+              ? 'error'
+              : lower.includes('[thought')
+                ? 'thought'
+                : 'status';
+        this.ensureEventLog(this.activeMission.id).emit(kind, { text });
       }
     } catch {}
   }

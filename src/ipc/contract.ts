@@ -366,6 +366,49 @@ export interface MissionEventsResponse {
   total: number;
 }
 
+export const MISSION_EVENT_KINDS = [
+  'step_started',
+  'observation',
+  'thought',
+  'tool_call',
+  'tool_result',
+  'policy_decision',
+  'approval_request',
+  'question',
+  'evidence',
+  'conflict',
+  'status',
+  'cost',
+  'error'
+] as const;
+
+export type MissionEventKind = (typeof MISSION_EVENT_KINDS)[number];
+
+export interface MissionEvent {
+  seq: number;
+  ts: number;
+  missionId: string;
+  workerId?: string;
+  kind: MissionEventKind;
+  stepId?: string;
+  data: Record<string, any>;
+}
+
+const VALID_KINDS = new Set<string>(MISSION_EVENT_KINDS);
+
+export function isMissionEvent(v: unknown): v is MissionEvent {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  if (typeof o.seq !== 'number' || !Number.isFinite(o.seq) || o.seq < 0) return false;
+  if (typeof o.ts !== 'number' || !Number.isFinite(o.ts)) return false;
+  if (typeof o.missionId !== 'string' || !o.missionId) return false;
+  if (typeof o.kind !== 'string' || !VALID_KINDS.has(o.kind)) return false;
+  if (o.workerId !== undefined && typeof o.workerId !== 'string') return false;
+  if (o.stepId !== undefined && typeof o.stepId !== 'string') return false;
+  if (!o.data || typeof o.data !== 'object' || Array.isArray(o.data)) return false;
+  return true;
+}
+
 export interface DataTransferResult {
   cancelled?: boolean;
   path?: string;
@@ -469,6 +512,7 @@ export const IPC_CHANNELS = {
   EVENT_WORKER: 'worker:event',
   EVENT_GOVERNANCE: 'governance:metrics',
   EVENT_EVIDENCE: 'evidence:event',
+  EVENT_MISSION_EVENT: 'mission:event',
   EVENT_MISSION_STATUS: 'mission:status',
   EVENT_TELEMETRY: 'telemetry:event',
   EVENT_PRESENCE: 'presence:event',

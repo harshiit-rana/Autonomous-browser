@@ -153,7 +153,7 @@
         <div id="no-workers-msg" class="empty-state-text">No active agent workers</div>
       </div>
 
-      <!-- Live Step Timeline & Thought Stream (Issue #137) -->
+      <!-- Live Step Timeline & Thought Stream (Issues #137, #235) -->
       <div class="timeline-header">
         <h4>Live Activity Timeline</h4>
         <!-- Timeline Filter Chips -->
@@ -162,11 +162,26 @@
           <button class="filter-chip" data-filter="actions">Actions</button>
           <button class="filter-chip" data-filter="thoughts">Thoughts</button>
           <button class="filter-chip" data-filter="evidence">Evidence</button>
+          <button class="filter-chip" data-filter="approvals">Approvals</button>
+          <button class="filter-chip" data-filter="errors">Errors</button>
         </div>
+        <div class="timeline-tools">
+          <input type="search" id="timeline-search" placeholder="Search events...">
+          <button id="timeline-jump-latest" class="badge-btn hidden" type="button">Latest</button>
+        </div>
+        <div id="timeline-worker-filters" class="timeline-filters"></div>
       </div>
 
-      <div id="evidence-feed">
+      <div id="evidence-feed" role="log">
         <div id="no-evidence-msg" class="empty-state-text">No activity recorded</div>
+      </div>
+
+      <div id="timeline-inspector" class="tl-inspector hidden" role="region" aria-label="Event Inspector">
+        <div class="tl-insp-head">
+          <strong>Event Inspector</strong>
+          <button id="timeline-inspector-close" class="icon-btn" type="button">&times;</button>
+        </div>
+        <div id="timeline-inspector-body"></div>
       </div>
     </aside>
   </main>

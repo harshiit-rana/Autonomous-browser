@@ -8,6 +8,10 @@
     "isReachable": true
   },
   {
+    "path": "agent/event_log.ts",
+    "isReachable": true
+  },
+  {
     "path": "agent/mission_checkpoint.ts",
     "isReachable": true
   },
@@ -449,6 +453,10 @@
   },
   {
     "path": "renderer/swarm_grid.ts",
+    "isReachable": true
+  },
+  {
+    "path": "renderer/timeline.ts",
     "isReachable": true
   },
   {
