@@ -154,6 +154,9 @@ contextBridge.exposeInMainWorld('aegis', {
   onEvidenceEvent: (callback: (data: EvidenceEventPayload) => void) => {
     ipcRenderer.on(IPC_CHANNELS.EVENT_EVIDENCE, (_, data) => callback(data));
   },
+  onMissionEvent: (callback: (data: any) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.EVENT_MISSION_EVENT, (_, data) => callback(data));
+  },
   onMissionStatus: (callback: (data: MissionStatusPayload) => void) => {
     ipcRenderer.on(IPC_CHANNELS.EVENT_MISSION_STATUS, (_, data) => callback(data));
   },

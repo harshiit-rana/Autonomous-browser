@@ -1035,3 +1035,25 @@ body.dark-theme {
   background: var(--bg-elevated, #1f2430); color: var(--text-primary, #e8eaf0); border: 1px solid var(--warning, #e0a030);
   padding: 8px 14px; border-radius: 8px; font-size: 12.5px; max-width: 80vw; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
 }
+
+/* Virtualised Timeline & Inspector (#235 LIV-04) */
+.timeline-tools { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+#timeline-search { flex: 1; background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-main); border-radius: 4px; padding: 3px 6px; font-size: 11px; }
+.tl-spacer { position: relative; width: 100%; }
+.tl-rows { position: relative; width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.tl-card { padding: 6px 8px; background: var(--bg-surface); border-radius: 4px; cursor: pointer; font-size: 11px; }
+.tl-card:focus { outline: 1px solid var(--accent); }
+.tl-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tl-worker-chip { padding: 1px 5px; border-radius: 4px; border: 1px solid; font-size: 10px; font-weight: 600; }
+.tl-action { font-weight: 600; color: var(--text-main); }
+.tl-time { margin-left: auto; color: var(--text-muted); font-size: 10px; font-family: monospace; }
+.tl-body { margin-top: 3px; color: var(--text-muted); word-break: break-word; }
+.tl-res { padding: 0 4px; border-radius: 3px; font-size: 10px; text-transform: uppercase; }
+.tl-res-ok { color: var(--success); }
+.tl-res-failed { color: var(--danger); }
+.tl-risk { padding: 0 4px; border-radius: 3px; font-size: 10px; background: rgba(245, 158, 11, 0.16); color: var(--warning); }
+.tl-inspector { border-top: 1px solid var(--border); background: var(--bg-panel); padding: 8px; max-height: 220px; overflow: auto; font-size: 11px; }
+.tl-insp-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.tl-insp-sec { margin-top: 6px; }
+.tl-insp-sec pre { white-space: pre-wrap; word-break: break-word; background: var(--bg-surface); padding: 6px; border-radius: 4px; font-size: 10px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }

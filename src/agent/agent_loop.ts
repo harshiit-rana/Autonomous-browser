@@ -319,6 +319,8 @@ export class AgentLoop {
     if (this.recentObservations.length > 3) this.recentObservations.shift();
     this.history.push({ role: 'user', content: observation });
     emit.evidence(`[Step ${step}] Observing: "${snapshot.title}" (${snapshot.elements.size} elements)`);
+    emit.event?.('step_started', { step, url: snapshot.url, title: snapshot.title });
+    emit.event?.('observation', { step, url: snapshot.url, title: snapshot.title, elementsCount: snapshot.elements.size });
     emit.checkpoint?.(); // the page the model is about to be asked about is what a resume re-opens
 
     // Decide
@@ -335,6 +337,7 @@ export class AgentLoop {
     } catch (err: any) {
       if (this.deps.signal.aborted) throw new Cancelled();
       emit.evidence(`[Error] Model invocation failed: ${err.message}`);
+      emit.event?.('error', { step, message: err.message });
       return this.end('failed', { error: `Model error: ${err.message}` });
     }
     this.checkAbort();
@@ -343,9 +346,13 @@ export class AgentLoop {
     this.checkAbort();
     this.recordUsage(response);
 
-    if (response.thinking) emit.evidence(`[Thought Stream] ${response.thinking}`);
+    if (response.thinking) {
+      emit.evidence(`[Thought Stream] ${response.thinking}`);
+      emit.event?.('thought', { step, text: response.thinking });
+    }
     if (response.finishReason === 'refusal') {
       emit.evidence(`[Refusal] ${response.text}`);
+      emit.event?.('error', { step, message: `Safety refusal: ${response.text}` });
       return this.end('failed', { error: `Safety refusal: ${response.text}` });
     }
 
@@ -353,6 +360,7 @@ export class AgentLoop {
     if (response.text) {
       blocks.push({ type: 'text', text: response.text });
       emit.evidence(`[Agent Thought] ${response.text.slice(0, 140)}`);
+      if (!response.thinking) emit.event?.('thought', { step, text: response.text });
     }
     for (const tc of response.toolCalls) blocks.push({ type: 'tool_call', id: tc.id, name: tc.name, arguments: tc.arguments });
     this.history.push({ role: 'assistant', content: blocks.length ? blocks : (response.text || '...') });
@@ -435,15 +443,17 @@ export class AgentLoop {
     try {
       new AuditLog().logAction({ missionId: this.deps.missionId, actor: 'policy', action: call.name, decision: decision.decision, targetOrigin: snapshot.url, details: { riskClass: decision.riskClass, reason: decision.reason } });
     } catch { /* audit storage unavailable */ }
-    emit.event?.('policy', { tool: call.name, decision: decision.decision, riskClass: decision.riskClass, reason: decision.reason });
+    emit.event?.('policy_decision', { step, tool: call.name, decision: decision.decision, riskClass: decision.riskClass, reason: decision.reason });
 
     if (decision.decision === 'deny') {
       emit.evidence(`[Security Policy Denied] ${decision.reason}`);
+      emit.event?.('tool_result', { step, tool: call.name, ok: false, output: decision.reason });
       this.toolResult(call.id, call.name, `Denied by security policy: ${decision.reason}`, true);
       return 'failed';
     }
     if (decision.decision === 'ask') {
       emit.evidence(`[Human Approval Required: ${decision.riskClass}] ${decision.reason}`);
+      emit.event?.('approval_request', { step, tool: call.name, targetLabel: target?.name, url: args.url || snapshot.url, riskClass: decision.riskClass, reason: decision.reason });
       const answer = await this.ask({ kind: 'approval', text: `Allow ${call.name}${args.url ? ` to ${args.url}` : target ? ` on "${target.name}"` : ''}? ${decision.reason}`, options: ['Approve', 'Deny'] });
       if (!/^approve/i.test(answer)) {
         emit.evidence(`[Policy] User denied ${call.name}`);
@@ -474,6 +484,7 @@ export class AgentLoop {
     const actionText = JSON.stringify(call.name === 'type' ? { ref: args.ref } : args).slice(0, 100);
     emit.evidence(`[Action] ${call.name}(${actionText})`);
     emit.action?.(step, call.name, actionText);
+    emit.event?.('tool_call', { step, tool: call.name, targetLabel: target?.name || args.url || args.ref, ...args });
 
     const refusal = this.deps.guardTool?.(call.name, args);
     if (refusal) {
@@ -520,12 +531,14 @@ export class AgentLoop {
       }
     }
     this.toolResult(call.id, call.name, output, !exec.ok);
+    emit.event?.('tool_result', { step, tool: call.name, ok: exec.ok, output: output.slice(0, 1200), isTerminal: exec.isTerminal });
     if (exec.image) {
       this.history.push({ role: 'user', content: [{ type: 'text', text: `[Screenshot of ${snapshot.url}]` }, { type: 'image', mimeType: exec.image.mimeType, base64: exec.image.base64 }] });
     }
     for (const ev of (exec.effect?.evidence as string[] | undefined) || []) {
       this.evidence.push(ev);
       emit.evidence(`[Evidence] ${ev}`);
+      emit.event?.('evidence', { step, text: ev });
     }
 
     if (exec.isTerminal) {

@@ -6,6 +6,7 @@
 import { OmnibarParser } from '../ui/omnibar_parser.js';
 import { ChoreographyEngine, FrameBudgetMonitor, type MotionInputEvent, type MotionMode } from '../ui/motion_engine.js';
 import { HistoryPanel } from './history_panel.js';
+import { MissionTimeline, type TimelineFilter } from './timeline.js';
 import { SwarmGrid } from './swarm_grid.js';
 import {
   TabState,
@@ -118,6 +119,7 @@ export class BrowserApp {
   private configuredMotionMode: MotionMode = 'full';
   private motionSeq = 0;
   private governanceLimitDesc: string | null = null;
+  private timeline!: MissionTimeline;
 
   constructor() {
     if (window.location.search.includes('lab=1')) {
@@ -203,6 +205,7 @@ export class BrowserApp {
     this.bindLayoutEvents();
     this.bindControls();
     this.bindSettingsEvents();
+    this.timeline = new MissionTimeline(this.evidenceFeed);
     new HistoryPanel();
     this.initMotion();
     this.registerBridgeListeners();
@@ -269,21 +272,30 @@ export class BrowserApp {
     });
     void this.checkInterruptedMission();
 
-    // Evidence & Activity Timeline feed
+    // Structured MissionEvent stream (#235 [LIV-04]) + legacy fallback for local UI messages
+    aegis.onMissionEvent?.((ev: any) => {
+      this.timeline.pushEvent(ev);
+      if (ev?.kind === 'evidence') {
+        const intent = this.triggerMotion({ type: 'evidence', workerId: ev.workerId, text: ev.data?.text });
+        const firstItem = this.evidenceFeed.querySelector('.tl-card') as HTMLElement | null;
+        if (firstItem && intent) {
+          this.animateMotionElement(
+            firstItem,
+            intent.usesTransform
+              ? [{ opacity: 0.25, transform: 'translateX(-8px)' }, { opacity: 1, transform: 'translateX(0)' }]
+              : [{ opacity: 0.45 }, { opacity: 1 }],
+            intent.durationMs,
+            intent.easing,
+            intent.usesTransform
+          );
+        }
+      }
+    });
+
+    // Evidence & Activity Timeline feed (legacy / demo fallback when onMissionEvent not emitted)
     aegis.onEvidenceEvent((data: EvidenceEventPayload) => {
-      this.addTimelineItem(data.text, data.timestamp);
-      const intent = this.triggerMotion({ type: 'evidence', text: data.text });
-      const firstItem = this.evidenceFeed.firstElementChild as HTMLElement | null;
-      if (firstItem && intent) {
-        this.animateMotionElement(
-          firstItem,
-          intent.usesTransform
-            ? [{ opacity: 0.25, transform: 'translateX(-8px)' }, { opacity: 1, transform: 'translateX(0)' }]
-            : [{ opacity: 0.45 }, { opacity: 1 }],
-          intent.durationMs,
-          intent.easing,
-          intent.usesTransform
-        );
+      if (!aegis.onMissionEvent) {
+        this.addTimelineItem(data.text, data.timestamp);
       }
     });
 
@@ -409,14 +421,14 @@ export class BrowserApp {
       if (e.key === 'Enter') sendSteering();
     });
 
-    // Timeline Filter Chips (Issue #137)
-    document.querySelectorAll('.filter-chip').forEach(btn => {
+    // Timeline Filter Chips (Issues #137, #235)
+    document.querySelectorAll('.filter-chip[data-filter]').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.filter-chip[data-filter]').forEach(b => b.classList.remove('active'));
         const target = e.currentTarget as HTMLElement;
         target.classList.add('active');
         this.currentFilter = (target.dataset.filter || 'all') as TimelineCategory;
-        this.applyTimelineFilter();
+        this.timeline.setCategoryFilter((target.dataset.filter || 'all') as TimelineFilter);
       });
     });
   }
@@ -521,48 +533,12 @@ export class BrowserApp {
     else this.addTimelineItem(`[Error] Answer not accepted: ${res?.data?.error || res?.error || 'unknown'}`);
   }
 
-  private addTimelineItem(text: string, timestamp?: string, forcedCategory?: TimelineCategory): void {
-    const emptyMsg = document.getElementById('no-evidence-msg');
-    if (emptyMsg) emptyMsg.remove();
-
-    let category: TimelineCategory = forcedCategory || 'evidence';
-    const lower = text.toLowerCase();
-    if (lower.includes('[action]') || lower.includes('[step') || lower.includes('[undo]')) {
-      category = 'actions';
-    } else if (lower.includes('[thought') || lower.includes('[steer]') || lower.includes('[agent thought]')) {
-      category = 'thoughts';
-    } else if (lower.includes('[error') || lower.includes('[roadblock') || lower.includes('[refusal]')) {
-      category = 'errors';
-    }
-
-    const item = document.createElement('div');
-    item.className = `evidence-item item-${category}`;
-    item.dataset.category = category;
-
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'ev-time';
-    timeSpan.textContent = timestamp || new Date().toTimeString().slice(0, 8);
-    item.appendChild(timeSpan);
-
-    const textSpan = document.createElement('span');
-    textSpan.className = 'ev-text';
-    textSpan.textContent = sanitizeText(text);
-    item.appendChild(textSpan);
-
-    this.evidenceFeed.prepend(item);
-    this.applyTimelineFilter();
+  private addTimelineItem(text: string, _timestamp?: string, _forcedCategory?: TimelineCategory): void {
+    this.timeline?.pushLegacyText(sanitizeText(text));
   }
 
   private applyTimelineFilter(): void {
-    const items = this.evidenceFeed.querySelectorAll('.evidence-item');
-    items.forEach(el => {
-      const cat = (el as HTMLElement).dataset.category;
-      if (this.currentFilter === 'all' || cat === this.currentFilter) {
-        (el as HTMLElement).style.display = 'flex';
-      } else {
-        (el as HTMLElement).style.display = 'none';
-      }
-    });
+    this.timeline?.setCategoryFilter((this.currentFilter || 'all') as TimelineFilter);
   }
 
   // ==========================================

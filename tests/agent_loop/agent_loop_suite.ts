@@ -469,7 +469,7 @@ scenario('policy: out-of-scope navigation asks once, approval persists for the m
     steps: [() => tc('navigate', { url: `${c.altBase}/agent/nav/b` }), ({ obs }) => { assert.ok(obs.includes(`URL: ${c.altBase}`)); return tc('fail', { reason: 'end' }); }]
   });
   assert.equal(r2.questions.length, 0, 'settings rule allowed it without asking');
-  assert.ok(r2.events.some(e => e.kind === 'policy' && /User policy rule: allow/.test(e.data.reason)));
+  assert.ok(r2.events.some(e => (e.kind === 'policy' || e.kind === 'policy_decision') && /User policy rule: allow/.test(e.data.reason)));
   return `asked ${r.questions.length}x, rule run asked ${r2.questions.length}x`;
 });
 

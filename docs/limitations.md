@@ -251,3 +251,12 @@ Tokens in `src/renderer/tokens.css`, `ChoreographyEngine` + `FrameBudgetMonitor`
 | High-contrast palette & theme switcher UI | Tokens (`[data-theme="light"]`, `[data-theme="high-contrast"]`, Okabe-Ito `--worker-1`..`--worker-8`) are defined in `src/renderer/tokens.css` and documented in `docs/design/motion.md`, but no chrome UI toggle exists yet to switch `data-theme`. | Theme switcher UI is covered under #238 [LIV-07]. |
 | Full-chrome sustained-stress animation measurement | The 10-worker 50 ev/s stress burst and p95 `< 20 ms` frame budget check run inside the Motion Lab harness (`tests/e2e/motion_lab.spec.ts`); automated frame-budget auto-degradation transitions are covered deterministically via `FrameBudgetMonitor` unit tests (`tests/test_motion_engine.ts`), rather than starving a live compositor for 3 s in CI. | Frame drops are timing-sensitive on shared CI runners. |
 | Worker-to-timeline shared-element flight in chrome | `evidence_fly` uses a transform fade-slide on newly prepended timeline items in `src/renderer/app.ts`; cross-panel FLIP flight from a worker tile in `SwarmGrid` to `#evidence-feed` awaits the virtualised `#235` timeline inspector. | Depends on #235 [LIV-04]. |
+
+## Structured event log & virtualised timeline (#235 LIV-04)
+
+`MissionEvent` schema (`src/ipc/contract.ts`), `EventLog` with source secret/PII/binary redaction (`src/agent/event_log.ts`), `AgentLoop` / `AgentRuntime` / `WorkerTaskRunner` typed event emission, and virtualised `MissionTimeline` + Inspector drawer (`src/renderer/timeline.ts`). Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| Per-step before/after thumbnails | Timeline cards show worker chip, action, target label, rationale, result status, risk badge, and Inspector JSON/policy trace; inline before/after JPEG thumbnails from the frame hub await the flight recorder disk store. | Covered under #236 [LIV-05]. |
+| Renderer mid-run `since(seq)` reload replay | `EventLog.since(seq)` and `TimelineStore.applyBatch` idempotency are unit-tested and wired on the backend (`MissionsRepo.getEvents`); automatic renderer reload resync IPC invocation on startup is not triggered during normal single-window runs. | Reload recovery covered in unit tests. |
