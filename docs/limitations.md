@@ -260,3 +260,12 @@ Tokens in `src/renderer/tokens.css`, `ChoreographyEngine` + `FrameBudgetMonitor`
 |---|---|---|
 | Per-step before/after thumbnails | Timeline cards show worker chip, action, target label, rationale, result status, risk badge, and Inspector JSON/policy trace; inline before/after JPEG thumbnails from the frame hub await the flight recorder disk store. | Covered under #236 [LIV-05]. |
 | Renderer mid-run `since(seq)` reload replay | `EventLog.since(seq)` and `TimelineStore.applyBatch` idempotency are unit-tested and wired on the backend (`MissionsRepo.getEvents`); automatic renderer reload resync IPC invocation on startup is not triggered during normal single-window runs. | Reload recovery covered in unit tests. |
+
+## Flight recorder & replay (#236 LIV-05)
+
+Consolidated on `src/automation/flight_recorder.ts` (`MissionFlightRecorder`) and removed orphaned `src/session/trajectory_replay.ts`. Writes durable fsynced `<userData>/missions/<id>/events.ndjson`, optional `frames/NNNN.jpg` (`AEGIS_RECORD_FRAMES=1`), enforces 200 MB eviction cap, tolerates crash-truncated NDJSON lines, migrates legacy `schemaVersion` (`v0 -> v1`), and exports redacted HTML/JSON replay bundles (`replay:load` / `replay:export` in `src/renderer/lab.ts`). Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| Per-frame retention background sweep | `MissionFlightRecorder` enforces the 200 MB per-mission cap on frame writes; cross-mission age-based retention deletion (`retentionDays`) is owned by #248 [SAF-02]. | Depends on #248 [SAF-02]. |
+| Blurred JPEG pixel synthesis on export | Export redacts all secret inputs/tokens in `recording.json` and omits frames associated with redacted password/secret steps (`screenshotBase64: undefined`); pixel-level Gaussian blur filter is not applied. | Redacting/omitting the frame prevents any secret leakage without adding native image-processing dependencies. |

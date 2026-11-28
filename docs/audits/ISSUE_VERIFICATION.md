@@ -6,8 +6,8 @@ Owner: [#222 - TRU-04](https://github.com/harshiit-rana/Autonomous-browser/issue
 
 - Total audited: **117**
 - Verified in the running app: **1**
-- Partial: **72**
-- Not in app: **44**
+- Partial: **73**
+- Not in app: **43**
 
 ## How rows are computed
 
@@ -66,7 +66,7 @@ Old issues stay closed as history. Each non-verified row names the open program 
 | #140 | [MCX-07] Mission composer & lifecycle UX: natural-language input, plan preview, clarifying questions, templates, omnibar intent routing | `src/ui/omnibar_parser.ts` (reachable)<br>`src/renderer/app.ts` (reachable)<br>`tests/test_omnibar_parser.ts` (in npm test) | No composer / prompt workspace UI. | `partial` | [#241](https://github.com/harshiit-rana/Autonomous-browser/issues/241) |
 | #141 | [MCX-08] Live telemetry: tokens, cost, latency, steps, worker utilisation - truthful and budget-aware | `src/models/governor.ts` (reachable)<br>`src/renderer/app.ts` (reachable) | Telemetry values not checked against real runs. | `partial` | [#231](https://github.com/harshiit-rana/Autonomous-browser/issues/231) |
 | #142 | [MCX-09] Results & evidence panel: reports, tables, files, click-through citations with highlighted sources | `src/data/verified_report.ts` (reachable)<br>`src/renderer/app.ts` (reachable) | No results / evidence panel in the renderer. | `partial` | [#230](https://github.com/harshiit-rana/Autonomous-browser/issues/230), [#251](https://github.com/harshiit-rana/Autonomous-browser/issues/251) |
-| #143 | [MCX-10] Flight recorder & replay: record screencast + events, scrub timeline, export shareable replay | `src/automation/flight_recorder.ts` (orphaned)<br>`src/session/trajectory_replay.ts` (orphaned)<br>`tests/test_flight_recorder.ts` (in npm test) | Both modules are orphaned; no recording or replay UI. | `not-in-app` | [#236](https://github.com/harshiit-rana/Autonomous-browser/issues/236) |
+| #143 | [MCX-10] Flight recorder & replay: record screencast + events, scrub timeline, export shareable replay | `src/automation/flight_recorder.ts` (reachable)<br>`tests/test_flight_recorder.ts` (in npm test) | Consolidated on automation/flight_recorder.ts; wired into AgentRuntime + Replay UI (#236). | `partial` | [#236](https://github.com/harshiit-rana/Autonomous-browser/issues/236) |
 | #144 | [MCX-11] First-run, empty states, honest demo mode and guided examples | `src/renderer/app.ts` (reachable)<br>`src/infrastructure/settings.ts` (reachable)<br>`src/models/provider_factory.ts` (reachable) | Demo mode flag selects MockModelProvider. | `partial` | [#224](https://github.com/harshiit-rana/Autonomous-browser/issues/224) |
 | #145 | [MCX-12] Chrome UI quality bar: performance, motion, accessibility, internationalisation | `src/renderer/app.ts` (reachable)<br>`tests/test_ui.ts` (not run by npm test)<br>`src/renderer/styles.css` | No performance / accessibility measurement. | `partial` | [#237](https://github.com/harshiit-rana/Autonomous-browser/issues/237) |
 | #146 | [MCX-13] Background missions, tray, notifications and "keep working when I look away" | `src/main/index.ts` (reachable)<br>`src/agent/runtime.ts` (reachable) | Tray and Notification code exists; background missions not verified. | `partial` | [#246](https://github.com/harshiit-rana/Autonomous-browser/issues/246) |

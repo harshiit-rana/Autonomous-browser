@@ -1,23 +1,23 @@
 # Release Gate Status: **NOT READY (2 of 7 checks failing)**
 
-> Generated automatically by `scripts/release_gate.mjs` at 2026-11-28T09:39:12.501Z
-> Commit: `ac474a8` | Working tree dirty: `true`
+> Generated automatically by `scripts/release_gate.mjs` at 2026-11-28T09:45:48.049Z
+> Commit: `8f1ad79` | Working tree dirty: `true`
 
 ## Gate Measurements Summary Table
 
 | Check ID | Area / Description | Verification Command | Status | Measured Evidence / Notes |
 |---|---|---|---|---|
-| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 6983ms |
+| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 7096ms |
 | `unit` | Unit & Integration Test Manifest | `tests/manifest.json` | **PASS** | Pre-verified unit manifest (passed via caller verification) |
-| `reachability` | Reachability Policy & Orphan Allowlist | `node scripts/audit_reachability.mjs` | **FAIL** | 59 orphaned modules awaiting wiring in allowlist pending list |
+| `reachability` | Reachability Policy & Orphan Allowlist | `node scripts/audit_reachability.mjs` | **FAIL** | 58 orphaned modules awaiting wiring in allowlist pending list |
 | `e2e` | Real-App Electron E2E Suite | `npm run test:e2e` | **PASS** | Real-app Playwright Electron E2E suite passed |
-| `docs-consistency` | Documentation Truth & Status Consistency | `scripts/gen_status.mjs hash check` | **PASS** | docs/STATUS.md matches reachability audit hash f6b721cf |
+| `docs-consistency` | Documentation Truth & Status Consistency | `scripts/gen_status.mjs hash check` | **PASS** | docs/STATUS.md matches reachability audit hash 709577ea |
 | `no-fake-paths` | Zero Forbidden Fake Patterns in src/ | `scripts/release_gate.mjs scan src/` | **PASS** | Zero forbidden fake/mock patterns detected on production paths |
 | `security-attack-suite` | Live Red-Team Security Attack Suite | `npm run test:security:live` | **FAIL** | live red-team harness not yet wired to real agent loop (ASR unmeasured) |
 
 ## Required Completion Items
 
-- [ ] **Reachability Policy & Orphan Allowlist** (`reachability`): 59 orphaned modules awaiting wiring in allowlist pending list
+- [ ] **Reachability Policy & Orphan Allowlist** (`reachability`): 58 orphaned modules awaiting wiring in allowlist pending list
 - [ ] **Live Red-Team Security Attack Suite** (`security-attack-suite`): live red-team harness not yet wired to real agent loop (ASR unmeasured)
 
 ---

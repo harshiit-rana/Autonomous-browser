@@ -1,8 +1,8 @@
 {
   "total": 117,
   "verified": 1,
-  "partial": 72,
-  "notInApp": 44,
+  "partial": 73,
+  "notInApp": 43,
   "issues": [
     {
       "number": 101,
@@ -1058,17 +1058,12 @@
       "number": 143,
       "title": "[MCX-10] Flight recorder & replay: record screencast + events, scrub timeline, export shareable replay",
       "kind": "code",
-      "result": "not-in-app",
+      "result": "partial",
       "evidence": [
         {
           "path": "src/automation/flight_recorder.ts",
           "type": "module",
-          "reachable": false
-        },
-        {
-          "path": "src/session/trajectory_replay.ts",
-          "type": "module",
-          "reachable": false
+          "reachable": true
         },
         {
           "path": "tests/test_flight_recorder.ts",
@@ -1076,7 +1071,7 @@
           "inSuite": true
         }
       ],
-      "gap": "Both modules are orphaned; no recording or replay UI.",
+      "gap": "Consolidated on automation/flight_recorder.ts; wired into AgentRuntime + Replay UI (#236).",
       "owningIssues": [
         236
       ]

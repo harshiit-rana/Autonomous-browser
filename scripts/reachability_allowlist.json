@@ -70,7 +70,6 @@
     "session/hibernation_daemon.ts": "#252",
     "session/session_manager.ts": "#252",
     "session/tab_handoff.ts": "#252",
-    "session/trajectory_replay.ts": "#236",
     "swarm/speculative_branching.ts": "#228",
     "ui/motion_engine.ts": "#234",
     "workspace/conversation_threads.ts": "#244",

@@ -57,7 +57,7 @@
   },
   {
     "path": "automation/flight_recorder.ts",
-    "isReachable": false
+    "isReachable": true
   },
   {
     "path": "automation/form_filler.ts",
@@ -525,10 +525,6 @@
   },
   {
     "path": "session/tab_handoff.ts",
-    "isReachable": false
-  },
-  {
-    "path": "session/trajectory_replay.ts",
     "isReachable": false
   },
   {

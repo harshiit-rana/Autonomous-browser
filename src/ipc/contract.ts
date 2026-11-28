@@ -479,6 +479,8 @@ export const IPC_CHANNELS = {
   // Persistence: mission history and backup/restore (Issue #239)
   MISSIONS_LIST: 'missions:list',
   MISSION_EVENTS_GET: 'mission:events_get',
+  REPLAY_LOAD: 'replay:load',
+  REPLAY_EXPORT: 'replay:export',
   DATA_EXPORT: 'data:export',
   DATA_IMPORT: 'data:import',
 

@@ -4,8 +4,14 @@
  * JSON replay artifacts, speed multipliers, and sensitive data redaction.
  */
 
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import type { MissionEvent } from '../ipc/contract.js';
+import { sanitizeEventData } from '../agent/event_log.js';
+
+export const FLIGHT_SCHEMA_VERSION = 1;
+export const DEFAULT_MAX_MISSION_BYTES = 200 * 1024 * 1024; // 200 MB cap per mission
 
 export interface FlightFrame {
   step: number;
@@ -235,5 +241,265 @@ export class FlightRecorder {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(outputPath, html, 'utf8');
     return outputPath;
+  }
+}
+
+export interface RecordedFrameMeta {
+  index: number;
+  file: string;
+  ts: number;
+  seq?: number;
+  sha256: string;
+  byteLength: number;
+  isSensitive?: boolean;
+  dataUrl?: string;
+}
+
+export interface LoadedMissionReplay {
+  missionId: string;
+  schemaVersion: number;
+  events: MissionEvent[];
+  frames: RecordedFrameMeta[];
+  truncatedLines: number;
+}
+
+/**
+ * Durable disk-backed mission flight recorder (#236 [LIV-05]):
+ * - Writes `<userData>/missions/<id>/events.ndjson` (append-only, fsynced per step)
+ * - Stores low-rate JPEG frames `frames/NNNN.jpg` when enabled, with 200 MB eviction cap
+ * - Tolerates crash-truncated trailing NDJSON lines and migrates older schemas
+ * - Exports self-contained redacted replay bundles
+ */
+export class MissionFlightRecorder {
+  public readonly missionDir: string;
+  public readonly eventsPath: string;
+  public readonly framesDir: string;
+  public readonly manifestPath: string;
+  private readonly recordFrames: boolean;
+  private readonly maxMissionBytes: number;
+  private frameIndex = 0;
+
+  constructor(missionDir: string, opts: { recordFrames?: boolean; maxMissionBytes?: number } = {}) {
+    this.missionDir = missionDir;
+    this.eventsPath = path.join(missionDir, 'events.ndjson');
+    this.framesDir = path.join(missionDir, 'frames');
+    this.manifestPath = path.join(missionDir, 'flight_manifest.json');
+    this.recordFrames = opts.recordFrames ?? false;
+    this.maxMissionBytes = opts.maxMissionBytes ?? DEFAULT_MAX_MISSION_BYTES;
+    fs.mkdirSync(this.missionDir, { recursive: true });
+    if (this.recordFrames) fs.mkdirSync(this.framesDir, { recursive: true });
+    if (!fs.existsSync(this.manifestPath)) {
+      fs.writeFileSync(
+        this.manifestPath,
+        JSON.stringify({ schemaVersion: FLIGHT_SCHEMA_VERSION, recordFrames: this.recordFrames, frames: [] }, null, 2),
+        'utf8'
+      );
+    } else if (fs.existsSync(this.framesDir)) {
+      this.frameIndex = fs.readdirSync(this.framesDir).filter(f => f.endsWith('.jpg')).length;
+    }
+  }
+
+  public appendEvent(ev: MissionEvent): void {
+    const clean = {
+      schemaVersion: FLIGHT_SCHEMA_VERSION,
+      ...ev,
+      data: sanitizeEventData(ev.data) as Record<string, any>
+    };
+    const line = JSON.stringify(clean) + '\n';
+    const fd = fs.openSync(this.eventsPath, 'a');
+    try {
+      fs.writeSync(fd, line, undefined, 'utf8');
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+  }
+
+  public recordJpegFrame(
+    jpegBytes: Buffer,
+    opts: { ts?: number; seq?: number; isSensitive?: boolean; force?: boolean } = {}
+  ): RecordedFrameMeta | null {
+    if (!this.recordFrames && !opts.force) return null;
+    if (opts.isSensitive) return null;
+    fs.mkdirSync(this.framesDir, { recursive: true });
+    this.frameIndex += 1;
+    const fileName = `${String(this.frameIndex).padStart(4, '0')}.jpg`;
+    const fullPath = path.join(this.framesDir, fileName);
+    const sha256 = crypto.createHash('sha256').update(jpegBytes).digest('hex');
+
+    const fd = fs.openSync(fullPath, 'w');
+    try {
+      fs.writeSync(fd, jpegBytes);
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+
+    const meta: RecordedFrameMeta = {
+      index: this.frameIndex,
+      file: `frames/${fileName}`,
+      ts: opts.ts ?? Date.now(),
+      seq: opts.seq,
+      sha256,
+      byteLength: jpegBytes.byteLength
+    };
+    this.updateManifestFrame(meta);
+    this.enforceSizeCap();
+    return meta;
+  }
+
+  private updateManifestFrame(meta: RecordedFrameMeta): void {
+    try {
+      const m = fs.existsSync(this.manifestPath)
+        ? JSON.parse(fs.readFileSync(this.manifestPath, 'utf8'))
+        : { schemaVersion: FLIGHT_SCHEMA_VERSION, frames: [] };
+      if (!Array.isArray(m.frames)) m.frames = [];
+      m.frames.push(meta);
+      fs.writeFileSync(this.manifestPath, JSON.stringify(m, null, 2), 'utf8');
+    } catch {
+      // Best effort manifest update
+    }
+  }
+
+  private enforceSizeCap(): void {
+    if (!fs.existsSync(this.framesDir)) return;
+    const calcSize = (dir: string): number => {
+      if (!fs.existsSync(dir)) return 0;
+      let total = 0;
+      for (const name of fs.readdirSync(dir)) {
+        const p = path.join(dir, name);
+        const st = fs.statSync(p);
+        total += st.isDirectory() ? calcSize(p) : st.size;
+      }
+      return total;
+    };
+    let total = calcSize(this.missionDir);
+    if (total <= this.maxMissionBytes) return;
+
+    const frameFiles = fs.readdirSync(this.framesDir).filter(f => f.endsWith('.jpg')).sort();
+    for (const f of frameFiles) {
+      if (total <= this.maxMissionBytes) break;
+      const full = path.join(this.framesDir, f);
+      try {
+        const sz = fs.statSync(full).size;
+        fs.unlinkSync(full);
+        total -= sz;
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  public static load(missionDir: string, opts: { includeFrameDataUrls?: boolean } = {}): LoadedMissionReplay {
+    const eventsPath = path.join(missionDir, 'events.ndjson');
+    const framesDir = path.join(missionDir, 'frames');
+    const manifestPath = path.join(missionDir, 'flight_manifest.json');
+    const missionId = path.basename(missionDir);
+
+    let schemaVersion = FLIGHT_SCHEMA_VERSION;
+    let manifestFrames: RecordedFrameMeta[] = [];
+    if (fs.existsSync(manifestPath)) {
+      try {
+        const m = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        schemaVersion = typeof m.schemaVersion === 'number' ? m.schemaVersion : 0;
+        if (Array.isArray(m.frames)) manifestFrames = m.frames;
+      } catch {
+        // corrupt manifest tolerated
+      }
+    }
+
+    const events: MissionEvent[] = [];
+    let truncatedLines = 0;
+    if (fs.existsSync(eventsPath)) {
+      const raw = fs.readFileSync(eventsPath, 'utf8');
+      for (const line of raw.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        try {
+          const parsed = JSON.parse(trimmed) as any;
+          // Migrate legacy schema (v0 -> v1)
+          const ev: MissionEvent = {
+            seq: typeof parsed.seq === 'number' ? parsed.seq : events.length + 1,
+            ts: typeof parsed.ts === 'number' ? parsed.ts : Date.now(),
+            missionId: typeof parsed.missionId === 'string' ? parsed.missionId : missionId,
+            ...(parsed.workerId ? { workerId: String(parsed.workerId) } : {}),
+            kind: parsed.kind || 'status',
+            ...(parsed.stepId ? { stepId: String(parsed.stepId) } : {}),
+            data: parsed.data && typeof parsed.data === 'object' ? parsed.data : { text: String(parsed.text || '') }
+          };
+          events.push(ev);
+        } catch {
+          truncatedLines += 1;
+        }
+      }
+    }
+
+    const frames: RecordedFrameMeta[] = [];
+    if (fs.existsSync(framesDir)) {
+      const jpgs = fs.readdirSync(framesDir).filter(f => f.endsWith('.jpg')).sort();
+      for (let i = 0; i < jpgs.length; i++) {
+        const file = jpgs[i];
+        const full = path.join(framesDir, file);
+        const bytes = fs.readFileSync(full);
+        const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+        const mMeta = manifestFrames.find(f => f.file === `frames/${file}`);
+        frames.push({
+          index: mMeta?.index ?? i + 1,
+          file: `frames/${file}`,
+          ts: mMeta?.ts ?? fs.statSync(full).mtimeMs,
+          seq: mMeta?.seq,
+          sha256,
+          byteLength: bytes.byteLength,
+          ...(opts.includeFrameDataUrls ? { dataUrl: `data:image/jpeg;base64,${bytes.toString('base64')}` } : {})
+        });
+      }
+    }
+
+    return {
+      missionId,
+      schemaVersion: Math.max(FLIGHT_SCHEMA_VERSION, schemaVersion),
+      events,
+      frames,
+      truncatedLines
+    };
+  }
+
+  public static exportReplayBundle(
+    missionDir: string,
+    outputDir: string,
+    opts: { blurSensitiveFrames?: boolean } = {}
+  ): { htmlPath: string; jsonPath: string; eventCount: number; frameCount: number } {
+    const loaded = MissionFlightRecorder.load(missionDir, { includeFrameDataUrls: true });
+    const redactedEvents = loaded.events.map(ev => ({
+      ...ev,
+      data: sanitizeEventData(ev.data, { privacyMode: 'Careful' }) as Record<string, any>
+    }));
+
+    const sensitiveSeqs = new Set<number>(
+      redactedEvents
+        .filter(e => e.kind === 'tool_call' && (e.data?.text === '[REDACTED_INPUT]' || /password|secret|pin|otp/i.test(String(e.data?.targetLabel || ''))))
+        .map(e => e.seq)
+    );
+
+    const legacyFrames: FlightFrame[] = loaded.frames.map((f, idx) => {
+      const isSensitive = (f.seq !== undefined && sensitiveSeqs.has(f.seq)) || Boolean(f.isSensitive);
+      return {
+        step: idx + 1,
+        timestamp: f.ts,
+        url: '',
+        action: `Frame ${f.index} (${f.sha256.slice(0, 10)})`,
+        screenshotBase64: isSensitive && opts.blurSensitiveFrames !== false ? undefined : f.dataUrl
+      };
+    });
+
+    fs.mkdirSync(outputDir, { recursive: true });
+    const jsonPath = path.join(outputDir, 'recording.json');
+    fs.writeFileSync(jsonPath, JSON.stringify({ ...loaded, events: redactedEvents }, null, 2), 'utf8');
+    const htmlPath = path.join(outputDir, 'index.html');
+    FlightRecorder.exportReplayHTML(
+      { id: loaded.missionId, goal: `Mission ${loaded.missionId}`, startTime: loaded.events[0]?.ts ?? Date.now(), frames: legacyFrames },
+      htmlPath
+    );
+    return { htmlPath, jsonPath, eventCount: redactedEvents.length, frameCount: legacyFrames.length };
   }
 }
