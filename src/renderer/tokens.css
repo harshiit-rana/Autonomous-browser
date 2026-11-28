@@ -1,0 +1,98 @@
+/**
+ * Project Aegis - Design & Motion Tokens (#234 [LIV-03])
+ * Themes: Dark (default), Light, High-Contrast; colour-blind-safe Okabe-Ito worker palette.
+ * All animated states strictly animate `transform` and `opacity`.
+ */
+
+:root {
+  /* Motion durations & easings */
+  --motion-dur-fast: 120ms;
+  --motion-dur-base: 200ms;
+  --motion-dur-slow: 360ms;
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-cursor: cubic-bezier(0.25, 1, 0.5, 1);
+  --motion-spring: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Spacing & elevation */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --shadow-card: 0 4px 14px rgba(0, 0, 0, 0.28);
+  --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+  /* Colour-blind-safe worker palette (Okabe-Ito inspired) paired with glyphs in UI */
+  --worker-color-0: #56B4E9;
+  --worker-color-1: #E69F00;
+  --worker-color-2: #009E73;
+  --worker-color-3: #CC79A7;
+  --worker-color-4: #F0E442;
+  --worker-color-5: #0072B2;
+  --worker-color-6: #D55E00;
+  --worker-color-7: #94A3B8;
+
+  /* Dark theme defaults */
+  --bg-main: #0B0F19;
+  --bg-surface: #131B2E;
+  --bg-card: rgba(30, 41, 59, 0.7);
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #3B82F6;
+  --accent-hover: #2563EB;
+  --text-main: #F8FAFC;
+  --text-muted: #94A3B8;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+}
+
+[data-theme="light"] {
+  --bg-main: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-card: rgba(241, 245, 249, 0.9);
+  --border: rgba(15, 23, 42, 0.12);
+  --text-main: #0F172A;
+  --text-muted: #475569;
+  --shadow-card: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="high-contrast"] {
+  --bg-main: #000000;
+  --bg-surface: #0A0A0A;
+  --bg-card: #121212;
+  --border: #FFFFFF;
+  --text-main: #FFFFFF;
+  --text-muted: #E2E8F0;
+  --accent: #38BDF8;
+  --warning: #FACC15;
+  --danger: #F87171;
+}
+
+/* Reduced / Off motion guarantees */
+[data-motion="reduced"] *,
+[data-motion="off"] *,
+[data-motion="reduced"] *::before,
+[data-motion="off"] *::before {
+  transition-property: opacity !important;
+  animation-name: none !important;
+}
+
+[data-motion="off"] * {
+  transition-duration: 0ms !important;
+  animation-duration: 0ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-dur-fast: 0ms;
+    --motion-dur-base: 90ms;
+    --motion-dur-slow: 90ms;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: opacity !important;
+  }
+}

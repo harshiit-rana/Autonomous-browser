@@ -440,6 +440,10 @@
     "isReachable": true
   },
   {
+    "path": "renderer/lab.ts",
+    "isReachable": true
+  },
+  {
     "path": "renderer/presence.ts",
     "isReachable": true
   },
@@ -625,7 +629,7 @@
   },
   {
     "path": "ui/motion_engine.ts",
-    "isReachable": false
+    "isReachable": true
   },
   {
     "path": "ui/omnibar_parser.ts",

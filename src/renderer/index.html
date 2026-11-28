@@ -267,6 +267,16 @@
         </div>
 
         <div class="form-group">
+          <label for="settings-motion-mode">Motion &amp; Choreography</label>
+          <select id="settings-motion-mode" class="form-select">
+            <option value="full">Full (event-driven motion)</option>
+            <option value="reduced">Reduced (fades only, no transforms)</option>
+            <option value="off">Off (instant transitions)</option>
+          </select>
+          <span class="field-hint">Honours system prefers-reduced-motion and degrades automatically if frame time exceeds 20 ms.</span>
+        </div>
+
+        <div class="form-group">
           <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
             <input type="checkbox" id="settings-skip-low-risk-preview">
             <span>Skip plan preview for low-risk read-only single-agent missions</span>

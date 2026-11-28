@@ -1,8 +1,8 @@
 {
   "total": 117,
   "verified": 1,
-  "partial": 71,
-  "notInApp": 45,
+  "partial": 72,
+  "notInApp": 44,
   "issues": [
     {
       "number": 101,
@@ -854,7 +854,7 @@
         {
           "path": "src/ui/motion_engine.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         },
         {
           "path": "src/renderer/app.ts",
@@ -2679,12 +2679,12 @@
       "number": 213,
       "title": "[ANI-01] Motion & choreography: implement the live \"agents at work\" animation with an early prototype, truthful event-to-motion mapping and measurable performance",
       "kind": "code",
-      "result": "not-in-app",
+      "result": "partial",
       "evidence": [
         {
           "path": "src/ui/motion_engine.ts",
           "type": "module",
-          "reachable": false
+          "reachable": true
         },
         {
           "path": "tests/test_workspace_and_motion.ts",

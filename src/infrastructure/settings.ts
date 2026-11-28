@@ -30,6 +30,8 @@ export interface AppSettings {
   maxWorkers: number;
   /** Skip the plan-preview confirmation dialog for single-agent read-only missions (#228). Default false. */
   skipLowRiskPlanPreview: boolean;
+  /** Motion level for Mission Control choreography (#234). Default 'full'. */
+  motionMode: 'full' | 'reduced' | 'off';
 }
 
 export const MAX_WORKERS_HARD_LIMIT = 8;
@@ -41,11 +43,11 @@ export function clampMaxWorkers(v: unknown): number {
   return Math.max(1, Math.min(MAX_WORKERS_HARD_LIMIT, n));
 }
 
-export const CURRENT_SETTINGS_VERSION = 3;
+export const CURRENT_SETTINGS_VERSION = 4;
 
 /**
  * Settings migrations, applied in order to the stored rows on load. Each takes the stored object (from version
- * `from`) and returns the fields to write. v1 -> v2 (#225): agent loop keys; v2 -> v3 (#228): skipLowRiskPlanPreview.
+ * `from`) and returns the fields to write. v1 -> v2 (#225); v2 -> v3 (#228); v3 -> v4 (#234 motionMode).
  */
 export const SETTINGS_MIGRATIONS: Array<{ from: number; to: number; migrate: (stored: Record<string, unknown>) => Record<string, unknown> }> = [
   {
@@ -64,6 +66,13 @@ export const SETTINGS_MIGRATIONS: Array<{ from: number; to: number; migrate: (st
     to: 3,
     migrate: stored => ({
       skipLowRiskPlanPreview: typeof stored.skipLowRiskPlanPreview === 'boolean' ? stored.skipLowRiskPlanPreview : false
+    })
+  },
+  {
+    from: 3,
+    to: 4,
+    migrate: stored => ({
+      motionMode: stored.motionMode === 'reduced' || stored.motionMode === 'off' ? stored.motionMode : 'full'
     })
   }
 ];
@@ -98,7 +107,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   maxCostUSD: 1,
   verifierModel: '',
   maxWorkers: DEFAULT_MAX_WORKERS,
-  skipLowRiskPlanPreview: false
+  skipLowRiskPlanPreview: false,
+  motionMode: 'full'
 };
 
 const logger = rootLogger.child('settings');

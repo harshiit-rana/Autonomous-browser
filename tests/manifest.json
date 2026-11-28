@@ -40,5 +40,6 @@
   { "id": "orchestrator", "cmd": "tsx tests/test_orchestrator.ts", "area": "swarm" },
   { "id": "governance_supervision", "cmd": "tsx tests/test_governance_supervision.ts", "area": "swarm" },
   { "id": "evidence_truth", "cmd": "tsx tests/test_evidence_truth.ts", "area": "swarm" },
-  { "id": "presence_layer", "cmd": "tsx tests/test_presence_layer.ts", "area": "mission-control" }
+  { "id": "presence_layer", "cmd": "tsx tests/test_presence_layer.ts", "area": "mission-control" },
+  { "id": "motion_engine", "cmd": "tsx tests/test_motion_engine.ts", "area": "ui" }
 ]

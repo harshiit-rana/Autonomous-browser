@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-motion="full">
+<head>
+  <meta charset="UTF-8">
+  <title>Aegis Motion Lab (#234)</title>
+  <link rel="stylesheet" href="./tokens.css">
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg-main); color: var(--text-main); padding: 16px; }
+    .lab-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--bg-surface); padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 14px; }
+    .lab-grid { display: grid; grid-template-columns: 1fr 340px; gap: 14px; }
+    .stage-box { position: relative; min-height: 320px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; overflow: hidden; }
+    .workers-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .lab-tile { background: var(--bg-card); border: 2px solid var(--border); border-radius: var(--radius-md); padding: 10px; }
+    .lab-cursor { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); pointer-events: none; left: 0; top: 0; opacity: 0; }
+    .lab-ripple { position: absolute; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--accent); pointer-events: none; left: 0; top: 0; }
+    .lab-feed { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px; max-height: 320px; overflow: auto; font-size: 12px; }
+    .lab-ev { padding: 6px; border-bottom: 1px solid var(--border); }
+    .stat-chip { padding: 3px 8px; border-radius: var(--radius-sm); background: var(--bg-card); font-size: 12px; border: 1px solid var(--border); }
+    button, select { background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="lab-toolbar">
+    <strong>Motion Lab (#234)</strong>
+    <label>Fixture:
+      <select id="lab-fixture">
+        <option value="swarm3">3-Worker Swarm (swarm3.json)</option>
+        <option value="single">Single Agent (single.json)</option>
+        <option value="approval_error">Approval &amp; Error (approval_error.json)</option>
+      </select>
+    </label>
+    <label>Speed:
+      <select id="lab-speed">
+        <option value="0.25">0.25x</option>
+        <option value="1" selected>1x</option>
+        <option value="2">2x</option>
+        <option value="4">4x</option>
+        <option value="8">8x</option>
+      </select>
+    </label>
+    <label>Motion:
+      <select id="lab-motion">
+        <option value="full" selected>Full</option>
+        <option value="reduced">Reduced</option>
+        <option value="off">Off</option>
+      </select>
+    </label>
+    <button id="lab-replay-btn">Replay Fixture</button>
+    <button id="lab-stress-btn">10-Worker Burst (50 ev/s)</button>
+    <span class="stat-chip">Mode: <strong id="lab-active-mode">full</strong></span>
+    <span class="stat-chip">p95 Frame: <strong id="lab-p95">0.0 ms</strong></span>
+    <span class="stat-chip">Intents: <strong id="lab-intents">0</strong></span>
+  </div>
+
+  <div class="lab-grid">
+    <div class="stage-box" id="lab-stage">
+      <div class="workers-row" id="lab-workers"></div>
+      <div class="lab-cursor" id="lab-cursor"></div>
+    </div>
+    <div class="lab-feed" id="lab-feed" role="log" aria-live="polite"></div>
+  </div>
+
+  <script type="module" src="./lab.ts"></script>
+</body>
+</html>

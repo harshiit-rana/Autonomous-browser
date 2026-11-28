@@ -8,10 +8,11 @@ export default defineConfig({
     outDir: path.resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
     rollupOptions: {
-      // The chrome window and the presence overlay window (#233) are two pages.
+      // The chrome window, the presence overlay window (#233), and the Motion Lab (#234).
       input: {
         index: path.resolve(__dirname, 'src/renderer/index.html'),
-        presence: path.resolve(__dirname, 'src/renderer/presence.html')
+        presence: path.resolve(__dirname, 'src/renderer/presence.html'),
+        lab: path.resolve(__dirname, 'src/renderer/lab.html')
       }
     }
   }

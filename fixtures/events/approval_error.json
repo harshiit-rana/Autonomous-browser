@@ -1,0 +1,7 @@
+[
+  { "seq": 1, "ts": 1000, "missionId": "fx_err_approval", "kind": "status", "data": { "status": "running", "reason": "loop_started" } },
+  { "seq": 2, "ts": 1300, "missionId": "fx_err_approval", "workerId": "worker-agent-1", "kind": "step_started", "stepId": "s1", "data": { "name": "Checkout form" } },
+  { "seq": 3, "ts": 1700, "missionId": "fx_err_approval", "workerId": "worker-agent-1", "kind": "approval_request", "stepId": "s1", "data": { "tool": "click", "targetLabel": "Place order", "riskClass": "financial", "x": 280, "y": 300 } },
+  { "seq": 4, "ts": 2500, "missionId": "fx_err_approval", "workerId": "worker-agent-1", "kind": "error", "stepId": "s1", "data": { "message": "Element e4 became stale after cart update" } },
+  { "seq": 5, "ts": 3100, "missionId": "fx_err_approval", "kind": "status", "data": { "status": "completed", "reason": "loop_finished" } }
+]

@@ -241,3 +241,13 @@ Live process/OS governance metrics, monotonic sleep-safe supervisor stall detect
 | Hibernation trigger frequency in long sessions | `TabHibernationDaemon` is wired into `ViewManager` (registers user tabs, wakes on activation, and hibernates eligible idle background user tabs on `ResourceGovernor` `throttle` events). Active agent tabs and audible tabs are always excluded (`canHibernateTab`). | 5-minute idle threshold not waited out inside fast Playwright E2E. |
 | OS suspend/sleep event | Sleep clock-jump immunity (`wallDelta` vs `monoDelta` skew rebase) and paused-worker exclusion are unit-tested via injected clocks in `tests/test_governance_supervision.ts`. | Hardware sleep is not triggered in CI. |
 | Default 60 s stall timeout in chaos E2E | Production default is `60_000 ms` (`DEFAULT_STALL_THRESHOLD_MS`); chaos E2E sets `AEGIS_WORKER_STALL_MS=2200` against a 12 s hung HTTP server so the full retry + stalled flow finishes inside 10 s. | Fast CI turn-around. |
+
+## Motion engine (#234 LIV-03)
+
+Tokens in `src/renderer/tokens.css`, `ChoreographyEngine` + `FrameBudgetMonitor` in `src/ui/motion_engine.ts`, Motion Lab (`src/renderer/lab.html` / `lab.ts`, `--lab=1` or `AEGIS_MOTION_LAB=1`), settings migration `v3 -> v4` (`motionMode`), and chrome renderer WAAPI integration (`src/renderer/app.ts`). Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| High-contrast palette & theme switcher UI | Tokens (`[data-theme="light"]`, `[data-theme="high-contrast"]`, Okabe-Ito `--worker-1`..`--worker-8`) are defined in `src/renderer/tokens.css` and documented in `docs/design/motion.md`, but no chrome UI toggle exists yet to switch `data-theme`. | Theme switcher UI is covered under #238 [LIV-07]. |
+| Full-chrome sustained-stress animation measurement | The 10-worker 50 ev/s stress burst and p95 `< 20 ms` frame budget check run inside the Motion Lab harness (`tests/e2e/motion_lab.spec.ts`); automated frame-budget auto-degradation transitions are covered deterministically via `FrameBudgetMonitor` unit tests (`tests/test_motion_engine.ts`), rather than starving a live compositor for 3 s in CI. | Frame drops are timing-sensitive on shared CI runners. |
+| Worker-to-timeline shared-element flight in chrome | `evidence_fly` uses a transform fade-slide on newly prepended timeline items in `src/renderer/app.ts`; cross-panel FLIP flight from a worker tile in `SwarmGrid` to `#evidence-feed` awaits the virtualised `#235` timeline inspector. | Depends on #235 [LIV-04]. |

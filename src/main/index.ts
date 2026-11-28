@@ -233,8 +233,9 @@ class MainApp {
     this.viewManager = new ViewManager(this.window);
     AgentRuntime.initialize(this.window, this.viewManager);
 
-    const rendererHtml = path.resolve(__dirname, '../renderer/index.html');
-    logger.info('Loading chrome renderer HTML', { rendererHtml });
+    const isMotionLab = process.argv.includes('--lab=1') || process.env.AEGIS_MOTION_LAB === '1';
+    const rendererHtml = path.resolve(__dirname, isMotionLab ? '../renderer/lab.html' : '../renderer/index.html');
+    logger.info('Loading chrome renderer HTML', { rendererHtml, isMotionLab });
     this.window.loadFile(rendererHtml);
 
     this.window.webContents.on('did-finish-load', () => {

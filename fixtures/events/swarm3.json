@@ -1,0 +1,16 @@
+[
+  { "seq": 1, "ts": 1000, "missionId": "fx_swarm3", "kind": "status", "data": { "status": "planning", "reason": "mission_started" } },
+  { "seq": 2, "ts": 1200, "missionId": "fx_swarm3", "workerId": "swarm_worker_1", "kind": "step_started", "stepId": "t1", "data": { "name": "Alpha Shop", "color": "#56B4E9", "glyph": "A" } },
+  { "seq": 3, "ts": 1280, "missionId": "fx_swarm3", "workerId": "swarm_worker_2", "kind": "step_started", "stepId": "t2", "data": { "name": "Beta Shop", "color": "#E69F00", "glyph": "B" } },
+  { "seq": 4, "ts": 1340, "missionId": "fx_swarm3", "workerId": "swarm_worker_3", "kind": "step_started", "stepId": "t3", "data": { "name": "Gamma Shop", "color": "#009E73", "glyph": "G" } },
+  { "seq": 5, "ts": 1700, "missionId": "fx_swarm3", "workerId": "swarm_worker_1", "kind": "tool_call", "stepId": "t1", "data": { "tool": "click", "targetLabel": "Price card", "x": 140, "y": 190 } },
+  { "seq": 6, "ts": 1820, "missionId": "fx_swarm3", "workerId": "swarm_worker_2", "kind": "tool_call", "stepId": "t2", "data": { "tool": "type", "text": "Widget Pro", "x": 420, "y": 190 } },
+  { "seq": 7, "ts": 2050, "missionId": "fx_swarm3", "workerId": "swarm_worker_3", "kind": "tool_call", "stepId": "t3", "data": { "tool": "scroll", "direction": "down", "x": 680, "y": 240 } },
+  { "seq": 8, "ts": 2450, "missionId": "fx_swarm3", "workerId": "swarm_worker_1", "kind": "evidence", "stepId": "t1", "data": { "text": "[Alpha] Widget Pro: $119.50" } },
+  { "seq": 9, "ts": 2650, "missionId": "fx_swarm3", "workerId": "swarm_worker_2", "kind": "evidence", "stepId": "t2", "data": { "text": "[Beta] Widget Pro: $129.00" } },
+  { "seq": 10, "ts": 2850, "missionId": "fx_swarm3", "workerId": "swarm_worker_3", "kind": "evidence", "stepId": "t3", "data": { "text": "[Gamma] Widget Pro: $124.00" } },
+  { "seq": 11, "ts": 3100, "missionId": "fx_swarm3", "workerId": "swarm_worker_1", "kind": "tool_result", "stepId": "t1", "data": { "ok": true } },
+  { "seq": 12, "ts": 3150, "missionId": "fx_swarm3", "workerId": "swarm_worker_2", "kind": "tool_result", "stepId": "t2", "data": { "ok": true } },
+  { "seq": 13, "ts": 3200, "missionId": "fx_swarm3", "workerId": "swarm_worker_3", "kind": "tool_result", "stepId": "t3", "data": { "ok": true } },
+  { "seq": 14, "ts": 3400, "missionId": "fx_swarm3", "kind": "status", "data": { "status": "completed", "reason": "swarm_done" } }
+]
