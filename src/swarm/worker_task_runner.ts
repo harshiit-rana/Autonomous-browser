@@ -162,10 +162,16 @@ async function runWorkerTaskInner(worker: IWorkerHost, task: ScheduledTask, deps
   });
 
   try {
+    const abortError = (): Error => {
+      if (stopReason === 'timeout') return new Error(`Worker timed out after ${Math.round(timeoutMs / 1000)} s (wall-clock budget)`);
+      if (stopReason === 'stalled') return new Error('Worker stalled (no heartbeat from the supervisor window); stopped');
+      if (stopReason === 'stopped') return new Error('Worker stopped by user');
+      return new Error('Mission cancelled');
+    };
     // The worker's own page first: the loop takes its policy scope from the page it starts on.
     const navRace = <T>(p: Promise<T>): Promise<T> => new Promise<T>((resolve, reject) => {
-      if (ac.signal.aborted) return reject(new Error(stopReason === 'stalled' ? 'Worker stalled during navigation' : 'Worker stopped'));
-      const onAbort = () => reject(new Error(stopReason === 'stalled' ? 'Worker stalled during navigation' : stopReason === 'stopped' ? 'Worker stopped by user' : 'Worker aborted'));
+      if (ac.signal.aborted) return reject(abortError());
+      const onAbort = () => reject(abortError());
       ac.signal.addEventListener('abort', onAbort, { once: true });
       p.then(v => { ac.signal.removeEventListener('abort', onAbort); resolve(v); }, e => { ac.signal.removeEventListener('abort', onAbort); reject(e); });
     });
@@ -179,7 +185,7 @@ async function runWorkerTaskInner(worker: IWorkerHost, task: ScheduledTask, deps
       await navRace(worker.navigate(deps.startUrl));
       deps.blackboard.recordVisit(deps.startUrl, worker.id);
     }
-    if (ac.signal.aborted) throw new Error('Worker aborted');
+    if (ac.signal.aborted) throw abortError();
     await tab.executor.ensureReady().catch(() => { /* CDP unavailable: tools report their own errors */ });
     sup?.recordEvent(worker.id, 'cdp_response', task.id);
 
