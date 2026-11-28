@@ -14,6 +14,15 @@ for (const f of fs.readdirSync('fixtures/demo').filter(n => n.endsWith('.json'))
   fs.copyFileSync(path.join('fixtures/demo', f), path.join('dist/fixtures/demo', f));
 }
 console.log('copied fixtures/demo -> dist/fixtures/demo');
+
+// Motion lab & event log fixtures (#234/#235): fixtures/events/*.json -> dist/fixtures/events
+if (fs.existsSync('fixtures/events')) {
+  fs.mkdirSync('dist/fixtures/events', { recursive: true });
+  for (const f of fs.readdirSync('fixtures/events').filter(n => n.endsWith('.json'))) {
+    fs.copyFileSync(path.join('fixtures/events', f), path.join('dist/fixtures/events', f));
+  }
+  console.log('copied fixtures/events -> dist/fixtures/events');
+}
 for (const [from, to] of pairs) {
   fs.mkdirSync(to, { recursive: true });
   for (const f of fs.readdirSync(from).filter(n => n.endsWith('.sql'))) {

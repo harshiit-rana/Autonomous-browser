@@ -57,7 +57,8 @@ export function auditReachability(srcDir = path.resolve('src'), entryPoints = [
   path.resolve('src/main/preload.ts'),
   path.resolve('src/renderer/app.ts'),
   path.resolve('src/main/presence_preload.ts'),
-  path.resolve('src/renderer/presence.ts')
+  path.resolve('src/renderer/presence.ts'),
+  path.resolve('src/renderer/lab.ts')
 ]) {
   const reachable = new Set();
   const queue = [...entryPoints];

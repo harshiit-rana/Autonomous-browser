@@ -1,0 +1,8 @@
+[
+  { "seq": 1, "ts": 1000, "missionId": "fx_single", "kind": "status", "data": { "status": "planning", "reason": "mission_started" } },
+  { "seq": 2, "ts": 1350, "missionId": "fx_single", "workerId": "worker-agent-1", "kind": "step_started", "stepId": "s1", "data": { "name": "Inspect arena products page", "x": 180, "y": 140 } },
+  { "seq": 3, "ts": 1850, "missionId": "fx_single", "workerId": "worker-agent-1", "kind": "tool_call", "stepId": "s1", "data": { "tool": "scroll", "direction": "down", "x": 220, "y": 260 } },
+  { "seq": 4, "ts": 2200, "missionId": "fx_single", "workerId": "worker-agent-1", "kind": "tool_call", "stepId": "s1", "data": { "tool": "click", "targetLabel": "Product Details", "x": 310, "y": 220 } },
+  { "seq": 5, "ts": 2700, "missionId": "fx_single", "workerId": "worker-agent-1", "kind": "evidence", "stepId": "s1", "data": { "text": "[Products Catalog] GPU RTX 5090 listed at $1,999.00" } },
+  { "seq": 6, "ts": 3100, "missionId": "fx_single", "kind": "status", "data": { "status": "completed", "reason": "loop_finished" } }
+]

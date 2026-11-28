@@ -4,6 +4,7 @@
  */
 
 import { OmnibarParser } from '../ui/omnibar_parser.js';
+import { ChoreographyEngine, FrameBudgetMonitor, type MotionInputEvent, type MotionMode } from '../ui/motion_engine.js';
 import { HistoryPanel } from './history_panel.js';
 import { SwarmGrid } from './swarm_grid.js';
 import {
@@ -103,6 +104,7 @@ export class BrowserApp {
   private groupOpenaiKey: HTMLElement;
   private groupOllamaUrl: HTMLElement;
   private settingsStatusMsg: HTMLElement;
+  private settingsMotionMode!: HTMLSelectElement;
 
   // State
   private isPaused = false;
@@ -110,8 +112,15 @@ export class BrowserApp {
   private currentTabs: TabState[] = [];
   private activeTabId: string | null = null;
   private activeWorkers: Map<string, WorkerEventPayload> = new Map();
+  private motionEngine = new ChoreographyEngine();
+  private frameBudget = new FrameBudgetMonitor({ budgetMs: 20, sustainMs: 3000 });
+  private configuredMotionMode: MotionMode = 'full';
+  private motionSeq = 0;
 
   constructor() {
+    if (window.location.search.includes('lab=1')) {
+      window.location.replace('./lab.html');
+    }
     this.omnibarInput = document.getElementById('omnibar-input') as HTMLInputElement;
     this.swarmRunBtn = document.getElementById('swarm-run-btn') as HTMLButtonElement;
     this.drawerToggleBtn = document.getElementById('toggle-drawer-btn') as HTMLButtonElement;
@@ -176,6 +185,7 @@ export class BrowserApp {
     this.groupOpenaiKey = document.getElementById('group-openai-key') as HTMLElement;
     this.groupOllamaUrl = document.getElementById('group-ollama-url') as HTMLElement;
     this.settingsStatusMsg = document.getElementById('settings-status-msg') as HTMLElement;
+    this.settingsMotionMode = document.getElementById('settings-motion-mode') as HTMLSelectElement;
 
     // Live Swarm Grid (#232). The frames port is handed over by the preload with window.postMessage.
     this.swarmGrid = new SwarmGrid(this.swarmGridContainer, (window as any).aegis || {}, {
@@ -191,6 +201,7 @@ export class BrowserApp {
     this.bindControls();
     this.bindSettingsEvents();
     new HistoryPanel();
+    this.initMotion();
     this.registerBridgeListeners();
 
     // Initial snapshot request
@@ -229,8 +240,9 @@ export class BrowserApp {
 
     // Worker status updates
     aegis.onWorkerEvent((data: WorkerEventPayload) => {
+      const isNew = !this.activeWorkers.has(data.id);
       this.activeWorkers.set(data.id, data);
-      this.renderWorkerCards();
+      this.renderWorkerCards(isNew ? data.id : undefined, data.status === 'failed' ? data.id : undefined);
       this.swarmGrid.onWorkerEvent(data);
     });
 
@@ -257,6 +269,19 @@ export class BrowserApp {
     // Evidence & Activity Timeline feed
     aegis.onEvidenceEvent((data: EvidenceEventPayload) => {
       this.addTimelineItem(data.text, data.timestamp);
+      const intent = this.triggerMotion({ type: 'evidence', text: data.text });
+      const firstItem = this.evidenceFeed.firstElementChild as HTMLElement | null;
+      if (firstItem && intent) {
+        this.animateMotionElement(
+          firstItem,
+          intent.usesTransform
+            ? [{ opacity: 0.25, transform: 'translateX(-8px)' }, { opacity: 1, transform: 'translateX(0)' }]
+            : [{ opacity: 0.45 }, { opacity: 1 }],
+          intent.durationMs,
+          intent.easing,
+          intent.usesTransform
+        );
+      }
     });
 
     // Telemetry stats
@@ -869,6 +894,9 @@ export class BrowserApp {
         if (this.settingsSkipLowRiskPreview) {
           this.settingsSkipLowRiskPreview.checked = Boolean(settings.skipLowRiskPlanPreview);
         }
+        if (this.settingsMotionMode && settings.motionMode) {
+          this.settingsMotionMode.value = settings.motionMode;
+        }
       }
     } catch (err) {
       console.error('Failed to load settings', err);
@@ -901,6 +929,7 @@ export class BrowserApp {
     if (!aegis?.updateSettings) return;
 
     const provider = this.settingsProvider.value as any;
+    const motionMode = (this.settingsMotionMode?.value as MotionMode) || 'full';
     const patch = {
       modelProvider: provider,
       apiKeys: {
@@ -909,7 +938,8 @@ export class BrowserApp {
         openai: this.settingsOpenaiKey.value.trim()
       },
       ollamaBaseUrl: this.settingsOllamaUrl.value.trim() || 'http://localhost:11434',
-      skipLowRiskPlanPreview: Boolean(this.settingsSkipLowRiskPreview?.checked)
+      skipLowRiskPlanPreview: Boolean(this.settingsSkipLowRiskPreview?.checked),
+      motionMode
     };
 
     // Validate the selected provider's key before saving (CREDENTIALS_TEST). A second Save on the same
@@ -934,6 +964,7 @@ export class BrowserApp {
 
     try {
       await aegis.updateSettings(patch);
+      this.applyMotionMode(motionMode);
       this.settingsStatusMsg.textContent = 'Settings saved successfully!';
       this.settingsStatusMsg.style.color = 'var(--success)';
       this.settingsStatusMsg.style.display = 'block';
@@ -1104,7 +1135,63 @@ export class BrowserApp {
     }
   }
 
-  private renderWorkerCards(): void {
+  private initMotion(): void {
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    mq?.addEventListener?.('change', () => this.applyMotionMode(this.configuredMotionMode));
+    const aegis = (window as any).aegis;
+    void aegis?.getSettings?.().then((res: any) => {
+      const s = res?.data || res;
+      this.applyMotionMode((s?.motionMode as MotionMode) || 'full');
+    }).catch(() => this.applyMotionMode('full'));
+    this.applyMotionMode('full');
+
+    let lastRaf = performance.now();
+    const tick = (now: number) => {
+      const sample = this.frameBudget.recordFrame(now - lastRaf, now);
+      lastRaf = now;
+      if (sample.degraded && this.motionEngine.getMotionMode() === 'full') {
+        this.applyMotionMode('reduced', true);
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  private effectiveMotionMode(configured: MotionMode): MotionMode {
+    if (configured === 'off') return 'off';
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return 'reduced';
+    return configured;
+  }
+
+  private applyMotionMode(mode: MotionMode, degraded = false): void {
+    if (!degraded) this.configuredMotionMode = mode;
+    const active = this.effectiveMotionMode(degraded ? 'reduced' : mode);
+    this.motionEngine.setMotionMode(active);
+    document.documentElement.dataset.motion = active;
+  }
+
+  private triggerMotion(event: Omit<MotionInputEvent, 'seq'>) {
+    this.motionSeq += 1;
+    return this.motionEngine.enqueue({ ...event, seq: this.motionSeq });
+  }
+
+  private animateMotionElement(
+    el: HTMLElement,
+    keyframes: Keyframe[],
+    durationMs: number,
+    easing: string,
+    usesTransform: boolean
+  ): void {
+    const mode = this.effectiveMotionMode(this.motionEngine.getMotionMode());
+    if (mode === 'off' || durationMs <= 0) return;
+    if (mode === 'reduced' && usesTransform) {
+      el.animate([{ opacity: 0.5 }, { opacity: 1 }], { duration: Math.min(durationMs, 100), easing: 'linear' });
+      return;
+    }
+    el.animate(keyframes, { duration: durationMs, easing });
+  }
+
+  private renderWorkerCards(spawnedWorkerId?: string, failedWorkerId?: string): void {
     const cards = Array.from(this.activeWorkers.values());
     if (this.workerCountStat) {
       this.workerCountStat.textContent = String(cards.length);
@@ -1152,6 +1239,34 @@ export class BrowserApp {
       card.appendChild(progressBar);
 
       this.workerCardsContainer.appendChild(card);
+
+      if (worker.id === spawnedWorkerId) {
+        const intent = this.triggerMotion({ type: 'worker_spawn', workerId: worker.id, targetId: worker.id });
+        if (intent) {
+          this.animateMotionElement(
+            card,
+            intent.usesTransform
+              ? [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }]
+              : [{ opacity: 0.4 }, { opacity: 1 }],
+            intent.durationMs,
+            intent.easing,
+            intent.usesTransform
+          );
+        }
+      } else if (worker.id === failedWorkerId) {
+        const intent = this.triggerMotion({ type: 'error', workerId: worker.id });
+        if (intent) {
+          this.animateMotionElement(
+            card,
+            intent.usesTransform
+              ? [{ transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }]
+              : [{ opacity: 0.5 }, { opacity: 1 }],
+            intent.durationMs,
+            intent.easing,
+            intent.usesTransform
+          );
+        }
+      }
     }
   }
 }

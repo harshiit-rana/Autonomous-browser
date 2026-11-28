@@ -230,3 +230,13 @@ Design and measurements: `docs/adr/0011-presence-layer.md`. Proof: `tests/test_p
 | Focus | The overlay is `focusable: false`; the harness's own OS helpers activate windows, so page-visible focus events are inconclusive (ADR 0011). | |
 | Screen recorders | Whether a recorder or remote desktop captures the click-through window was not tested. Model screenshots (`capturePage`, CDP) never contain it (tested). | |
 | Layer lifetime | The cursor stays drawn (dimmed after 30 s) until its view is hidden or removed; there is no "agent finished" fade. | Needs the mission lifecycle (#226). |
+
+## Motion engine (#234 LIV-03)
+
+Tokens in `src/renderer/tokens.css`, `ChoreographyEngine` + `FrameBudgetMonitor` in `src/ui/motion_engine.ts`, Motion Lab (`src/renderer/lab.html` / `lab.ts`, `--lab=1` or `AEGIS_MOTION_LAB=1`), settings migration `v3 -> v4` (`motionMode`), and chrome renderer WAAPI integration (`src/renderer/app.ts`). Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| High-contrast palette & theme switcher UI | Tokens (`[data-theme="light"]`, `[data-theme="high-contrast"]`, Okabe-Ito `--worker-1`..`--worker-8`) are defined in `src/renderer/tokens.css` and documented in `docs/design/motion.md`, but no chrome UI toggle exists yet to switch `data-theme`. | Theme switcher UI is covered under #238 [LIV-07]. |
+| Full-chrome sustained-stress animation measurement | The 10-worker 50 ev/s stress burst and p95 `< 20 ms` frame budget check run inside the Motion Lab harness (`tests/e2e/motion_lab.spec.ts`); automated frame-budget auto-degradation transitions are covered deterministically via `FrameBudgetMonitor` unit tests (`tests/test_motion_engine.ts`), rather than starving a live compositor for 3 s in CI. | Frame drops are timing-sensitive on shared CI runners. |
+| Worker-to-timeline shared-element flight in chrome | `evidence_fly` uses a transform fade-slide on newly prepended timeline items in `src/renderer/app.ts`; cross-panel FLIP flight from a worker tile in `SwarmGrid` to `#evidence-feed` awaits the virtualised `#235` timeline inspector. | Depends on #235 [LIV-04]. |
