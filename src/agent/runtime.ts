@@ -6,7 +6,7 @@ import { ViewManager, TabView } from '../main/view_manager.js';
 import { ModelProviderFactory } from '../models/provider_factory.js';
 import { IModelProvider, CanonicalMessage, ModelRequest } from '../models/types.js';
 import { PerceptionEngine } from './perception.js';
-import { IPC_CHANNELS, ModelProviderId, WorkerEventPayload, EvidenceEventPayload, MissionStatusPayload, TelemetryEventPayload, MissionQuestionPayload, InterruptedMission } from '../ipc/contract.js';
+import { IPC_CHANNELS, ModelProviderId, WorkerEventPayload, EvidenceEventPayload, MissionStatusPayload, TelemetryEventPayload, MissionQuestionPayload, InterruptedMission, WorkerControlResponse, GovernanceMetricsPayload } from '../ipc/contract.js';
 import { rootLogger } from '../infrastructure/logger.js';
 import { getSettings, clampMaxWorkers } from '../infrastructure/settings.js';
 import { getAppPaths } from '../infrastructure/paths.js';
@@ -21,7 +21,8 @@ import { SwarmCoordinator, MissionDecompositionPlan } from '../swarm/coordinator
 import { planWithOrchestrator, validateOrchestratorPlan } from '../swarm/orchestrator.js';
 import { SwarmManager } from '../swarm/swarm_manager.js';
 import { SharedBlackboard } from '../swarm/blackboard.js';
-import { WorkerSupervisor } from '../swarm/supervisor.js';
+import { WorkerSupervisor, DEFAULT_STALL_THRESHOLD_MS } from '../swarm/supervisor.js';
+import { ResourceGovernor } from '../swarm/resource_governor.js';
 import { runWorkerTask, runNonBrowserTask, WorkerRunDeps, DEFAULT_WORKER_MAX_STEPS } from '../swarm/worker_task_runner.js';
 import { UrlClaims } from '../swarm/worker_findings.js';
 import { PauseGate, QuestionQueue } from '../swarm/worker_coordination.js';
@@ -69,6 +70,8 @@ export interface RuntimeDeps {
   /** Loop timing overrides (tests). */
   stepDelayMs?: number;
   settleMaxMs?: number;
+  stallThresholdMs?: number;
+  resourceGovernor?: ResourceGovernor;
 }
 
 /** Routes every model call through the global concurrency governor. */
@@ -115,6 +118,14 @@ export class AgentRuntime {
   /** Swarm missions: every worker waits on this gate and shares this question queue (#227). */
   private swarmGate = new PauseGate();
   private swarmQuestions = new QuestionQueue();
+  /** Per-worker controls, gates, supervisor, and resource governor (#231). */
+  private governor: ResourceGovernor;
+  private workerSupervisor: WorkerSupervisor | null = null;
+  private workerGates = new Map<string, PauseGate>();
+  private workerAbortHandles = new Map<string, (reason: string) => void>();
+  private stoppedWorkers = new Set<string>();
+  private workerTakeoverIds = new Set<string>();
+  private workerMeta = new Map<string, WorkerEventPayload>();
 
   private viewManager: ViewManager;
   private window: BrowserWindow;
@@ -124,6 +135,11 @@ export class AgentRuntime {
     this.window = window;
     this.viewManager = viewManager;
     this.deps = deps;
+    this.governor = deps.resourceGovernor ?? new ResourceGovernor({ checkIntervalMs: 2000 });
+    this.governor.on('metrics', (m) => this.emitGovernanceMetrics(m));
+    this.governor.on('throttle', () => {
+      void this.viewManager.hibernateIdleTabs(this.governor);
+    });
     viewManager.onTabCrashed = (tabId, reason) => this.handleTabCrash(tabId, reason);
   }
 
@@ -348,6 +364,10 @@ export class AgentRuntime {
     logger.info('Cancelling mission', { missionId: mission.id });
     // Aborts the model HTTP request, the governor queue/backoff, page settles and the tool in flight (raceAbort in the loop).
     this.abortController?.abort();
+    for (const abortWorker of this.workerAbortHandles.values()) {
+      try { abortWorker('cancelled'); } catch {}
+    }
+    for (const gate of this.workerGates.values()) gate.resume();
     void this.activeSwarm?.shutdown();
     this.wakePausedLoop();
     if (this.pendingQuestion) {
@@ -355,6 +375,205 @@ export class AgentRuntime {
       this.pendingQuestion = null;
     }
     this.finishMission('cancelled', undefined, 'Mission cancelled by user', 'user_cancel');
+  }
+
+  /**
+   * Emergency Global Kill Switch (#231): stops any live mission/swarm, aborts all model calls and closes
+   * agent-owned tabs within < 1 s. Emits `mission:status: cancelled` even if called between missions.
+   */
+  public killAll(reason = 'Global kill switch triggered'): void {
+    logger.error('Global kill switch invoked on runtime', undefined, { reason });
+    this.abortController?.abort();
+    for (const abortWorker of this.workerAbortHandles.values()) {
+      try { abortWorker('cancelled'); } catch {}
+    }
+    for (const gate of this.workerGates.values()) gate.resume();
+    this.swarmGate.resume();
+    void this.activeSwarm?.shutdown();
+    this.wakePausedLoop();
+
+    const mission = this.activeMission;
+    if (mission && !isTerminal(mission.state)) {
+      if (this.pendingQuestion) {
+        this.pendingQuestion.reject(new Error('Mission killed'));
+        this.pendingQuestion = null;
+      }
+      this.finishMission('cancelled', undefined, reason, 'kill_switch');
+    } else {
+      const payload: MissionStatusPayload = {
+        missionId: mission?.id ?? 'kill_switch',
+        status: 'cancelled',
+        message: reason,
+        reason: 'kill_switch',
+        ts: Date.now()
+      };
+      this.events.emit('status', payload);
+      try {
+        if (!this.window.isDestroyed()) this.window.webContents.send(IPC_CHANNELS.EVENT_MISSION_STATUS, payload);
+      } catch {}
+    }
+
+    this.viewManager.closeAgentTabs();
+  }
+
+  public getGovernanceMetrics(): GovernanceMetricsPayload {
+    const m = this.governor.getMetrics();
+    return {
+      recommendedConcurrency: m.recommendedConcurrency,
+      limitReason: m.limitReason,
+      limitDescription: m.limitDescription,
+      cpuPercent: m.cpuPercent,
+      freeSystemMemMb: m.freeSystemMemMb,
+      totalSystemMemMb: m.totalSystemMemMb,
+      appWorkingSetMb: m.appWorkingSetMb,
+      eventLoopLagMs: m.eventLoopLagMs,
+      activeWebContentsCount: m.activeWebContentsCount,
+      isThrottled: m.isThrottled,
+      metricsAvailable: m.metricsAvailable
+    };
+  }
+
+  public pauseWorker(workerId: string): WorkerControlResponse {
+    if (workerId === 'worker-agent-1') {
+      this.pause();
+      const meta = this.workerMeta.get(workerId);
+      this.emitWorkerEvent({
+        ...(meta || { id: workerId, task: 'Paused by user', progress: 50 }),
+        id: workerId,
+        task: meta?.task ? `[Paused] ${meta.task}` : 'Paused by user',
+        status: 'paused',
+        at: Date.now()
+      });
+      return { ok: true, workerId, status: 'paused' };
+    }
+    const gate = this.workerGates.get(workerId);
+    if (!gate) return { ok: false, workerId, error: 'Worker not active' };
+    gate.pause();
+    this.workerSupervisor?.pauseWorker(workerId);
+    const meta = this.workerMeta.get(workerId);
+    this.emitWorkerEvent({
+      ...(meta || { id: workerId, workerId, task: 'Paused by user', progress: 50 }),
+      id: workerId,
+      workerId,
+      task: meta?.task ? `[Paused] ${meta.task}` : 'Paused by user',
+      status: 'paused',
+      at: Date.now()
+    });
+    this.emitEvidence(`[Worker Control] Paused ${meta?.name ?? workerId}`);
+    return { ok: true, workerId, status: 'paused' };
+  }
+
+  public resumeWorker(workerId: string): WorkerControlResponse {
+    if (workerId === 'worker-agent-1') {
+      this.resume();
+      const meta = this.workerMeta.get(workerId);
+      this.emitWorkerEvent({
+        ...(meta || { id: workerId, task: 'Running', progress: 50 }),
+        id: workerId,
+        task: (meta?.task || 'Running').replace(/^\[(Paused|Takeover)\]\s*/i, ''),
+        status: 'running',
+        at: Date.now()
+      });
+      return { ok: true, workerId, status: 'running' };
+    }
+    const gate = this.workerGates.get(workerId);
+    if (!gate) return { ok: false, workerId, error: 'Worker not active' };
+    this.workerTakeoverIds.delete(workerId);
+    gate.resume();
+    this.workerSupervisor?.resumeWorker(workerId);
+    const meta = this.workerMeta.get(workerId);
+    this.emitWorkerEvent({
+      ...(meta || { id: workerId, workerId, task: 'Resumed', progress: 50 }),
+      id: workerId,
+      workerId,
+      task: (meta?.task || 'Running').replace(/^\[(Paused|Takeover)\]\s*/i, ''),
+      status: 'running',
+      at: Date.now()
+    });
+    this.emitEvidence(`[Worker Control] Resumed ${meta?.name ?? workerId}`);
+    return { ok: true, workerId, status: 'running' };
+  }
+
+  public stopWorker(workerId: string): WorkerControlResponse {
+    if (workerId === 'worker-agent-1') {
+      this.cancel();
+      return { ok: true, workerId, status: 'stopped' };
+    }
+    const abortFn = this.workerAbortHandles.get(workerId);
+    if (!abortFn) return { ok: false, workerId, error: 'Worker not active' };
+    this.stoppedWorkers.add(workerId);
+    this.workerGates.get(workerId)?.resume();
+    this.workerTakeoverIds.delete(workerId);
+    abortFn('stopped');
+    const meta = this.workerMeta.get(workerId);
+    this.emitWorkerEvent({
+      ...(meta || { id: workerId, workerId, task: 'Stopped by user', progress: 0 }),
+      id: workerId,
+      workerId,
+      task: 'Stopped by user',
+      status: 'stopped',
+      at: Date.now()
+    });
+    this.emitEvidence(`[Worker Control] Stopped ${meta?.name ?? workerId}`);
+    return { ok: true, workerId, status: 'stopped' };
+  }
+
+  public takeoverWorker(workerId: string): WorkerControlResponse {
+    if (workerId === 'worker-agent-1') {
+      const meta = this.workerMeta.get(workerId);
+      if (this.activeMission?.state === 'takeover') {
+        void this.handBack();
+        this.emitWorkerEvent({
+          ...(meta || { id: workerId, task: 'Running', progress: 50 }),
+          id: workerId,
+          task: (meta?.task || 'Running').replace(/^\[(Paused|Takeover)\]\s*/i, ''),
+          status: 'running',
+          at: Date.now()
+        });
+        return { ok: true, workerId, status: 'running' };
+      }
+      this.takeover();
+      this.emitWorkerEvent({
+        ...(meta || { id: workerId, task: 'Manual takeover', progress: 50 }),
+        id: workerId,
+        task: '[Takeover] Manual control',
+        status: 'takeover',
+        at: Date.now()
+      });
+      return { ok: true, workerId, status: 'takeover' };
+    }
+    const gate = this.workerGates.get(workerId);
+    if (!gate) return { ok: false, workerId, error: 'Worker not active' };
+    const meta = this.workerMeta.get(workerId);
+    if (this.workerTakeoverIds.has(workerId)) {
+      this.workerTakeoverIds.delete(workerId);
+      gate.resume();
+      this.workerSupervisor?.resumeWorker(workerId);
+      this.emitWorkerEvent({
+        ...(meta || { id: workerId, workerId, task: 'Handed back', progress: 50 }),
+        id: workerId,
+        workerId,
+        task: (meta?.task || 'Running').replace(/^\[(Paused|Takeover)\]\s*/i, ''),
+        status: 'running',
+        at: Date.now()
+      });
+      this.emitEvidence(`[Worker Control] Handed back control to ${meta?.name ?? workerId}`);
+      return { ok: true, workerId, status: 'running' };
+    }
+    this.workerTakeoverIds.add(workerId);
+    gate.pause();
+    this.workerSupervisor?.pauseWorker(workerId);
+    this.viewManager.promote(workerId);
+    this.emitWorkerEvent({
+      ...(meta || { id: workerId, workerId, task: 'Manual takeover', progress: 50 }),
+      id: workerId,
+      workerId,
+      task: '[Takeover] Manual control',
+      status: 'takeover',
+      at: Date.now()
+    });
+    this.emitEvidence(`[Worker Control] Manual takeover on ${meta?.name ?? workerId}`);
+    return { ok: true, workerId, status: 'takeover' };
   }
 
   /** The user's answer to the open question (ask_user, approval, stuck escalation, crash banner). */
@@ -459,21 +678,34 @@ export class AgentRuntime {
     // One manager per mission: its workers get `agent-<missionId>-<workerId>` in-memory partitions and their own
     // views (shown in the Grid by ViewManager, #232); they are all torn down in the finally below (also when the
     // window closes or the mission is cancelled). The user's tabs are never used.
+    const stallMs =
+      this.deps.stallThresholdMs ??
+      (Number(process.env.AEGIS_WORKER_STALL_MS) > 0 ? Number(process.env.AEGIS_WORKER_STALL_MS) : DEFAULT_STALL_THRESHOLD_MS);
+    const checkMs = Math.min(1000, Math.max(100, Math.floor(stallMs / 4)));
     const swarm = new SwarmManager({ maxWorkers, missionId: mission.id, parentWindow: this.window });
     this.activeSwarm = swarm;
-    const supervisor = new WorkerSupervisor({ stallThresholdMs: 90_000 });
+    const supervisor = new WorkerSupervisor({ checkIntervalMs: checkMs, stallThresholdMs: stallMs });
+    this.workerSupervisor = supervisor;
+    this.workerGates.clear();
+    this.workerAbortHandles.clear();
+    this.stoppedWorkers.clear();
+    this.workerTakeoverIds.clear();
     const coordinator = new SwarmCoordinator({
       swarm,
       blackboard: new SharedBlackboard({ missionId: mission.id }),
+      governor: this.governor,
       supervisor,
       maxWorkers
     });
-    const abortHandles = new Map<string, (reason: string) => void>();
+    const abortHandles = this.workerAbortHandles;
     this.swarmGate = new PauseGate();
     this.swarmQuestions = new QuestionQueue();
 
     coordinator.on('stageStarted', (ev: any) => {
       this.emitEvidence(`[Swarm Stage Started] ${ev.stageName} (${ev.taskCount} tasks)`);
+    });
+    coordinator.on('governanceMetrics', (m: any) => {
+      this.emitGovernanceMetrics(m);
     });
     coordinator.on('planUpdated', (ev: any) => {
       this.emitEvidence(`[Replan ${ev.attempt}] ${ev.justification} (${(ev.diff || []).join(' | ')})`);
@@ -484,15 +716,37 @@ export class AgentRuntime {
       id: ev.workerId, workerId: ev.workerId, name: ev.identity?.name, color: ev.identity?.color, glyph: ev.identity?.glyph,
       task, progress, status, at: Date.now()
     });
-    coordinator.on('taskStarted', (ev: any) => workerEvent(ev, `Starting: ${ev.name ?? ev.taskId}`, 'running', 5));
+    coordinator.on('taskStarted', (ev: any) => {
+      if (ev.workerId !== 'coordinator' && !this.workerGates.has(ev.workerId)) {
+        this.workerGates.set(ev.workerId, new PauseGate());
+      }
+      workerEvent(ev, `Starting: ${ev.name ?? ev.taskId}`, 'running', 5);
+    });
     coordinator.on('taskRetry', (ev: any) => workerEvent(ev, `Retrying after: ${String(ev.error).slice(0, 80)}`, 'running', 5));
     coordinator.on('taskFailed', (ev: any) => {
       if (signal.aborted) return; // cancelled: the shutdown rejects in-flight tasks; that is not a task failure
-      workerEvent(ev, `Failed: ${String(ev.error).slice(0, 80)}`, 'failed', 100);
+      const isStalled = this.workerSupervisor?.getTelemetry(ev.workerId)?.status === 'stalled' || /stalled/i.test(String(ev.error));
+      workerEvent(
+        ev,
+        `${ev.stoppedByUser ? 'Stopped' : isStalled ? 'Stalled' : 'Failed'}: ${String(ev.error).slice(0, 80)}`,
+        ev.stoppedByUser ? 'stopped' : isStalled ? 'stalled' : 'failed',
+        100
+      );
     });
     coordinator.on('taskNeedsHuman', (ev: any) => this.emitEvidence(`[Needs You] ${ev.identity?.name ?? ev.workerId}: ${String(ev.reason).slice(0, 160)}`));
     coordinator.on('workerStalled', (ev: any) => {
-      this.emitEvidence(`[Supervisor] ${ev.workerId} stalled (${ev.stallClass}); stopping that attempt`);
+      this.emitEvidence(`[Supervisor] ${ev.workerId} stalled (${ev.stallClass}; ${ev.final ? 'stalled cleanly' : 'aborting and retrying once'})`);
+      if (ev.final) {
+        const meta = this.workerMeta.get(ev.workerId);
+        this.emitWorkerEvent({
+          ...(meta || { id: ev.workerId, workerId: ev.workerId, progress: 0 }),
+          id: ev.workerId,
+          workerId: ev.workerId,
+          task: `Stalled (${ev.stallClass})`,
+          status: 'stalled',
+          at: Date.now()
+        });
+      }
       abortHandles.get(ev.workerId)?.('stalled');
     });
 
@@ -527,6 +781,8 @@ export class AgentRuntime {
         workerMaxCostUSD: settings.maxCostUSD / maxWorkers,
         supervisor,
         abortHandles,
+        workerGates: this.workerGates,
+        stoppedWorkers: this.stoppedWorkers,
         waitWhilePaused: () => this.swarmGate.wait(signal),
         askUser: q => questions.ask(() => this.askUser(mission, q), signal),
         emitWorker: p => this.emitWorkerEvent(p),
@@ -566,6 +822,11 @@ export class AgentRuntime {
       throw err;
     } finally {
       this.activeSwarm = null;
+      this.workerSupervisor = null;
+      this.workerGates.clear();
+      this.workerAbortHandles.clear();
+      this.stoppedWorkers.clear();
+      this.workerTakeoverIds.clear();
       await swarm.shutdown();
     }
     if (signal.aborted || this.activeMission !== mission || isTerminal(mission.state)) return; // cancelled while the swarm was unwinding
@@ -934,9 +1195,32 @@ export class AgentRuntime {
 
   private emitWorkerEvent(payload: WorkerEventPayload): void {
     try {
+      this.workerMeta.set(payload.id, payload);
       if (!this.window.isDestroyed()) {
         MissionRecorder.event(this.activeMission?.id, 'worker', payload);
         this.window.webContents.send(IPC_CHANNELS.EVENT_WORKER, payload);
+      }
+    } catch {}
+  }
+
+  private emitGovernanceMetrics(metrics: any): void {
+    const payload: GovernanceMetricsPayload = {
+      recommendedConcurrency: metrics.recommendedConcurrency,
+      limitReason: metrics.limitReason ?? null,
+      limitDescription: metrics.limitDescription ?? null,
+      cpuPercent: metrics.cpuPercent,
+      freeSystemMemMb: metrics.freeSystemMemMb,
+      totalSystemMemMb: metrics.totalSystemMemMb,
+      appWorkingSetMb: metrics.appWorkingSetMb,
+      eventLoopLagMs: metrics.eventLoopLagMs,
+      activeWebContentsCount: metrics.activeWebContentsCount,
+      isThrottled: Boolean(metrics.isThrottled),
+      metricsAvailable: metrics.metricsAvailable !== false
+    };
+    this.events.emit('governance', payload);
+    try {
+      if (!this.window.isDestroyed()) {
+        this.window.webContents.send(IPC_CHANNELS.EVENT_GOVERNANCE, payload);
       }
     } catch {}
   }

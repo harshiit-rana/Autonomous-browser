@@ -120,6 +120,24 @@ contextBridge.exposeInMainWorld('aegis', {
   stopDemo: () =>
     ipcRenderer.invoke(IPC_CHANNELS.DEMO_STOP),
 
+  // Per-worker controls & Governance (#231)
+  pauseWorker: (workerId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WORKER_PAUSE, { workerId }),
+  resumeWorker: (workerId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WORKER_RESUME, { workerId }),
+  stopWorker: (workerId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WORKER_STOP, { workerId }),
+  takeoverWorker: (workerId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WORKER_TAKEOVER, { workerId }),
+  getGovernanceMetrics: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.GOVERNANCE_GET_METRICS),
+  triggerKillSwitch: (reason?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.KILL_SWITCH_TRIGGER, { reason }),
+  resetKillSwitch: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.KILL_SWITCH_RESET),
+  getKillSwitchStatus: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.KILL_SWITCH_GET_STATUS),
+
   // Push event subscriptions
   onTabsSync: (callback: (snapshot: TabsSnapshot) => void) => {
     ipcRenderer.on(IPC_CHANNELS.EVENT_TABS_SYNC, (_, data) => callback(data));
@@ -129,6 +147,9 @@ contextBridge.exposeInMainWorld('aegis', {
   },
   onWorkerEvent: (callback: (data: WorkerEventPayload) => void) => {
     ipcRenderer.on(IPC_CHANNELS.EVENT_WORKER, (_, data) => callback(data));
+  },
+  onGovernanceMetrics: (callback: (data: any) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.EVENT_GOVERNANCE, (_, data) => callback(data));
   },
   onEvidenceEvent: (callback: (data: EvidenceEventPayload) => void) => {
     ipcRenderer.on(IPC_CHANNELS.EVENT_EVIDENCE, (_, data) => callback(data));

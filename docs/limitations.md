@@ -230,3 +230,14 @@ Design and measurements: `docs/adr/0011-presence-layer.md`. Proof: `tests/test_p
 | Focus | The overlay is `focusable: false`; the harness's own OS helpers activate windows, so page-visible focus events are inconclusive (ADR 0011). | |
 | Screen recorders | Whether a recorder or remote desktop captures the click-through window was not tested. Model screenshots (`capturePage`, CDP) never contain it (tested). | |
 | Layer lifetime | The cursor stays drawn (dimmed after 30 s) until its view is hidden or removed; there is no "agent finished" fade. | Needs the mission lifecycle (#226). |
+
+## Resource governance & supervision (#231 SWX-05)
+
+Live process/OS governance metrics, monotonic sleep-safe supervisor stall detection, per-worker IPC/UI controls, global kill switch, and `TabHibernationDaemon` wiring (`ResourceGovernor`, `WorkerSupervisor`, `AgentRuntime`, `ViewManager`). Not done, or only partly:
+
+| Item | Status | Reason / what covers it |
+|---|---|---|
+| Sustained CPU > 85% / free RAM < 1 GB in live CI container | **Unit-tested with metric overrides; live Chromium metrics read in E2E.** `ResourceGovernor` hysteresis, CPU/memory/event-loop throttling, and UI limit-reason string (`"N workers (limited by ...)"`) are verified via unit overrides (`tests/test_governance_supervision.ts`); Electron `app.getAppMetrics()` + `webContents` count are verified over IPC in `tests/e2e/governance_chaos.spec.ts`. | Synthetically exhausting CI runner RAM/CPU in Electron risks crashing the shared runner. |
+| Hibernation trigger frequency in long sessions | `TabHibernationDaemon` is wired into `ViewManager` (registers user tabs, wakes on activation, and hibernates eligible idle background user tabs on `ResourceGovernor` `throttle` events). Active agent tabs and audible tabs are always excluded (`canHibernateTab`). | 5-minute idle threshold not waited out inside fast Playwright E2E. |
+| OS suspend/sleep event | Sleep clock-jump immunity (`wallDelta` vs `monoDelta` skew rebase) and paused-worker exclusion are unit-tested via injected clocks in `tests/test_governance_supervision.ts`. | Hardware sleep is not triggered in CI. |
+| Default 60 s stall timeout in chaos E2E | Production default is `60_000 ms` (`DEFAULT_STALL_THRESHOLD_MS`); chaos E2E sets `AEGIS_WORKER_STALL_MS=2200` against a 12 s hung HTTP server so the full retry + stalled flow finishes inside 10 s. | Fast CI turn-around. |

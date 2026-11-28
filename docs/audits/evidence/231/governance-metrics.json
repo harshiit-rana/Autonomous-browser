@@ -1,0 +1,13 @@
+{
+  "recommendedConcurrency": 8,
+  "limitReason": null,
+  "limitDescription": null,
+  "cpuPercent": 0,
+  "freeSystemMemMb": 1419,
+  "totalSystemMemMb": 15611,
+  "appWorkingSetMb": 615,
+  "eventLoopLagMs": 0,
+  "activeWebContentsCount": 3,
+  "isThrottled": false,
+  "metricsAvailable": true
+}

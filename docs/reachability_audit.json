@@ -401,7 +401,7 @@
   },
   {
     "path": "planning/state_snapshotter.ts",
-    "isReachable": false
+    "isReachable": true
   },
   {
     "path": "platform/auto_updater.ts",
@@ -505,7 +505,7 @@
   },
   {
     "path": "session/hibernation_daemon.ts",
-    "isReachable": false
+    "isReachable": true
   },
   {
     "path": "session/session_manager.ts",
