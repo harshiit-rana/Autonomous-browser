@@ -350,10 +350,13 @@ export class ResourceGovernor extends EventEmitter {
       this.healthyStreak = 0;
       this.lastRecommended = recommended;
     } else if (recommended > this.lastRecommended) {
-      if (healthyForRelease || !this.isThrottled) {
+      if (!this.isThrottled) {
+        this.lastRecommended = recommended;
+        this.healthyStreak = 0;
+      } else if (healthyForRelease) {
         this.healthyStreak += 1;
-        // Require 2 clean recovery readings while throttled before scaling back up to avoid oscillation
-        if (!this.isThrottled || this.healthyStreak >= 2) {
+        // Require 2 clean recovery readings while throttled before scaling back up +1 at a time to avoid oscillation
+        if (this.healthyStreak >= 2) {
           this.lastRecommended = Math.min(recommended, this.lastRecommended + 1);
           this.healthyStreak = 0;
         }
