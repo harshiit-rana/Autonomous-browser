@@ -15,6 +15,8 @@ import type { WorkerEvent } from '../swarm/worker_host.js';
 import type { ExecutorPresence } from '../core/action_executor.js';
 import { PresenceLayer } from './presence_layer.js';
 import { electronDisplays, electronOverlayFactory } from './presence_window.js';
+import { TabHibernationDaemon } from '../session/hibernation_daemon.js';
+import type { ResourceGovernor } from '../swarm/resource_governor.js';
 
 export interface TabView {
   id: string;
@@ -59,6 +61,7 @@ export class ViewManager {
   private lastReportSeq = 0;
   private gridBroadcastTimer: NodeJS.Timeout | null = null;
   private registry: WorkerViewRegistry;
+  private hibernationDaemon = new TabHibernationDaemon(300_000, 60_000);
   /** Click-through window that draws the agents' cursors above the native views (#233, ADR 0011). Not part of the view stack. */
   public readonly presence: PresenceLayer;
   private presenceSeq = 0;
@@ -75,6 +78,7 @@ export class ViewManager {
     window.once('closed', () => {
       registry.removeListener('added', onAdded);
       registry.removeListener('removed', onRemoved);
+      this.hibernationDaemon.stop();
       this.frameHub.dispose();
     });
   }
@@ -157,6 +161,9 @@ export class ViewManager {
 
     this.tabs.set(id, tab);
     this.tabOrder.push(id);
+    if (!tab.state.owner.startsWith('agent:')) {
+      this.hibernationDaemon.registerTab(id, view.webContents, url, state.title);
+    }
     this.frameHub.addSource(electronFrameSource(id, view.webContents, executor));
     this.presentation.set(id, 'parked');
     executor.setPresenceSink((e) => this.stampPresence(id, view.webContents, e, { name: tab.state.owner.startsWith('agent:') ? 'Agent' : 'Agent', color: '#7C5CFF' }));
@@ -329,6 +336,8 @@ export class ViewManager {
     const targetTab = this.tabs.get(id);
     if (!targetTab) return;
     this.stagedWorkerId = null;
+    this.hibernationDaemon.touchTab(id);
+    void this.hibernationDaemon.wakeTab(id);
 
     if (this.activeTabId === id) {
       this.relayout();
@@ -346,6 +355,7 @@ export class ViewManager {
     if (!tab) return;
 
     logger.info('Closing tab', { id });
+    this.hibernationDaemon.unregisterTab(id);
 
     const closedIndex = this.tabOrder.indexOf(id);
     const wasActive = this.activeTabId === id;
@@ -727,5 +737,35 @@ export class ViewManager {
 
   public listTabs(): TabView[] {
     return this.tabOrder.map(id => this.tabs.get(id)).filter((t): t is TabView => !!t);
+  }
+
+  /** Closes all agent-owned tabs immediately (used by Global Kill Switch, #231). */
+  public closeAgentTabs(): number {
+    let closed = 0;
+    for (const tab of this.listTabs()) {
+      if (tab.state.owner.startsWith('agent:')) {
+        this.closeTab(tab.id);
+        closed += 1;
+      }
+    }
+    return closed;
+  }
+
+  /** Safely hibernates eligible idle background user tabs under ResourceGovernor rules (#231). */
+  public async hibernateIdleTabs(governor: ResourceGovernor): Promise<number> {
+    let count = 0;
+    for (const tab of this.listTabs()) {
+      const check = governor.canHibernateTab({
+        isAgentControlled: tab.state.owner.startsWith('agent:'),
+        hasPendingSideEffects: false,
+        isAudible: Boolean(tab.state.isAudible),
+        isActiveTab: tab.id === this.activeTabId,
+        lastAccessedTime: Date.now() - 360_000
+      });
+      if (check.eligible && await this.hibernationDaemon.hibernateTab(tab.id)) {
+        count += 1;
+      }
+    }
+    return count;
   }
 }

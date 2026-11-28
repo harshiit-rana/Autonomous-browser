@@ -120,6 +120,9 @@ function renderRecordedEvent(ev: RecordedEvent): void {
   row.className = 'lab-ev';
   row.textContent = `#${ev.seq} [${ev.kind}] ${ev.workerId ?? 'mission'} ${JSON.stringify(ev.data ?? {})}`;
   feedEl.prepend(row);
+  while (feedEl.children.length > 60) {
+    feedEl.lastElementChild?.remove();
+  }
   if (intent?.type === 'evidence_fly') {
     animateElement(row, [{ opacity: 0.2, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'translateX(0)' }], intent.durationMs, intent.easing, true);
   }
@@ -163,6 +166,8 @@ async function replayFixture(name: string): Promise<void> {
 async function runStressBurst(workers = 10, eventsPerSec = 50, durationMs = 2000): Promise<void> {
   workersEl.replaceChildren();
   tiles.clear();
+  monitor.reset();
+  lastRaf = performance.now();
   let seq = 1;
   const intervalMs = Math.max(10, Math.round(1000 / eventsPerSec));
   const endAt = performance.now() + durationMs;

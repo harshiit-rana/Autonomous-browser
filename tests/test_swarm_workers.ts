@@ -13,6 +13,7 @@ import { SwarmManager } from '../src/swarm/swarm_manager.js';
 import { SharedBlackboard } from '../src/swarm/blackboard.js';
 import { URLFrontier } from '../src/swarm/url_frontier.js';
 import { WorkerSupervisor } from '../src/swarm/supervisor.js';
+import { ResourceGovernor } from '../src/swarm/resource_governor.js';
 import { checkFinding, UrlClaims, adjudicateConflicts } from '../src/swarm/worker_findings.js';
 import { PauseGate, QuestionQueue } from '../src/swarm/worker_coordination.js';
 import { clampMaxWorkers } from '../src/infrastructure/settings.js';
@@ -27,7 +28,19 @@ console.log('--- #227 SWX-01: swarm workers run the AgentLoop ---');
 function coordinator(opts: { maxWorkers?: number; frontier?: URLFrontier; supervisor?: WorkerSupervisor } = {}) {
   const fakes = fakeWorkerFactory();
   const swarm = new SwarmManager({ missionId: 'm_t', workerFactory: fakes.factory, maxWorkers: 8 });
-  const c = new SwarmCoordinator({ swarm, blackboard: new SharedBlackboard({ inMemory: true }), maxWorkers: opts.maxWorkers, frontier: opts.frontier, supervisor: opts.supervisor });
+  const governor = new ResourceGovernor({
+    maxConcurrencyCap: 8,
+    sampleOverride: () => ({
+      totalSystemMemMb: 16384,
+      freeSystemMemMb: 8192,
+      processRssMb: 120,
+      appWorkingSetMb: 120,
+      cpuPercent: 10,
+      eventLoopLagMs: 1,
+      metricsAvailable: true
+    })
+  });
+  const c = new SwarmCoordinator({ swarm, blackboard: new SharedBlackboard({ inMemory: true }), governor, maxWorkers: opts.maxWorkers, frontier: opts.frontier, supervisor: opts.supervisor });
   return { c, swarm, fakes };
 }
 const shopUrls = (n: number) => Array.from({ length: n }, (_, i) => `http://127.0.0.1:${4100 + i}/product`);

@@ -409,6 +409,38 @@ body.dark-theme {
   margin-bottom: 8px;
 }
 
+.worker-card .card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.worker-ctrl-btn {
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.worker-ctrl-btn:hover {
+  border-color: var(--accent);
+}
+
+.worker-ctrl-btn.danger {
+  color: var(--danger);
+}
+
+.worker-card.stalled {
+  border-color: var(--warning, #f59e0b);
+}
+
+.worker-card.paused, .worker-card.takeover {
+  border-color: var(--accent);
+}
+
 .progress-bar {
   height: 4px;
   background: rgba(255, 255, 255, 0.08);

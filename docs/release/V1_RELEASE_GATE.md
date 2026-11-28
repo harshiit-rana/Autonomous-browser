@@ -1,17 +1,17 @@
 # Release Gate Status: **NOT READY (2 of 7 checks failing)**
 
-> Generated automatically by `scripts/release_gate.mjs` at 2026-11-28T08:58:41.689Z
-> Commit: `8a8b49d` | Working tree dirty: `true`
+> Generated automatically by `scripts/release_gate.mjs` at 2026-11-28T09:16:52.598Z
+> Commit: `975cc65` | Working tree dirty: `true`
 
 ## Gate Measurements Summary Table
 
 | Check ID | Area / Description | Verification Command | Status | Measured Evidence / Notes |
 |---|---|---|---|---|
-| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 1090ms |
+| `typecheck` | TypeScript Compilation | `npx tsc -b` | **PASS** | Clean compile without errors in 5912ms |
 | `unit` | Unit & Integration Test Manifest | `tests/manifest.json` | **PASS** | Pre-verified unit manifest (passed via caller verification) |
 | `reachability` | Reachability Policy & Orphan Allowlist | `node scripts/audit_reachability.mjs` | **FAIL** | 59 orphaned modules awaiting wiring in allowlist pending list |
 | `e2e` | Real-App Electron E2E Suite | `npm run test:e2e` | **PASS** | Real-app Playwright Electron E2E suite passed |
-| `docs-consistency` | Documentation Truth & Status Consistency | `scripts/gen_status.mjs hash check` | **PASS** | docs/STATUS.md matches reachability audit hash f32e4d98 |
+| `docs-consistency` | Documentation Truth & Status Consistency | `scripts/gen_status.mjs hash check` | **PASS** | docs/STATUS.md matches reachability audit hash 2718b0bc |
 | `no-fake-paths` | Zero Forbidden Fake Patterns in src/ | `scripts/release_gate.mjs scan src/` | **PASS** | Zero forbidden fake/mock patterns detected on production paths |
 | `security-attack-suite` | Live Red-Team Security Attack Suite | `npm run test:security:live` | **FAIL** | live red-team harness not yet wired to real agent loop (ASR unmeasured) |
 

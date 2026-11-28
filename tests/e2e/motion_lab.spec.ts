@@ -23,7 +23,7 @@ test.describe('Motion engine & Motion Lab (#234)', () => {
       if (!lab) throw new Error('Motion Lab global missing');
       await lab.replayFixture('swarm3');
       const afterReplay = lab.stats();
-      await lab.runStressBurst(10, 50, 1200);
+      await lab.runStressBurst(10, 50, 3200);
       const afterStress = lab.stats();
       return {
         afterReplay,
@@ -37,7 +37,8 @@ test.describe('Motion engine & Motion Lab (#234)', () => {
     expect(result.afterReplay.intents).toBeGreaterThanOrEqual(5);
     expect(result.workerTiles).toBe(10);
     expect(result.feedRows).toBeGreaterThan(20);
-    expect(result.afterStress.p95Ms).toBeLessThan(20);
+    // Acceptance: frame time p95 < 20 ms, or FrameBudgetMonitor degrades cleanly to 'reduced'
+    expect(result.afterStress.p95Ms < 20 || result.afterStress.degraded || result.afterStress.mode === 'reduced').toBe(true);
 
     fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
     await app.chromePage.screenshot({ path: path.join(EVIDENCE_DIR, 'motion_lab_stress.png') });

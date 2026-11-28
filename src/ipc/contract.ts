@@ -116,13 +116,38 @@ export interface WorkerEventPayload {
   glyph?: string;
   task: string;
   progress: number;
-  status: 'running' | 'done' | 'idle' | 'failed';
+  status: 'running' | 'paused' | 'takeover' | 'stalled' | 'stopped' | 'done' | 'idle' | 'failed';
   /** Swarm workers (#227): same value as `id`, the loop step number and the tool call the worker ran last. */
   workerId?: string;
   step?: number;
   lastAction?: string;
   /** Time of the event (ms since epoch); the e2e uses it to prove workers ran at the same time. */
   at?: number;
+}
+
+export interface WorkerControlRequest {
+  workerId: string;
+}
+
+export interface WorkerControlResponse {
+  ok: boolean;
+  workerId: string;
+  status?: string;
+  error?: string;
+}
+
+export interface GovernanceMetricsPayload {
+  recommendedConcurrency: number;
+  limitReason: 'memory' | 'cpu' | 'event_loop' | null;
+  limitDescription: string | null;
+  cpuPercent: number;
+  freeSystemMemMb: number;
+  totalSystemMemMb: number;
+  appWorkingSetMb: number;
+  eventLoopLagMs: number;
+  activeWebContentsCount: number;
+  isThrottled: boolean;
+  metricsAvailable: boolean;
 }
 
 export interface EvidenceEventPayload {
@@ -431,10 +456,18 @@ export const IPC_CHANNELS = {
   AUDIT_LOG_GET: 'security:audit_log_get',
   AUDIT_LOG_VERIFY: 'security:audit_log_verify',
 
+  // Per-worker controls & Resource Governance (Issue #231 [SWX-05])
+  WORKER_PAUSE: 'worker:pause',
+  WORKER_RESUME: 'worker:resume',
+  WORKER_STOP: 'worker:stop',
+  WORKER_TAKEOVER: 'worker:takeover',
+  GOVERNANCE_GET_METRICS: 'governance:get_metrics',
+
   // Push Events from Main to Renderer
   EVENT_TABS_SYNC: 'tabs:sync',
   EVENT_TAB_PATCH: 'tab:patch',
   EVENT_WORKER: 'worker:event',
+  EVENT_GOVERNANCE: 'governance:metrics',
   EVENT_EVIDENCE: 'evidence:event',
   EVENT_MISSION_STATUS: 'mission:status',
   EVENT_TELEMETRY: 'telemetry:event',

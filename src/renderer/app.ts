@@ -37,11 +37,12 @@ export class BrowserApp {
   private newTabBtn: HTMLButtonElement;
   private modelSelect: HTMLSelectElement;
 
-  // Real Controls (Issue #139)
+  // Real Controls (Issue #139, #231)
   private pauseBtn: HTMLButtonElement;
   private takeoverBtn: HTMLButtonElement;
   private undoBtn: HTMLButtonElement;
   private cancelMissionBtn: HTMLButtonElement;
+  private killSwitchBtn: HTMLButtonElement;
 
   // Layout Switcher (Issue #138)
   private layoutStageBtn: HTMLButtonElement;
@@ -116,6 +117,7 @@ export class BrowserApp {
   private frameBudget = new FrameBudgetMonitor({ budgetMs: 20, sustainMs: 3000 });
   private configuredMotionMode: MotionMode = 'full';
   private motionSeq = 0;
+  private governanceLimitDesc: string | null = null;
 
   constructor() {
     if (window.location.search.includes('lab=1')) {
@@ -134,6 +136,7 @@ export class BrowserApp {
     this.takeoverBtn = document.getElementById('takeover-btn') as HTMLButtonElement;
     this.undoBtn = document.getElementById('undo-btn') as HTMLButtonElement;
     this.cancelMissionBtn = document.getElementById('cancel-mission-btn') as HTMLButtonElement;
+    this.killSwitchBtn = document.getElementById('kill-switch-btn') as HTMLButtonElement;
 
     // Layout
     this.layoutStageBtn = document.getElementById('layout-stage-btn') as HTMLButtonElement;
@@ -284,7 +287,11 @@ export class BrowserApp {
       }
     });
 
-    // Telemetry stats
+    // Telemetry stats & Resource Governance (#141, #231)
+    aegis.onGovernanceMetrics?.((g: any) => {
+      this.governanceLimitDesc = g?.limitDescription || null;
+      this.updateWorkerCountLabel();
+    });
     aegis.onTelemetry((data: { tokensTotal: number; costTotal: number }) => {
       if (this.tokensStat) {
         this.tokensStat.textContent = data.tokensTotal.toLocaleString();
@@ -380,6 +387,12 @@ export class BrowserApp {
     this.cancelMissionBtn.addEventListener('click', () => {
       aegis?.cancelMission?.();
       this.addTimelineItem('[Mission] Cancelled by user', undefined, 'errors');
+    });
+
+    // Global Kill Switch (#231)
+    this.killSwitchBtn?.addEventListener('click', () => {
+      aegis?.triggerKillSwitch?.('Emergency Kill Switch clicked');
+      this.addTimelineItem('[Kill Switch] Halted all agents and closed agent tabs', undefined, 'errors');
     });
 
     // Mid-Run Steering (Issue #211)
@@ -1191,11 +1204,17 @@ export class BrowserApp {
     el.animate(keyframes, { duration: durationMs, easing });
   }
 
+  private updateWorkerCountLabel(): void {
+    if (!this.workerCountStat) return;
+    const count = this.activeWorkers.size;
+    this.workerCountStat.textContent = this.governanceLimitDesc
+      ? `${count} workers (${this.governanceLimitDesc})`
+      : String(count);
+  }
+
   private renderWorkerCards(spawnedWorkerId?: string, failedWorkerId?: string): void {
     const cards = Array.from(this.activeWorkers.values());
-    if (this.workerCountStat) {
-      this.workerCountStat.textContent = String(cards.length);
-    }
+    this.updateWorkerCountLabel();
 
     this.workerCardsContainer.replaceChildren();
 
@@ -1207,10 +1226,12 @@ export class BrowserApp {
       return;
     }
 
+    const aegis = (window as any).aegis;
     for (const worker of cards) {
       const card = document.createElement('div');
       card.className = `worker-card ${worker.status}`;
       card.id = sanitizeText(worker.id);
+      card.dataset.workerId = worker.id;
 
       const top = document.createElement('div');
       top.className = 'card-top';
@@ -1237,6 +1258,44 @@ export class BrowserApp {
       fill.style.width = `${Math.min(100, Math.max(0, worker.progress))}%`;
       progressBar.appendChild(fill);
       card.appendChild(progressBar);
+
+      if (worker.status === 'running' || worker.status === 'paused' || worker.status === 'takeover') {
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+
+        const pauseBtn = document.createElement('button');
+        pauseBtn.type = 'button';
+        pauseBtn.className = 'worker-ctrl-btn';
+        pauseBtn.dataset.action = worker.status === 'paused' ? 'resume' : 'pause';
+        pauseBtn.textContent = worker.status === 'paused' ? 'Resume' : 'Pause';
+        pauseBtn.addEventListener('click', () => {
+          if (worker.status === 'paused') aegis?.resumeWorker?.(worker.id);
+          else aegis?.pauseWorker?.(worker.id);
+        });
+        actions.appendChild(pauseBtn);
+
+        const takeoverBtn = document.createElement('button');
+        takeoverBtn.type = 'button';
+        takeoverBtn.className = 'worker-ctrl-btn';
+        takeoverBtn.dataset.action = 'takeover';
+        takeoverBtn.textContent = worker.status === 'takeover' ? 'Hand Back' : 'Takeover';
+        takeoverBtn.addEventListener('click', () => {
+          aegis?.takeoverWorker?.(worker.id);
+        });
+        actions.appendChild(takeoverBtn);
+
+        const stopBtn = document.createElement('button');
+        stopBtn.type = 'button';
+        stopBtn.className = 'worker-ctrl-btn danger';
+        stopBtn.dataset.action = 'stop';
+        stopBtn.textContent = 'Stop';
+        stopBtn.addEventListener('click', () => {
+          aegis?.stopWorker?.(worker.id);
+        });
+        actions.appendChild(stopBtn);
+
+        card.appendChild(actions);
+      }
 
       this.workerCardsContainer.appendChild(card);
 
