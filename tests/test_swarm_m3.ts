@@ -411,7 +411,19 @@ async function runSwarmTests() {
   // Product code has no mock view; this test drives the scheduling logic with the FakeWorkerHost test helper.
   const fakes = fakeWorkerFactory();
   const fakeSwarm = new SwarmManager({ missionId: 'm_test_exec', workerFactory: fakes.factory });
-  const coordinator = new SwarmCoordinator({ swarm: fakeSwarm });
+  const steadyGovernor = new ResourceGovernor({
+    maxConcurrencyCap: 6,
+    sampleOverride: () => ({
+      totalSystemMemMb: 16384,
+      freeSystemMemMb: 8192,
+      processRssMb: 120,
+      appWorkingSetMb: 120,
+      cpuPercent: 10,
+      eventLoopLagMs: 1,
+      metricsAvailable: true
+    })
+  });
+  const coordinator = new SwarmCoordinator({ swarm: fakeSwarm, governor: steadyGovernor });
 
   // Test 1: Linear mission -> 1 worker justified
   const linearPlan = coordinator.planMission('m_linear', 'Go to https://duckduckgo.com and search for AI');

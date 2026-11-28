@@ -12,9 +12,48 @@
  */
 
 import { EventEmitter } from 'node:events';
+import { execFileSync } from 'node:child_process';
+import * as fs from 'node:fs';
 import * as os from 'node:os';
 import { monitorEventLoopDelay, performance, type IntervalHistogram } from 'node:perf_hooks';
 import { logger } from '../infrastructure/logger.js';
+
+let cachedAvailSample: { monoMs: number; mb: number } | null = null;
+
+/**
+ * Reads truly available system memory in MB:
+ * - Linux: parses `/proc/meminfo` `MemAvailable:` (includes reclaimable page cache)
+ * - macOS: sums free + inactive + speculative + purgeable pages from `vm_stat` (cached 2 s)
+ * - Windows / fallback: `os.freemem()`
+ */
+function readAvailableSystemMemMb(): number {
+  const nowMono = performance.now();
+  if (cachedAvailSample && nowMono - cachedAvailSample.monoMs < 2000) {
+    return cachedAvailSample.mb;
+  }
+  let mb = Math.round(os.freemem() / (1024 * 1024));
+  try {
+    if (process.platform === 'linux') {
+      const meminfo = fs.readFileSync('/proc/meminfo', 'utf8');
+      const m = /^MemAvailable:\s+(\d+)\s+kB/m.exec(meminfo);
+      if (m) mb = Math.round(Number(m[1]) / 1024);
+    } else if (process.platform === 'darwin') {
+      const out = execFileSync('vm_stat', { encoding: 'utf8', timeout: 500 });
+      const pageMatch = /page size of (\d+) bytes/i.exec(out);
+      const pageBytes = pageMatch ? Number(pageMatch[1]) : 4096;
+      const pages = (label: string) => {
+        const r = new RegExp(`Pages ${label}:\\s+(\\d+)\\.`, 'i').exec(out);
+        return r ? Number(r[1]) : 0;
+      };
+      const availPages = pages('free') + pages('inactive') + pages('speculative') + pages('purgeable');
+      if (availPages > 0) mb = Math.round((availPages * pageBytes) / (1024 * 1024));
+    }
+  } catch {
+    // Keep os.freemem() fallback
+  }
+  cachedAvailSample = { monoMs: nowMono, mb };
+  return mb;
+}
 
 export interface ProcessMetricSample {
   type: string;
@@ -185,7 +224,7 @@ export class ResourceGovernor extends EventEmitter {
       rssMb = ov?.processRssMb ?? Math.round(mem.rss / (1024 * 1024));
       heapMb = ov?.processHeapMb ?? Math.round(mem.heapUsed / (1024 * 1024));
       totalSysMb = ov?.totalSystemMemMb ?? Math.round(os.totalmem() / (1024 * 1024));
-      freeSysMb = ov?.freeSystemMemMb ?? Math.round(os.freemem() / (1024 * 1024));
+      freeSysMb = ov?.freeSystemMemMb ?? readAvailableSystemMemMb();
 
       if (ov?.metricsAvailable === false || !Number.isFinite(totalSysMb) || !Number.isFinite(freeSysMb) || totalSysMb <= 0) {
         metricsAvailable = false;
