@@ -690,14 +690,13 @@
    "title": "[MCX-10] Flight recorder & replay: record screencast + events, scrub timeline, export shareable replay",
    "kind": "code",
    "modules": [
-    "automation/flight_recorder.ts",
-    "session/trajectory_replay.ts"
+    "automation/flight_recorder.ts"
    ],
    "tests": [
     "test_flight_recorder.ts"
    ],
    "files": [],
-   "gap": "Both modules are orphaned; no recording or replay UI.",
+   "gap": "Consolidated on automation/flight_recorder.ts; wired into AgentRuntime + Replay UI (#236).",
    "owning": [
     236
    ]

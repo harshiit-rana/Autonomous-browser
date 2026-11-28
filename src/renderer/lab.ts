@@ -189,12 +189,111 @@ motionEl.addEventListener('change', () => applyModeUi(motionEl.value as MotionMo
 document.getElementById('lab-replay-btn')?.addEventListener('click', () => { void replayFixture(fixtureEl.value); });
 document.getElementById('lab-stress-btn')?.addEventListener('click', () => { void runStressBurst(10, 50, 2000); });
 
-// Expose deterministic stats for E2E verification (#234)
+// Mission Replay (#236 [LIV-05]) reusing Motion Lab renderer & ChoreographyEngine
+const replayMissionInput = document.getElementById('replay-mission-input') as HTMLInputElement | null;
+const replayScrubber = document.getElementById('replay-scrubber') as HTMLInputElement | null;
+const replayStepLabel = document.getElementById('replay-step-label') as HTMLElement | null;
+const replayFrameImg = document.getElementById('replay-frame-img') as HTMLImageElement | null;
+const replayPlayBtn = document.getElementById('replay-play-btn') as HTMLButtonElement | null;
+
+let loadedReplay: { missionId: string; events: RecordedEvent[]; frames: Array<{ index: number; seq?: number; ts: number; sha256: string; dataUrl?: string }> } | null = null;
+let replayTimer: number | null = null;
+
+function scrubToStep(idx: number): void {
+  if (!loadedReplay || loadedReplay.events.length === 0) return;
+  const clamped = Math.max(0, Math.min(loadedReplay.events.length - 1, idx));
+  if (replayScrubber) replayScrubber.value = String(clamped);
+  if (replayStepLabel) replayStepLabel.textContent = `${clamped + 1} / ${loadedReplay.events.length}`;
+
+  workersEl.replaceChildren();
+  feedEl.replaceChildren();
+  tiles.clear();
+  for (let i = 0; i <= clamped; i++) {
+    renderRecordedEvent(loadedReplay.events[i]);
+  }
+  const ev = loadedReplay.events[clamped];
+  const frame = loadedReplay.frames.find(f => f.seq === ev.seq)
+    || loadedReplay.frames[Math.min(loadedReplay.frames.length - 1, Math.floor((clamped / Math.max(1, loadedReplay.events.length - 1)) * Math.max(0, loadedReplay.frames.length - 1)))];
+  if (replayFrameImg) {
+    if (frame?.dataUrl) {
+      replayFrameImg.style.display = 'block';
+      replayFrameImg.src = frame.dataUrl;
+      replayFrameImg.dataset.frameHash = frame.sha256;
+    } else {
+      replayFrameImg.style.display = 'none';
+      replayFrameImg.dataset.frameHash = frame?.sha256 || '';
+    }
+  }
+}
+
+async function loadMissionReplay(missionId: string): Promise<any> {
+  const aegis = (window as any).aegis;
+  if (!aegis?.loadReplay) throw new Error('Replay bridge unavailable');
+  const res = await aegis.loadReplay(missionId);
+  const data = res?.data || res;
+  loadedReplay = data;
+  if (replayMissionInput) replayMissionInput.value = missionId;
+  const maxIdx = Math.max(0, (data?.events?.length || 1) - 1);
+  if (replayScrubber) {
+    replayScrubber.min = '0';
+    replayScrubber.max = String(maxIdx);
+    replayScrubber.value = '0';
+  }
+  scrubToStep(0);
+  return data;
+}
+
+document.getElementById('replay-load-btn')?.addEventListener('click', () => {
+  const id = replayMissionInput?.value.trim();
+  if (id) void loadMissionReplay(id);
+});
+replayScrubber?.addEventListener('input', () => scrubToStep(Number(replayScrubber.value) || 0));
+replayPlayBtn?.addEventListener('click', () => {
+  if (replayTimer !== null) {
+    clearInterval(replayTimer);
+    replayTimer = null;
+    if (replayPlayBtn) replayPlayBtn.textContent = 'Play Replay';
+    return;
+  }
+  if (!loadedReplay || loadedReplay.events.length === 0) return;
+  if (replayPlayBtn) replayPlayBtn.textContent = 'Pause Replay';
+  const speed = Number(speedEl.value) || 1;
+  replayTimer = window.setInterval(() => {
+    const next = (Number(replayScrubber?.value) || 0) + 1;
+    if (!loadedReplay || next >= loadedReplay.events.length) {
+      if (replayTimer !== null) clearInterval(replayTimer);
+      replayTimer = null;
+      if (replayPlayBtn) replayPlayBtn.textContent = 'Play Replay';
+      return;
+    }
+    scrubToStep(next);
+  }, Math.max(40, Math.round(400 / speed)));
+});
+document.getElementById('replay-export-btn')?.addEventListener('click', async () => {
+  if (!loadedReplay?.missionId) return;
+  await (window as any).aegis?.exportReplay?.(loadedReplay.missionId);
+});
+
+// Expose deterministic stats for E2E verification (#234, #236)
 (window as any).__motionLab = {
   replayFixture,
   runStressBurst,
-  stats: () => ({ ...monitor.snapshot(), mode: effectiveMode(), intents: intentCount })
+  loadMissionReplay,
+  scrubToStep,
+  stats: () => ({
+    ...monitor.snapshot(),
+    mode: effectiveMode(),
+    intents: intentCount,
+    replayEvents: loadedReplay?.events?.length ?? 0,
+    replayFrames: loadedReplay?.frames?.length ?? 0,
+    activeFrameHash: replayFrameImg?.dataset.frameHash || ''
+  })
 };
+
+const qsMission = new URLSearchParams(window.location.search).get('missionId');
+if (qsMission) {
+  void loadMissionReplay(qsMission);
+}
 
 const initialMode = effectiveMode();
 applyModeUi(initialMode);

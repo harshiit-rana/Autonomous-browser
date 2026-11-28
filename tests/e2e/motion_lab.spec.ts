@@ -23,7 +23,7 @@ test.describe('Motion engine & Motion Lab (#234)', () => {
       if (!lab) throw new Error('Motion Lab global missing');
       await lab.replayFixture('swarm3');
       const afterReplay = lab.stats();
-      await lab.runStressBurst(10, 50, 3200);
+      await lab.runStressBurst(10, 50, 3800);
       const afterStress = lab.stats();
       return {
         afterReplay,

@@ -52,10 +52,21 @@
     <span class="stat-chip">Intents: <strong id="lab-intents">0</strong></span>
   </div>
 
+  <div class="lab-toolbar" id="replay-toolbar">
+    <strong>Mission Replay (#236)</strong>
+    <input id="replay-mission-input" type="text" placeholder="Mission ID (e.g. m_...)" style="background:var(--bg-card);color:var(--text-main);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 8px;">
+    <button id="replay-load-btn">Load Mission</button>
+    <button id="replay-play-btn">Play Replay</button>
+    <input id="replay-scrubber" type="range" min="0" max="0" value="0" style="flex:1;min-width:140px;">
+    <span class="stat-chip" id="replay-step-label">0 / 0</span>
+    <button id="replay-export-btn">Export Replay</button>
+  </div>
+
   <div class="lab-grid">
     <div class="stage-box" id="lab-stage">
       <div class="workers-row" id="lab-workers"></div>
       <div class="lab-cursor" id="lab-cursor"></div>
+      <img id="replay-frame-img" alt="Recorded step frame" style="display:none;max-width:100%;max-height:220px;margin-top:10px;border-radius:6px;border:1px solid var(--border);" data-frame-hash="">
     </div>
     <div class="lab-feed" id="lab-feed" role="log" aria-live="polite"></div>
   </div>

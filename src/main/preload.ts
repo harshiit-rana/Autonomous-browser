@@ -95,6 +95,10 @@ contextBridge.exposeInMainWorld('aegis', {
     ipcRenderer.invoke(IPC_CHANNELS.MISSIONS_LIST, { limit }),
   getMissionEvents: (missionId: string, afterSeq?: number, limit?: number) =>
     ipcRenderer.invoke(IPC_CHANNELS.MISSION_EVENTS_GET, { missionId, afterSeq, limit }),
+  loadReplay: (missionId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.REPLAY_LOAD, { missionId }),
+  exportReplay: (missionId: string, outputDir?: string, confirmed?: boolean) =>
+    ipcRenderer.invoke(IPC_CHANNELS.REPLAY_EXPORT, { missionId, outputDir, confirmed }),
   exportData: () =>
     ipcRenderer.invoke(IPC_CHANNELS.DATA_EXPORT),
   importData: () =>

@@ -1,5 +1,5 @@
 import { SessionManager } from '../src/session/session_manager.js';
-import { TrajectoryRecorder, TrajectoryReplayer, TrajectoryStep } from '../src/session/trajectory_replay.js';
+import { TrajectoryRecorder, TrajectoryReplayer, TrajectoryStep } from '../src/automation/flight_recorder.js';
 import { DownloadPipeline } from '../src/session/download_pipeline.js';
 import * as assert from 'node:assert';
 import * as fs from 'node:fs';

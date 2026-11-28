@@ -585,6 +585,44 @@ class MainApp {
       }
     );
 
+    // Flight Recorder & Replay (#236 [LIV-05])
+    registerTypedHandler<{ missionId: string }, any>(
+      IPC_CHANNELS.REPLAY_LOAD,
+      getChrome,
+      (req) => {
+        const missionId = String(req.missionId || '').replace(/[^a-zA-Z0-9._-]/g, '');
+        if (!missionId) throw new Error('Invalid missionId');
+        const { MissionFlightRecorder } = require('../automation/flight_recorder.js');
+        const missionDir = path.join(getAppPaths().userData, 'missions', missionId);
+        return MissionFlightRecorder.load(missionDir, { includeFrameDataUrls: true });
+      }
+    );
+
+    registerTypedHandler<{ missionId: string; outputDir?: string; confirmed?: boolean }, any>(
+      IPC_CHANNELS.REPLAY_EXPORT,
+      getChrome,
+      async (req) => {
+        const missionId = String(req.missionId || '').replace(/[^a-zA-Z0-9._-]/g, '');
+        if (!missionId) throw new Error('Invalid missionId');
+        if (!req.confirmed && this.window) {
+          const { dialog } = require('electron');
+          const choice = await dialog.showMessageBox(this.window, {
+            type: 'question',
+            buttons: ['Export Redacted Replay', 'Cancel'],
+            defaultId: 0,
+            cancelId: 1,
+            title: 'Export Mission Replay',
+            message: `Export replay bundle for mission ${missionId}? Secrets and password inputs are redacted before export.`
+          });
+          if (choice.response !== 0) return { cancelled: true };
+        }
+        const { MissionFlightRecorder } = require('../automation/flight_recorder.js');
+        const missionDir = path.join(getAppPaths().userData, 'missions', missionId);
+        const outDir = req.outputDir || path.join(getAppPaths().userData, 'exports', `replay_${missionId}`);
+        return MissionFlightRecorder.exportReplayBundle(missionDir, outDir, { blurSensitiveFrames: true });
+      }
+    );
+
     // The user's answer to the agent's open question (ask_user / approval / stuck), #225
     registerTypedHandler<MissionAnswerRequest, { ok: boolean; error?: string }>(
       IPC_CHANNELS.MISSION_ANSWER,

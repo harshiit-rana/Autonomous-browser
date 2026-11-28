@@ -27,6 +27,7 @@ import { runWorkerTask, runNonBrowserTask, WorkerRunDeps, DEFAULT_WORKER_MAX_STE
 import { UrlClaims } from '../swarm/worker_findings.js';
 import { PauseGate, QuestionQueue } from '../swarm/worker_coordination.js';
 import { MissionRecorder } from '../infrastructure/mission_recorder.js';
+import { MissionFlightRecorder } from '../automation/flight_recorder.js';
 import { EventLog } from './event_log.js';
 import { AgentLoop, MissionBrief, UserQuestion, VerificationOutcome, LoopOutcome } from './agent_loop.js';
 import { AgentTabHost } from './tools.js';
@@ -1001,7 +1002,12 @@ export class AgentRuntime {
         worker: p => { if (live()) this.emitWorkerEvent({ id: 'worker-agent-1', name: 'Agent [Operator]', task: p.task, progress: p.progress, status: 'running' }); },
         event: (kind, data) => {
           const d = (data && typeof data === 'object') ? data as Record<string, any> : { value: data };
-          this.ensureEventLog(mission.id).emit(kind, d, { workerId: 'worker-agent-1', stepId: typeof d.step === 'number' ? `step_${d.step}` : undefined });
+          const ev = this.ensureEventLog(mission.id).emit(kind, d, { workerId: 'worker-agent-1', stepId: typeof d.step === 'number' ? `step_${d.step}` : undefined });
+          if (kind === 'step_started' && process.env.AEGIS_RECORD_FRAMES === '1' && this.activeFlightRecorder) {
+            void tab.view.webContents.capturePage().then(img => {
+              this.activeFlightRecorder?.recordJpegFrame(img.toJPEG(65), { seq: ev.seq, ts: ev.ts });
+            }).catch(() => {});
+          }
         },
         toolPhase: a => {
           if (!live()) return;
@@ -1247,16 +1253,25 @@ export class AgentRuntime {
   }
 
   private activeEventLog: EventLog | null = null;
+  private activeFlightRecorder: MissionFlightRecorder | null = null;
 
   private ensureEventLog(missionId: string): EventLog {
     if (!this.activeEventLog || (this.activeEventLog as any).missionId !== missionId) {
+      const mDir = path.join(this.userData(), 'missions', missionId);
+      const flight = new MissionFlightRecorder(mDir, {
+        recordFrames: process.env.AEGIS_RECORD_FRAMES === '1'
+      });
+      this.activeFlightRecorder = flight;
       this.activeEventLog = new EventLog(missionId, {
         privacyMode: getSettings().privacyMode,
-        persist: ev => MissionRecorder.event(ev.missionId, ev.kind, {
-          ...ev.data,
-          ...(ev.workerId ? { workerId: ev.workerId } : {}),
-          ...(ev.stepId ? { stepId: ev.stepId } : {})
-        }),
+        persist: ev => {
+          MissionRecorder.event(ev.missionId, ev.kind, {
+            ...ev.data,
+            ...(ev.workerId ? { workerId: ev.workerId } : {}),
+            ...(ev.stepId ? { stepId: ev.stepId } : {})
+          });
+          flight.appendEvent(ev);
+        },
         forward: ev => {
           if (!this.window.isDestroyed()) {
             this.window.webContents.send(IPC_CHANNELS.EVENT_MISSION_EVENT, ev);
